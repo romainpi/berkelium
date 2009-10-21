@@ -905,4 +905,7 @@ void WindowImpl::HandleMouseLeave() {
 void WindowImpl::UpdatePreferredWidth(int pref_width) {
 }
 
+void WindowImpl::UpdatePreferredSize(const gfx::Size&) {
+}
+
 }
