@@ -55,6 +55,11 @@ IF(CHROME_FOUND)
 
   ADD_EXECUTABLE(berkelium ${BERKELIUM_TOP_LEVEL}/subprocess.cpp)
   TARGET_LINK_LIBRARIES(berkelium libberkelium )
-
-
+  ADD_CUSTOM_TARGET(chrome.pak ALL COMMAND ln -sf ${CHROME_ROOT}/src/out/${CHROMIUMMODE}/chrome.pak)
+  ADD_CUSTOM_TARGET(libavcodec.so.52 ALL COMMAND ln -sf ${CHROME_ROOT}/src/out/${CHROMIUMMODE}/libavcodec.so.52)
+  ADD_CUSTOM_TARGET(libavformat.so.52 ALL COMMAND ln -sf ${CHROME_ROOT}/src/out/${CHROMIUMMODE}/libavformat.so.52)
+  ADD_CUSTOM_TARGET(libavutil.so.52 ALL COMMAND ln -sf ${CHROME_ROOT}/src/out/${CHROMIUMMODE}/libavutil.so.52)
+  ADD_CUSTOM_TARGET(locales ALL COMMAND ln -sf ${CHROME_ROOT}/src/out/${CHROMIUMMODE}/locales)
+  ADD_CUSTOM_TARGET(resources ALL COMMAND ln -sf ${CHROME_ROOT}/src/out/${CHROMIUMMODE}/resources)
+  ADD_CUSTOM_TARGET(themes ALL COMMAND ln -sf ${CHROME_ROOT}/src/out/${CHROMIUMMODE}/themes)
 ENDIF(CHROME_FOUND)
