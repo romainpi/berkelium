@@ -35,6 +35,7 @@
 #include "berkelium/WindowDelegate.hpp"
 #include "berkelium/Context.hpp"
 
+#include <stdio.h>
 #include <sys/types.h>
 #ifdef _WIN32
 #define sleep(x) Sleep(x*1000)
