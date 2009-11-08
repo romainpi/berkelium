@@ -51,19 +51,31 @@ IF(CHROME_FOUND)
   TARGET_LINK_LIBRARIES(libberkelium ${CHROME_LIBRARIES})
 
   ADD_EXECUTABLE(ppmrender ${BERKELIUM_TOP_LEVEL}/ppmmain.cpp)
-  TARGET_LINK_LIBRARIES(ppmrender -L. debug liblibberkelium_d.dylib optimized liblibberkelium.dylib )
+  IF(APPLE)
+    SET( CHROMIUM_DYLIB_EXT .dylib)
+  ELSE()
+    SET( CHROMIUM_DYLIB_EXT .so)
+  ENDIF()
+  TARGET_LINK_LIBRARIES(ppmrender -L. debug liblibberkelium_d${CHROMIUM_DYLIB_EXT} optimized liblibberkelium${CHROMIUM_DYLIB_EXT} )
+
 
   ADD_EXECUTABLE(berkelium ${BERKELIUM_TOP_LEVEL}/subprocess.cpp)
-
-  TARGET_LINK_LIBRARIES(berkelium -L. debug liblibberkelium_d.dylib optimized liblibberkelium.dylib )
+  TARGET_LINK_LIBRARIES(berkelium -L. debug liblibberkelium_d${CHROMIUM_DYLIB_EXT} optimized liblibberkelium${CHROMIUM_DYLIB_EXT} )
 IF(APPLE)
-  ADD_LIBRARY(plugin_carbon_interpose SHARED ${CHROME_ROOT}/src/chrome/browser/plugin_carbon_interpose_mac.cc)
-  SET_TARGET_PROPERTIES(plugin_carbon_interpose PROPERTIES COMPILE_FLAGS ${CHROMIUM_CFLAGS})
-  SET_TARGET_PROPERTIES(plugin_carbon_interpose PROPERTIES LINK_FLAGS "-framework Carbon")
-  TARGET_LINK_LIBRARIES(plugin_carbon_interpose -L. debug liblibberkelium_d.dylib optimized liblibberkelium.dylib )
+    ADD_LIBRARY(plugin_carbon_interpose SHARED ${CHROME_ROOT}/src/chrome/browser/plugin_carbon_interpose_mac.cc)
+    SET_TARGET_PROPERTIES(plugin_carbon_interpose PROPERTIES COMPILE_FLAGS ${CHROMIUM_CFLAGS})
+    SET_TARGET_PROPERTIES(plugin_carbon_interpose PROPERTIES LINK_FLAGS "-framework Carbon")
+    TARGET_LINK_LIBRARIES(plugin_carbon_interpose -L. debug liblibberkelium_d.dylib optimized liblibberkelium.dylib )
 
-  ADD_CUSTOM_TARGET(plugin_carbon_interpose.dylib ALL DEPENDS plugin_carbon_interpose COMMAND ln -sf libplugin_carbon_interpose.dylib plugin_carbon_interpose.dylib && ln -sf ${CMAKE_CURRENT_BINARY_DIR}/libplugin_carbon_interpose.dylib ../plugin_carbon_interpose.dylib)
-ENDIF()
+
+
+
+    ADD_CUSTOM_TARGET(plugin_carbon_interpose.dylib ALL DEPENDS plugin_carbon_interpose COMMAND ln -sf libplugin_carbon_interpose.dylib plugin_carbon_interpose.dylib && ln -sf ${CMAKE_CURRENT_BINARY_DIR}/libplugin_carbon_interpose.dylib ../plugin_carbon_interpose.dylib)
+  ENDIF()
+
+  ADD_DEPENDENCIES(berkelium libberkelium)
+  ADD_DEPENDENCIES(ppmrender libberkelium)
+
   ADD_CUSTOM_TARGET(chrome.pak ALL COMMAND ln -sf ${CHROME_ROOT}/src/out/${CHROMIUMMODE}/chrome.pak ../chrome.pak && ln -sf ${CHROME_ROOT}/src/out/${CHROMIUMMODE}/chrome.pak)
   ADD_CUSTOM_TARGET(libavcodec.so.52 ALL COMMAND ln -sf ${CHROME_ROOT}/src/out/${CHROMIUMMODE}/libavcodec.so.52 ../libavcodec.so.52 && ln -sf ${CHROME_ROOT}/src/out/${CHROMIUMMODE}/libavcodec.so.52)
   ADD_CUSTOM_TARGET(libavformat.so.52 ALL COMMAND ln -sf ${CHROME_ROOT}/src/out/${CHROMIUMMODE}/libavformat.so.52 ../libavformat.so.52 && ln -sf ${CHROME_ROOT}/src/out/${CHROMIUMMODE}/libavformat.so.52)
