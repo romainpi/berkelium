@@ -15,7 +15,7 @@ ENDIF()
 
 IF(APPLE)
 IF(NOT CHROMIUMBUILDER)
-SET(CHROMIUMBUILDER,xcode)
+SET(CHROMIUMBUILDER "xcode")
 ENDIF()
 ENDIF()
 
@@ -25,13 +25,12 @@ ENDIF()
 IF(CHROMIUMBUILDER)
   STRING(COMPARE EQUAL ${CHROMIUMBUILDER} "scons" CHROMIUM_ISSCONS)
 ENDIF()
-
 IF(CHROMIUM_ISXCODE)
   SET(CHROMIUM_PLAT mac)
   SET(CHROMIUM_PLAT_CFLAGS -pthread)
   SET(SNOW)
 
-  SET(CHROMIUM_PLAT_LDFLAGS -dynamiclib -pthread ${CHROMIUMDIR}/src/third_party/WebKit/WebKitLibraries/libWebKitSystemInterface${SNOW}Leopard.a -framework CoreAudio -framework AudioToolbox -framework Cocoa -framework QuartzCore -framework Security -framework SecurityInterface -framework SystemConfiguration -ObjC -framework Carbon chromium/src/xcodebuild/chrome.build/${CHROMIUMMODE}/chrome_dll.build/Objects-normal/i386/keystone_glue.o -framework OpenGL -framework JavaScriptCore)
+  SET(CHROMIUM_PLAT_LDFLAGS -dynamiclib -pthread ${CHROMIUMDIR}/src/third_party/WebKit/WebKitLibraries/libWebKitSystemInterface${SNOW}Leopard.a "-framework IOKit" "-framework CoreAudio" "-framework AudioToolbox" "-framework Cocoa" "-framework QuartzCore" "-framework Security" "-framework SecurityInterface" "-framework SystemConfiguration" -ObjC "-framework Carbon" -Wl,${CHROMIUMDIR}/src/xcodebuild/chrome.build/${CHROMIUMMODE}/chrome_dll.build/Objects-normal/i386/keystone_glue.o "-framework OpenGL" "-framework JavaScriptCore")
   SET(CHROMIUM_START_GROUP)
   SET(CHROMIUM_END_GROUP)
   SET(CHROMIUM_DLLEXT dylib)
@@ -54,7 +53,7 @@ IF(NOT CHROMIUM_ISSCONS)
    SET(CHROME_LIBRARY_DIRS ${CHROMIUM_CHLIBS} ${CHROMIUM_CHLIBS}/app ${CHROMIUM_CHLIBS}/base ${CHROMIUM_CHLIBS}/ipc ${CHROMIUM_CHLIBS}/chrome ${CHROMIUM_CHLIBS}/net ${CHROMIUM_CHLIBS}/media ${CHROMIUM_CHLIBS}/webkit ${CHROMIUM_CHLIBS}/sandbox ${CHROMIUM_CHLIBS}/skia ${CHROMIUM_CHLIBS}/printing ${CHROMIUM_CHLIBS}/v8/tools/gyp ${CHROMIUM_CHLIBS}/sdch ${CHROMIUM_CHLIBS}/build/temp_gyp ${CHROMIUM_CHLIBS}/native_client/src/trusted/plugin/ ${CHROMIUM_CHLIBS}/native_client/src/shared/srpc ${CHROMIUM_CHLIBS}/native_client/src/shared/imc ${CHROMIUM_CHLIBS}/native_client/src/shared/platform ${CHROMIUM_CHLIBS}/native_client/src/trusted/nonnacl_util ${CHROMIUM_CHLIBS}/native_client/src/trusted/nonnacl_util/linux ${CHROMIUM_CHLIBS}/native_client/src/trusted/service_runtime/ ${CHROMIUM_CHLIBS}/ ${CHROMIUM_CHLIBS}/native_client/src/trusted/desc/ ${CHROMIUM_CHLIBS}/third_party/bzip2 ${CHROMIUM_CHLIBS}/third_party/ffmpeg ${CHROMIUM_CHLIBS}/third_party/harfbuzz ${CHROMIUM_CHLIBS}/third_party/hunspell ${CHROMIUM_CHLIBS}/third_party/icu ${CHROMIUM_CHLIBS}/third_party/libevent ${CHROMIUM_CHLIBS}/third_party/libjpeg ${CHROMIUM_CHLIBS}/third_party/libpng ${CHROMIUM_CHLIBS}/third_party/libxml ${CHROMIUM_CHLIBS}/third_party/libxslt ${CHROMIUM_CHLIBS}/third_party/lzma_sdk ${CHROMIUM_CHLIBS}/third_party/modp_b64 ${CHROMIUM_CHLIBS}/third_party/sqlite ${CHROMIUM_CHLIBS}/third_party/zlib ${CHROMIUM_CHLIBS}/third_party/WebKit/JavaScriptCore/JavaScriptCore.gyp ${CHROMIUM_CHLIBS}/third_party/WebKit/WebCore/WebCore.gyp)
 
 
-    SET(CHROMIUM_TPLIBS event zlib png xml jpeg xslt bzip2 sqlite google_nacl_imc_c)
+    SET(CHROMIUM_TPLIBS event zlib png xml jpeg xslt bzip2 sqlite google_nacl_imc_c base_i18n)
 
     SET(CHROMIUM_GENINCLUDES ${CHROMIUM_CHLIBS}/gen/chrome)
   ELSE(NOT CHROMIUM_ISXCODE)
@@ -65,8 +64,8 @@ IF(NOT CHROMIUM_ISSCONS)
     ENDIF()
 
     SET(CHROME_LIBRARY_DIRS ${CHROMIUM_CHLIBS})
-
-    SET(CHROMIUM_TPLIBS ${CHLIBS}/libevent.a ${CHLIBS}/libxslt.a ${CHLIBS}/libjpeg.a ${CHLIBS}/libpng.a ${CHLIBS}/libz.a ${CHLIBS}/libxml2.a ${CHLIBS}/libbz2.a ${CHLIBS}/libsqlite3.a ${CHLIBS}/libprofile_import.a libgoogle_nacl_imc_c)
+#${CHROMIUM_CHLIBS}/libsync.a ${CHROMIUM_CHLIBS}/libsyncapi.a ${CHROMIUM_CHLIBS}/libprotobuf_lite.a 
+    SET(CHROMIUM_TPLIBS ${CHROMIUM_CHLIBS}/libevent.a ${CHROMIUM_CHLIBS}/libxslt.a ${CHROMIUM_CHLIBS}/libjpeg.a ${CHROMIUM_CHLIBS}/libpng.a ${CHROMIUM_CHLIBS}/libz.a ${CHROMIUM_CHLIBS}/libxml2.a ${CHROMIUM_CHLIBS}/libbz2.a ${CHROMIUM_CHLIBS}/libsqlite3.a ${CHROMIUM_CHLIBS}/libprofile_import.a libgoogle_nacl_imc_c  base_gfx)
 
     SET(GENINCLUDES ${CHROMIUMDIR}/src/xcodebuild/DerivedSources/${CHROMIUMMODE}/chrome)
     
@@ -80,10 +79,10 @@ ELSE(NOT CHROMIUM_ISSCONS)
   ENDIF()
 
   SET(CHROME_LIBRARY_DIRS ${CHROMIUMLIBPATH})
-  SET(CHROMIUM_TPLIBS event xslt jpeg png z xml2 bz2 sqlite google_nacl_imc_c)
+  SET(CHROMIUM_TPLIBS event xslt jpeg png z xml2 bz2 sqlite google_nacl_imc_c  base_i18n)
 ENDIF(NOT CHROMIUM_ISSCONS)
 
-SET(CHROMIUMLIBS ${CHROMIUMLDFLAGS} ${CHROMIUM_TPLIBS}  dl m common browser debugger renderer utility printing app_base base icui18n icuuc icudata skia net googleurl sdch modp_b64 v8_snapshot v8_base glue pcre wtf webkit webcore media ffmpeg hunspell plugin  appcache ipc worker database common_constants npGoogleNaClPluginChrome nonnacl_srpc platform sel sel_ldr_launcher nonnacl_util_chrome nrd_xfer gio expiration nacl base_i18n)
+SET(CHROMIUMLIBS ${CHROMIUMLDFLAGS} ${CHROMIUM_TPLIBS}  dl m common browser debugger renderer utility printing app_base base icui18n icuuc icudata skia net googleurl sdch modp_b64 v8_snapshot v8_base glue pcre wtf webkit webcore media ffmpeg hunspell plugin  appcache ipc worker database common_constants npGoogleNaClPluginChrome nonnacl_srpc platform sel sel_ldr_launcher nonnacl_util_chrome nrd_xfer gio expiration nacl)
 SET(CHROMIUM_ARCHFLAGS)
 # Flags that affect both compiling and linking
 SET(CHROMIUM_CLIBFLAGS ${CHROMIUM_ARCHFLAGS} -fvisibility=hidden -fvisibility-inlines-hidden -fPIC -pthread -Wall -fno-rtti)
