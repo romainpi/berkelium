@@ -53,7 +53,7 @@ IF(NOT CHROMIUM_ISSCONS)
    SET(CHROME_LIBRARY_DIRS ${CHROMIUM_CHLIBS} ${CHROMIUM_CHLIBS}/app ${CHROMIUM_CHLIBS}/base ${CHROMIUM_CHLIBS}/ipc ${CHROMIUM_CHLIBS}/chrome ${CHROMIUM_CHLIBS}/net ${CHROMIUM_CHLIBS}/media ${CHROMIUM_CHLIBS}/webkit ${CHROMIUM_CHLIBS}/sandbox ${CHROMIUM_CHLIBS}/skia ${CHROMIUM_CHLIBS}/printing ${CHROMIUM_CHLIBS}/v8/tools/gyp ${CHROMIUM_CHLIBS}/sdch ${CHROMIUM_CHLIBS}/build/temp_gyp ${CHROMIUM_CHLIBS}/native_client/src/trusted/plugin/ ${CHROMIUM_CHLIBS}/native_client/src/shared/srpc ${CHROMIUM_CHLIBS}/native_client/src/shared/imc ${CHROMIUM_CHLIBS}/native_client/src/shared/platform ${CHROMIUM_CHLIBS}/native_client/src/trusted/nonnacl_util ${CHROMIUM_CHLIBS}/native_client/src/trusted/nonnacl_util/linux ${CHROMIUM_CHLIBS}/native_client/src/trusted/service_runtime/ ${CHROMIUM_CHLIBS}/ ${CHROMIUM_CHLIBS}/native_client/src/trusted/desc/ ${CHROMIUM_CHLIBS}/third_party/bzip2 ${CHROMIUM_CHLIBS}/third_party/ffmpeg ${CHROMIUM_CHLIBS}/third_party/harfbuzz ${CHROMIUM_CHLIBS}/third_party/hunspell ${CHROMIUM_CHLIBS}/third_party/icu ${CHROMIUM_CHLIBS}/third_party/libevent ${CHROMIUM_CHLIBS}/third_party/libjpeg ${CHROMIUM_CHLIBS}/third_party/libpng ${CHROMIUM_CHLIBS}/third_party/libxml ${CHROMIUM_CHLIBS}/third_party/libxslt ${CHROMIUM_CHLIBS}/third_party/lzma_sdk ${CHROMIUM_CHLIBS}/third_party/modp_b64 ${CHROMIUM_CHLIBS}/third_party/sqlite ${CHROMIUM_CHLIBS}/third_party/zlib ${CHROMIUM_CHLIBS}/third_party/WebKit/JavaScriptCore/JavaScriptCore.gyp ${CHROMIUM_CHLIBS}/third_party/WebKit/WebCore/WebCore.gyp)
 
 
-    SET(CHROMIUM_TPLIBS event zlib png xml jpeg xslt bzip2 sqlite google_nacl_imc_c base_i18n)
+    SET(CHROMIUM_TPLIBS event zlib png xml jpeg xslt bzip2 ${CHROMIUM_CHLIBS}/third_party/sqlite/libsqlite.a google_nacl_imc_c base_i18n)
 
     SET(CHROMIUM_GENINCLUDES ${CHROMIUM_CHLIBS}/gen/chrome)
   ELSE(NOT CHROMIUM_ISXCODE)
@@ -79,7 +79,7 @@ ELSE(NOT CHROMIUM_ISSCONS)
   ENDIF()
 
   SET(CHROME_LIBRARY_DIRS ${CHROMIUMLIBPATH})
-  SET(CHROMIUM_TPLIBS event xslt jpeg png z xml2 bz2 sqlite google_nacl_imc_c  base_i18n)
+  SET(CHROMIUM_TPLIBS event xslt jpeg png z xml2 bz2 ${CHROMIUMLIBPATH}/libsqlite.a google_nacl_imc_c  base_i18n)
 ENDIF(NOT CHROMIUM_ISSCONS)
 
 SET(CHROMIUMLIBS ${CHROMIUMLDFLAGS} ${CHROMIUM_TPLIBS}  dl m common browser debugger renderer utility printing app_base base icui18n icuuc icudata skia net googleurl sdch modp_b64 v8_snapshot v8_base glue pcre wtf webkit webcore media ffmpeg hunspell plugin  appcache ipc worker database common_constants npGoogleNaClPluginChrome nonnacl_srpc platform sel sel_ldr_launcher nonnacl_util_chrome nrd_xfer gio expiration nacl)
