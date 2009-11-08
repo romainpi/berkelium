@@ -76,14 +76,14 @@ IF(APPLE)
   ADD_DEPENDENCIES(berkelium libberkelium)
   ADD_DEPENDENCIES(ppmrender libberkelium)
 
-  ADD_CUSTOM_TARGET(chrome.pak ALL COMMAND ln -sf ${CHROME_ROOT}/src/out/${CHROMIUMMODE}/chrome.pak ../chrome.pak && ln -sf ${CHROME_ROOT}/src/out/${CHROMIUMMODE}/chrome.pak)
-  ADD_CUSTOM_TARGET(libavcodec.so.52 ALL COMMAND ln -sf ${CHROME_ROOT}/src/out/${CHROMIUMMODE}/libavcodec.so.52 ../libavcodec.so.52 && ln -sf ${CHROME_ROOT}/src/out/${CHROMIUMMODE}/libavcodec.so.52)
-  ADD_CUSTOM_TARGET(libavformat.so.52 ALL COMMAND ln -sf ${CHROME_ROOT}/src/out/${CHROMIUMMODE}/libavformat.so.52 ../libavformat.so.52 && ln -sf ${CHROME_ROOT}/src/out/${CHROMIUMMODE}/libavformat.so.52)
-  ADD_CUSTOM_TARGET(libavutil.so.52 ALL COMMAND ln -sf ${CHROME_ROOT}/src/out/${CHROMIUMMODE}/libavutil.so.52 ../libavutil.so.52 && ln -sf ${CHROME_ROOT}/src/out/${CHROMIUMMODE}/libavutil.so.52)
+  ADD_CUSTOM_TARGET(chrome.pak ALL COMMAND ln -sf ${CHROMIUM_DATADIR}/chrome.pak ../chrome.pak && ln -sf ${CHROMIM_DATADIR}/chrome.pak)
+  ADD_CUSTOM_TARGET(libavcodec.so.52 ALL COMMAND ln -sf ${CHROMIUM_DATADIR}/libavcodec.so.52 ../libavcodec.so.52 && ln -sf ${CHROMIUM_DATADIR}/libavcodec.so.52)
+  ADD_CUSTOM_TARGET(libavformat.so.52 ALL COMMAND ln -sf ${CHROMIUM_DATADIR}/libavformat.so.52 ../libavformat.so.52 && ln -sf ${CHROMIUM_DATADIR}/libavformat.so.52)
+  ADD_CUSTOM_TARGET(libavutil.so.52 ALL COMMAND ln -sf ${CHROMIUM_DATADIR}/libavutil.so.52 ../libavutil.so.52 && ln -sf ${CHROMIUM_DATADIR}/libavutil.so.52)
 
-  ADD_CUSTOM_TARGET(locales ALL COMMAND ln -sf ${CHROME_ROOT}/src/out/${CHROMIUMMODE}/locales && ln -sf ${CHROME_ROOT}/src/out/${CHROMIUMMODE}/locales ../locales)
-  ADD_CUSTOM_TARGET(resources ALL COMMAND ln -sf ${CHROME_ROOT}/src/out/${CHROMIUMMODE}/resources && ln -sf ${CHROME_ROOT}/src/out/${CHROMIUMMODE}/resources ../resources)
-  ADD_CUSTOM_TARGET(themes ALL COMMAND ln -sf ${CHROME_ROOT}/src/out/${CHROMIUMMODE}/themes && ln -sf ${CHROME_ROOT}/src/out/${CHROMIUMMODE}/themes ../themes)
+  ADD_CUSTOM_TARGET(locales ALL COMMAND ln -sf ${CHROMIUM_DATADIR}/locales && ln -sf ${CHROMIUM_DATADIR}/locales ../locales)
+  ADD_CUSTOM_TARGET(resources ALL COMMAND ln -sf ${CHROMIUM_DATADIR}/resources && ln -sf ${CHROMIUM_DATADIR}/resources ../resources)
+  ADD_CUSTOM_TARGET(themes ALL COMMAND ln -sf ${CHROMIUM_DATADIR}/themes && ln -sf ${CHROMIUM_DATADIR}/themes ../themes)
 
 
 ENDIF(CHROME_FOUND)

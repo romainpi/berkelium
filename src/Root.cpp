@@ -60,6 +60,12 @@
 #include "base/logging.h"
 #include <signal.h>
 #include <sys/stat.h>
+#if defined(OS_MACOSX)
+#include "base/mac_util.h"
+#include "chrome/common/chrome_paths_internal.h"
+#include "chrome/app/breakpad_mac.h"
+#include "third_party/WebKit/WebKit/mac/WebCoreSupport/WebSystemInterface.h"
+#endif
 #ifdef _WIN32
 #include <direct.h>
 #endif
@@ -144,10 +150,18 @@ Root::Root (){
     app::RegisterPathProvider();
     FilePath homedirpath;
     PathService::Get(chrome::DIR_USER_DATA,&homedirpath);
-
-    //RenderProcessHost::set_run_renderer_in_process(true);
-
-	mMessageLoop = new MessageLoop(MessageLoop::TYPE_UI);
+    bool SINGLE_PROCESS=false;
+#if defined(OS_MACOSX)
+    mac_util::SetOverrideAppBundlePath(chrome::GetFrameworkBundlePath());
+    if (SINGLE_PROCESS) {
+        InitWebCoreSystemInterface();
+        //CGColorSpaceCreateDeviceRGB();
+    }
+#endif  // OS_MACOSX
+    if (SINGLE_PROCESS) {
+        RenderProcessHost::set_run_renderer_in_process(true);
+    }
+    mMessageLoop = new MessageLoop(MessageLoop::TYPE_UI);
     mUIThread = new ChromeThread();
 
     mProcessSingleton= new ProcessSingleton(homedirpath);

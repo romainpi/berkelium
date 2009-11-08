@@ -45,9 +45,11 @@ ENDIF()
 
 IF(NOT CHROMIUM_ISSCONS)
   IF(NOT CHROMIUM_ISXCODE)
+    ### Make build (Linux 32/64-bit) ###
     SET(CHLIBS $(CHROMIUMLIBPATH))
+    SET(CHROMIUM_DATADIR ${CHROMIUMDIR}/src/out/${CHROMIUMMODE})
     IF(NOT CHROMIUM_CHLIBS)
-      SET(CHROMIUM_CHLIBS ${CHROMIUMDIR}/src/out/${CHROMIUMMODE}/obj.target)
+      SET(CHROMIUM_CHLIBS ${CHROMIUM_DATADIR}/obj.target)
     ENDIF()
 
    SET(CHROME_LIBRARY_DIRS ${CHROMIUM_CHLIBS} ${CHROMIUM_CHLIBS}/app ${CHROMIUM_CHLIBS}/base ${CHROMIUM_CHLIBS}/ipc ${CHROMIUM_CHLIBS}/chrome ${CHROMIUM_CHLIBS}/net ${CHROMIUM_CHLIBS}/media ${CHROMIUM_CHLIBS}/webkit ${CHROMIUM_CHLIBS}/sandbox ${CHROMIUM_CHLIBS}/skia ${CHROMIUM_CHLIBS}/printing ${CHROMIUM_CHLIBS}/v8/tools/gyp ${CHROMIUM_CHLIBS}/sdch ${CHROMIUM_CHLIBS}/build/temp_gyp ${CHROMIUM_CHLIBS}/native_client/src/trusted/plugin/ ${CHROMIUM_CHLIBS}/native_client/src/shared/srpc ${CHROMIUM_CHLIBS}/native_client/src/shared/imc ${CHROMIUM_CHLIBS}/native_client/src/shared/platform ${CHROMIUM_CHLIBS}/native_client/src/trusted/nonnacl_util ${CHROMIUM_CHLIBS}/native_client/src/trusted/nonnacl_util/linux ${CHROMIUM_CHLIBS}/native_client/src/trusted/service_runtime/ ${CHROMIUM_CHLIBS}/ ${CHROMIUM_CHLIBS}/native_client/src/trusted/desc/ ${CHROMIUM_CHLIBS}/third_party/bzip2 ${CHROMIUM_CHLIBS}/third_party/ffmpeg ${CHROMIUM_CHLIBS}/third_party/harfbuzz ${CHROMIUM_CHLIBS}/third_party/hunspell ${CHROMIUM_CHLIBS}/third_party/icu ${CHROMIUM_CHLIBS}/third_party/libevent ${CHROMIUM_CHLIBS}/third_party/libjpeg ${CHROMIUM_CHLIBS}/third_party/libpng ${CHROMIUM_CHLIBS}/third_party/libxml ${CHROMIUM_CHLIBS}/third_party/libxslt ${CHROMIUM_CHLIBS}/third_party/lzma_sdk ${CHROMIUM_CHLIBS}/third_party/modp_b64 ${CHROMIUM_CHLIBS}/third_party/sqlite ${CHROMIUM_CHLIBS}/third_party/zlib ${CHROMIUM_CHLIBS}/third_party/WebKit/JavaScriptCore/JavaScriptCore.gyp ${CHROMIUM_CHLIBS}/third_party/WebKit/WebCore/WebCore.gyp)
@@ -57,26 +59,31 @@ IF(NOT CHROMIUM_ISSCONS)
 
     SET(CHROMIUM_GENINCLUDES ${CHROMIUM_CHLIBS}/gen/chrome)
   ELSE(NOT CHROMIUM_ISXCODE)
-
+    ### XCode Build System (Mac OS X) ###
     SET(CHROMIUM_CHLIBS ${CHROMIUMLIBPATH})
     IF (NOT CHROMIUN_CHLIBS)
        SET(CHROMIUM_CHLIBS ${CHROMIUMDIR}/src/xcodebuild/${CHROMIUMMODE})
     ENDIF()
+    SET(CHROMIUM_DATADIR ${CHROMIUM_CHLIBS})
 
     SET(CHROME_LIBRARY_DIRS ${CHROMIUM_CHLIBS})
-#${CHROMIUM_CHLIBS}/libsync.a ${CHROMIUM_CHLIBS}/libsyncapi.a ${CHROMIUM_CHLIBS}/libprotobuf_lite.a 
-    SET(CHROMIUM_TPLIBS ${CHROMIUM_CHLIBS}/libevent.a ${CHROMIUM_CHLIBS}/libxslt.a ${CHROMIUM_CHLIBS}/libjpeg.a ${CHROMIUM_CHLIBS}/libpng.a ${CHROMIUM_CHLIBS}/libz.a ${CHROMIUM_CHLIBS}/libxml2.a ${CHROMIUM_CHLIBS}/libbz2.a ${CHROMIUM_CHLIBS}/libsqlite3.a ${CHROMIUM_CHLIBS}/libprofile_import.a libgoogle_nacl_imc_c  base_gfx)
-
+    SET(CHROMIUM_TPLIBS ${CHROMIUM_CHLIBS}/libevent.a ${CHROMIUM_CHLIBS}/libxslt.a ${CHROMIUM_CHLIBS}/libjpeg.a ${CHROMIUM_CHLIBS}/libpng.a ${CHROMIUM_CHLIBS}/libz.a ${CHROMIUM_CHLIBS}/libxml2.a ${CHROMIUM_CHLIBS}/libbz2.a ${CHROMIUM_CHLIBS}/libsqlite3.a ${CHROMIUM_CHLIBS}/libprofile_import.a libgoogle_nacl_imc_c)
+    IF(CHROME_IS_OVER_VERSION_29000)
+        # Uncomment me for experimental 29000 builds (Crash in WebCore calling CoreGraphics after about 3 renders, in __dyld_misaligned_stack_error)
+        SET(CHROMIUM_TPLIBS ${CHROMIUM_TPLIBS} base_i18n ${CHROMIUM_CHLIBS}/libsync.a ${CHROMIUM_CHLIBS}/libsyncapi.a ${CHROMIUM_CHLIBS}/libprotobuf_lite.a )
+    ELSE()
+        SET(CHROMIUM_TPLIBS ${CHROMIUM_TPLIBS} base_gfx)
+    ENDIF()
     SET(GENINCLUDES ${CHROMIUMDIR}/src/xcodebuild/DerivedSources/${CHROMIUMMODE}/chrome)
-    
+
   ENDIF(NOT CHROMIUM_ISXCODE)
 ELSE(NOT CHROMIUM_ISSCONS)
-
-  SET(GENINCLUDES ${CHROMIUMDIR}/src/out/${CHROMIUMMODE}) #not sure
-
+  ### SCONS Build System (deprecated) ###
+  SET(CHROMIUM_DATADIR ${CHROMIUMDIR}/src/out/${CHROMIUMMODE})
   IF(NOT CHROMIUMLIBPATH)
-    SET(CHROMIUMLIBPATH ${CHROMIUMDIR}/src/out/${CHROMIUMMODE}/lib)
+    SET(CHROMIUMLIBPATH ${CHROMIUM_DATADIR}/lib)
   ENDIF()
+  SET(GENINCLUDES ${CHROMIUM_DATADIR}) #not sure
 
   SET(CHROME_LIBRARY_DIRS ${CHROMIUMLIBPATH})
   SET(CHROMIUM_TPLIBS event xslt jpeg png z xml2 bz2 ${CHROMIUMLIBPATH}/libsqlite.a google_nacl_imc_c  base_i18n)

@@ -183,6 +183,23 @@ bool IsCrashReporterEnabled() {
     return false;
 }
 
+#ifdef OS_MACOSX
+struct NSString;
+void ClearCrashKeyValue(NSString*) {
+}
+void SetCrashKeyValue(NSString*, NSString*) {
+}
+namespace browser_sync {
+class TalkMediatorImpl {
+public:
+TalkMediatorImpl();
+};
+TalkMediatorImpl::TalkMediatorImpl() {
+NOTREACHED();
+}
+}
+#endif
+
 namespace Berkelium {
 namespace {
 void CommonSubprocessInit() {
