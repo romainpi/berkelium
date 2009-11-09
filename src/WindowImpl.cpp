@@ -194,10 +194,10 @@ void WindowImpl::mouseWheel(int xScroll, int yScroll) {
     }
 }
 
-void WindowImpl::textEvent(std::wstring evt) {
+void WindowImpl::textEvent(const wchar_t* evt, size_t evtLength) {
     FrontToBackIter iter = frontIter();
     if (iter != frontEnd()) {
-        (*iter)->textEvent(evt);
+        (*iter)->textEvent(evt,evtLength);
     }
 }
 void WindowImpl::keyEvent(bool pressed, int mods, int vk_code, int scancode) {
@@ -251,14 +251,14 @@ void WindowImpl::SetContainerBounds (const gfx::Rect &rc) {
     }
 }
 
-void WindowImpl::executeJavascript(const std::wstring &javascript) {
+void WindowImpl::executeJavascript(const wchar_t *javascript, size_t javascriptLength) {
     if (host()) {
-        host()->ExecuteJavascriptInWebFrame(std::wstring(), javascript);
+        host()->ExecuteJavascriptInWebFrame(std::wstring(), std::wstring(javascript, javascriptLength));
     }
 }
 
-bool WindowImpl::navigateTo(const std::string &url) {
-    this->mCurrentURL = GURL(url);
+bool WindowImpl::navigateTo(const char *url, size_t urlLength) {
+    this->mCurrentURL = GURL(std::string(url,urlLength));
     return doNavigateTo(this->mCurrentURL, GURL(), false);
 }
 bool WindowImpl::doNavigateTo(
@@ -574,22 +574,36 @@ void WindowImpl::ProcessDOMUIMessage(
     const std::string& message, const Value* content,
     int request_id, bool has_callback)
 {
-    std::vector<std::string> argsVector;
-
+    WindowDelegate::Data *argsVector=NULL;
+    size_t argsVectorSize=0;
+    std::vector<std::string> storage;
     /* Callbacks don't work for DOMUI, so we just process message and content.
        (request_id and has_callback are hardcoded to false.)
        In addition, content is currently hardcoded as an array of strings.
     */
     if (content->GetType() == Value::TYPE_LIST) {
         const ListValue* argsListValue = static_cast<const ListValue*>(content);
-        for (size_t i = 0; i < argsListValue->GetSize(); ++i) {
-            argsVector.push_back(std::string());
-            argsListValue->GetString(i, &argsVector.back());
+        argsVectorSize=argsListValue->GetSize();
+        storage.resize(argsVectorSize);
+        argsVector = new WindowDelegate::Data[argsVectorSize];
+        for (size_t i = 0; i < argsVectorSize; ++i) {
+            if (argsListValue->GetString(i, &storage[i])) {
+                argsVector[i].message=storage[i].data();
+                argsVector[i].length=storage[i].length();
+            }else {
+                argsVector[i].length=0;
+            }
         }
     }
 
     if (mDelegate) {
-        mDelegate->onChromeSend(this, message, argsVector);
+        WindowDelegate::Data temp_message;
+        temp_message.message=message.data();
+        temp_message.length=message.length();
+        mDelegate->onChromeSend(this, temp_message, argsVector, argsVectorSize);
+    }
+    if (storage.size()&&argsVector!=NULL) {
+        delete[] argsVector;
     }
 }
 
@@ -748,8 +762,9 @@ void WindowImpl::DidStartProvisionalLoadForFrame(
     }
     if (mDelegate) {
         this->mCurrentURL = url;
-        mDelegate->onStartLoading(this, url.spec());
-        mDelegate->onAddressBarChanged(this, url.spec());
+        const std::string&spec=url.spec();
+        mDelegate->onStartLoading(this, spec.data(), spec.length());
+        mDelegate->onAddressBarChanged(this, spec.data(), spec.length());
     }
 }
 

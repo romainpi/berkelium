@@ -49,13 +49,13 @@ public:
 
     // DidStartProvisionalLoadForFrame
     // DidRedirectProvisionalLoad
-    virtual void onAddressBarChanged(Window *win, const std::string &newURL)=0;
+    virtual void onAddressBarChanged(Window *win, const char* newURL, size_t newURLSize)=0;
 
     // DidStartProvisionalLoadForFrame
-    virtual void onStartLoading(Window *win, const std::string &newURL)=0;
+    virtual void onStartLoading(Window *win, const char *newURL, size_t newURLSize)=0;
     // DocumentLoadedInFrame
     virtual void onLoad(Window *win)=0;
-    virtual void onLoadError(Window *win, const std::string &error)=0;
+    virtual void onLoadError(Window *win, const char* error, size_t errorLength)=0;
 
     virtual void onBeforeUnload(Window *win, bool *proceed)=0;
     virtual void onCancelUnload(Window *win)=0;
@@ -63,11 +63,15 @@ public:
     virtual void onCrashed(Window *win)=0;
     virtual void onUnresponsive(Window *win)=0;
     virtual void onResponsive(Window *win)=0;
-
+    struct Data {
+        const char *message;
+        size_t length;
+    };
     virtual void onChromeSend(
         Window *win,
-        const std::string &message,
-        const std::vector<std::string> &content)=0;
+        Data message,
+        const Data* content,
+        size_t numContents)=0;
 
     virtual void onCreatedWindow(Window *win, Window *newWindow)=0;
 
@@ -83,13 +87,13 @@ public:
      * It should be possible to paint plugins directly onto the canvas.
      * If this is not possible, then plugins may be created as widgets with
      * a negative z-index (i.e. below anything else on the screen).
-     */
+     
     virtual void onPaintPluginTexture(
         Window *win,
         void* sourceGLTexture,
         const std::vector<Rect> srcRects, // relative to destRect
         const Rect &destRect)=0;
-
+    */
 ////////// WIDGET FUNCTIONS //////////
     virtual void onWidgetCreated(Window *win, Widget *newWidget, int zIndex)=0;
     virtual void onWidgetDestroyed(Window *win, Widget *newWidget)=0;

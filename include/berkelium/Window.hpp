@@ -118,13 +118,13 @@ public:
     virtual void mouseButton(unsigned int buttonID, bool down)=0;
     virtual void mouseWheel(int xScroll, int yScroll)=0;
 
-    virtual void textEvent(std::wstring evt)=0;
+    virtual void textEvent(const wchar_t *evt, size_t evtLength)=0;
     virtual void keyEvent(bool pressed, int mods, int vk_code, int scancode)=0;
 
 
     virtual void resize(int width, int height)=0;
-    virtual void executeJavascript(const std::wstring &javascript)=0;
-    virtual bool navigateTo(const std::string &url)=0;
+    virtual void executeJavascript(const wchar_t* javascript, size_t javascriptLength)=0;
+    virtual bool navigateTo(const char *url, const size_t urlLength)=0;
     virtual void refresh()=0;
 
     virtual void cut()=0;

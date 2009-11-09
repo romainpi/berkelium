@@ -54,7 +54,7 @@ public:
     void mouseMoved(int xPos, int yPos);
     void mouseButton(uint32 buttonID, bool down);
     void mouseWheel(int xScroll, int yScroll);
-    void textEvent(std::wstring evt);
+    void textEvent(const wchar_t * evt, size_t evtLength);
     void keyEvent(bool pressed, int mods, int vk_code, int scancode);
 
     void setHost(RenderWidgetHost *host);

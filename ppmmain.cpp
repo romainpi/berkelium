@@ -53,13 +53,13 @@ class TestDelegate : public WindowDelegate {
     std::string mURL;
 public:
 
-    virtual void onAddressBarChanged(Window *win, const std::string &newURL) {
-        mURL = newURL;
+    virtual void onAddressBarChanged(Window *win, const char*newURL,size_t newURLLength) {
+        mURL = std::string(newURL,newURLLength);
         std::cout << "*** onAddressChanged to "<<mURL<<std::endl;
     }
 
-    virtual void onStartLoading(Window *win, const std::string &newURL) {
-        std::cout << "*** Start loading "<<newURL<<" from "<<mURL<<std::endl;
+    virtual void onStartLoading(Window *win, const char* newURL, size_t newURLLength) {
+        std::cout << "*** Start loading "<<std::string(newURL,newURLLength)<<" from "<<mURL<<std::endl;
     }
     virtual void onLoad(Window *win) {
         sleep(1);
@@ -82,8 +82,8 @@ public:
         }
 */
     }
-    virtual void onLoadError(Window *win, const std::string &error) {
-        std::cout << "*** onLoadError "<<mURL<<": "<<error<<std::endl;
+    virtual void onLoadError(Window *win, const char* error, size_t errorLength) {
+        std::cout << "*** onLoadError "<<mURL<<": "<<std::string(error,errorLength)<<std::endl;
     }
 
     virtual void onResponsive(Window *win) {
@@ -144,13 +144,14 @@ public:
 
     virtual void onChromeSend(
         Window *win,
-        const std::string &message,
-        const std::vector<std::string> &contents)
+        WindowDelegate::Data message,
+        const WindowDelegate::Data *contents,
+        size_t numContents)
     {
-        std::cout << "*** onChromeSend ("<<message<<"):"<<std::endl;
-        for (std::vector<std::string>::const_iterator iter = contents.begin();
-             iter != contents.end(); ++iter) {
-            std::cout << "\t\'" << *iter << "\'" << std::endl;
+        std::cout << "*** onChromeSend ("<<std::string(message.message,message.length)<<"):"<<std::endl;
+        for (size_t iter=0;iter<numContents;++iter) {
+            std::cout << "\t\'"<<std::string(contents[iter].message,
+                                             contents[iter].length)<<"\'" <<std::endl;
         }
     }
 
@@ -195,7 +196,8 @@ int main () {
     Window* win=Window::create();
     win->resize(800,600);
     win->setDelegate(new TestDelegate);
-    win->navigateTo("http://dunnbypaul.net/js_mouse/");
+    std::string url("http://dunnbypaul.net/js_mouse/");
+    win->navigateTo(url.data(),url.length());
     win->setTransparent(false);
     //win->navigateTo("http://google.com");
 

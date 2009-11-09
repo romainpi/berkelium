@@ -48,7 +48,7 @@ public:
     virtual void mouseButton(unsigned int buttonID, bool down)=0;
     virtual void mouseWheel(int xScroll, int yScroll)=0;
 
-    virtual void textEvent(std::wstring evt)=0;
+    virtual void textEvent(const wchar_t* evt, size_t evtLength)=0;
     virtual void keyEvent(bool pressed, int mods, int vk_code, int scancode)=0;
 
     virtual Rect getRect() const=0;

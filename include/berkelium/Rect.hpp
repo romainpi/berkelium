@@ -52,12 +52,11 @@ struct Rect {
         return (x >= left() && x < right() &&
                 y >= top() && y < bottom());
     }
-
     Rect intersect(const Rect &rect) const {
-        int rx = std::max(left(), rect.left());
-        int ry = std::max(top(), rect.top());
-        int rr = std::min(right(), rect.right());
-        int rb = std::min(bottom(), rect.bottom());
+        int rx = rectmax(left(), rect.left());
+        int ry = rectmax(top(), rect.top());
+        int rr = rectmin(right(), rect.right());
+        int rb = rectmin(bottom(), rect.bottom());
         if (rx >= rr || ry >= rb)
             rx = ry = rr = rb = 0;  // non-intersecting
         Rect ret;
@@ -66,6 +65,13 @@ struct Rect {
         ret.mWidth = rr-rx;
         ret.mHeight = rb-ry;
         return ret;
+    }
+private:
+    static int rectmax(int a, int b) {
+        return a>b?a:b;
+    }
+    static int rectmin(int a, int b) {
+        return a<b?a:b;
     }
 };
 

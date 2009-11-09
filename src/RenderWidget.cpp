@@ -461,7 +461,7 @@ void RenderWidget::keyEvent(bool pressed, int modifiers, int vk_code, int scanco
 }
 
 
-void RenderWidget::textEvent(std::wstring text) {
+void RenderWidget::textEvent(const wchar_t * text, size_t textLength) {
 	// generate one of these events for each lengthCap chunks.
 	// 1 less because we need to null terminate.
 	const size_t lengthCap = WebKit::WebKeyboardEvent::textLengthCap-1;
@@ -472,22 +472,19 @@ void RenderWidget::textEvent(std::wstring text) {
 	event.nativeKeyCode = 0;
 	event.keyIdentifier[0]=0;
 	size_t i;
-	while (text.size() > lengthCap) {
-
-	}
-	for (i = 0; i + lengthCap < text.size(); i+=lengthCap) {
-		memcpy(event.text, text.data()+i, lengthCap*sizeof(WebKit::WebUChar));
+	for (i = 0; i + lengthCap < textLength; i+=lengthCap) {
+		memcpy(event.text, text+i, lengthCap*sizeof(WebKit::WebUChar));
 		event.text[lengthCap]=0;
-		memcpy(event.unmodifiedText, text.data()+i, lengthCap*sizeof(WebKit::WebUChar));
+		memcpy(event.unmodifiedText, text+i, lengthCap*sizeof(WebKit::WebUChar));
 		event.unmodifiedText[lengthCap]=0;
         GetRenderWidgetHost()->ForwardKeyboardEvent(event);
 	}
-	if (i < text.size()) {
-		assert(text.size()-i <= lengthCap);
-		memcpy(event.unmodifiedText, text.data()+i, (text.size()-i)*sizeof(WebKit::WebUChar));
-		memcpy(event.text, text.data()+i, (text.size()-i)*sizeof(WebKit::WebUChar));
-		event.text[text.size()-i]=0;
-		event.unmodifiedText[text.size()-i]=0;
+	if (i < textLength) {
+		assert(textLength-i <= lengthCap);
+		memcpy(event.unmodifiedText, text+i, (textLength-i)*sizeof(WebKit::WebUChar));
+		memcpy(event.text, text+i, (textLength-i)*sizeof(WebKit::WebUChar));
+		event.text[textLength-i]=0;
+		event.unmodifiedText[textLength-i]=0;
         GetRenderWidgetHost()->ForwardKeyboardEvent(event);
 	}
 }

@@ -71,7 +71,7 @@ class WindowImpl :
         const GURL& virtual_url,
         const NavigationController::LoadCommittedDetails& details,
         const ViewHostMsg_FrameNavigate_Params& params);
-    bool UpdateTitleForEntry(NavigationEntry* ent, const std::wstring& title);
+    bool UpdateTitleForEntry(NavigationEntry* ent, const std::wstring&title);
 
 public:
     WindowImpl *getImpl();
@@ -96,8 +96,8 @@ public:
     // (but can be null if not applicable). Can be overridden.
     void SetIsLoading(bool is_loading);
 
-    void executeJavascript(const std::wstring &javascript);
-    bool navigateTo(const std::string &url);
+    void executeJavascript(const wchar_t *javascript, size_t javascriptLength);
+    bool navigateTo(const char* url, size_t urlLength);
 
     Profile *profile() const;
     RenderProcessHost *process() const;
@@ -113,7 +113,7 @@ public:
     virtual void mouseMoved(int xPos, int yPos);
     virtual void mouseButton(unsigned int buttonID, bool down);
     virtual void mouseWheel(int xScroll, int yScroll);
-    virtual void textEvent(std::wstring evt);
+    virtual void textEvent(const wchar_t *evt, size_t evtLength);
     virtual void keyEvent(bool pressed, int mods, int vk_code, int scancode);
 
     virtual void refresh();
