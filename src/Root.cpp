@@ -149,6 +149,17 @@ Root::Root (){
     chrome::RegisterPathProvider();
     app::RegisterPathProvider();
     FilePath homedirpath;
+#if defined(_WIN32)||defined(__APPLE__)
+#else
+    {
+        char homeDirPath[128];
+        FilePath tmpPath;
+        file_util::GetTempDir(&tmpPath);
+        sprintf(homeDirPath,"chrome.%d",getpid());
+        tmpPath=tmpPath.Append(homeDirPath);
+        PathService::Override(chrome::DIR_USER_DATA,tmpPath);
+    }
+#endif
     PathService::Get(chrome::DIR_USER_DATA,&homedirpath);
     bool SINGLE_PROCESS=false;
 #if defined(OS_MACOSX)
@@ -282,7 +293,7 @@ Root::~Root(){
     g_browser_process->profile_manager()->RemoveProfile(mProf);
 
     g_browser_process->EndSession();
-
+    mProcessSingleton->Cleanup();
     delete mRenderViewHostFactory;
     
     delete mProf;
