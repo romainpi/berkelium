@@ -2,7 +2,6 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 2.4)
 SET(CMAKE_VERBOSE_MAKEFILE OFF)
 SET(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS TRUE)
-
 IF(COMMAND CMAKE_POLICY)
   # Use new policy for absolute path libraries.  We have no reason to depend on the
   # old version which adds library search paths unnecessarily
@@ -76,14 +75,19 @@ IF(APPLE)
   ADD_DEPENDENCIES(berkelium libberkelium)
   ADD_DEPENDENCIES(ppmrender libberkelium)
 
-  ADD_CUSTOM_TARGET(chrome.pak ALL COMMAND ln -sf ${CHROMIUM_DATADIR}/chrome.pak ../chrome.pak && ln -sf ${CHROMIM_DATADIR}/chrome.pak)
-  ADD_CUSTOM_TARGET(libavcodec.so.52 ALL COMMAND ln -sf ${CHROMIUM_DATADIR}/libavcodec.so.52 ../libavcodec.so.52 && ln -sf ${CHROMIUM_DATADIR}/libavcodec.so.52)
-  ADD_CUSTOM_TARGET(libavformat.so.52 ALL COMMAND ln -sf ${CHROMIUM_DATADIR}/libavformat.so.52 ../libavformat.so.52 && ln -sf ${CHROMIUM_DATADIR}/libavformat.so.52)
-  ADD_CUSTOM_TARGET(libavutil.so.52 ALL COMMAND ln -sf ${CHROMIUM_DATADIR}/libavutil.so.52 ../libavutil.so.52 && ln -sf ${CHROMIUM_DATADIR}/libavutil.so.52)
+  IF(APPLE)
+    SET(CHROMIUM_FRAMEWORK Chromium\ Framework.framework)
+    ADD_CUSTOM_TARGET(chrome.pak ALL COMMAND ln -sf ${CHROME_ROOT}/src/xcodebuild/Release/${CHROMIUM_FRAMEWORK}/Resources/chrome.pak ../chrome.pak && ln -sf ${CHROME_ROOT}/src/xcodebuild/Release/${CHROMIUM_FRAMEWORK}/Resources/chrome.pak ../chrome.pak)
+    ADD_CUSTOM_TARGET(Versions ALL COMMAND ln -sf ${CHROME_ROOT}/src/xcodebuild/Release/${CHROMIUM_FRAMEWORK}/Versions ../../Versions && ln -sf ${CHROME_ROOT}/src/xcodebuild/Release/${CHROMIUM_FRAMEWORK}/Versions ../Versions && ln -sf ${CHROME_ROOT}/src/xcodebuild/Release/${CHROMIUM_FRAMEWORK}/Versions Versions)
+  ELSE()
+    ADD_CUSTOM_TARGET(chrome.pak ALL COMMAND ln -sf ${CHROMIUM_DATADIR}/chrome.pak ../chrome.pak && ln -sf ${CHROMIM_DATADIR}/chrome.pak)
+    ADD_CUSTOM_TARGET(libavcodec.so.52 ALL COMMAND ln -sf ${CHROMIUM_DATADIR}/libavcodec.so.52 ../libavcodec.so.52 && ln -sf ${CHROMIUM_DATADIR}/libavcodec.so.52)
+    ADD_CUSTOM_TARGET(libavformat.so.52 ALL COMMAND ln -sf ${CHROMIUM_DATADIR}/libavformat.so.52 ../libavformat.so.52 && ln -sf ${CHROMIUM_DATADIR}/libavformat.so.52)
+    ADD_CUSTOM_TARGET(libavutil.so.52 ALL COMMAND ln -sf ${CHROMIUM_DATADIR}/libavutil.so.52 ../libavutil.so.52 && ln -sf ${CHROMIUM_DATADIR}/libavutil.so.52)
 
-  ADD_CUSTOM_TARGET(locales ALL COMMAND ln -sf ${CHROMIUM_DATADIR}/locales && ln -sf ${CHROMIUM_DATADIR}/locales ../locales)
-  ADD_CUSTOM_TARGET(resources ALL COMMAND ln -sf ${CHROMIUM_DATADIR}/resources && ln -sf ${CHROMIUM_DATADIR}/resources ../resources)
-  ADD_CUSTOM_TARGET(themes ALL COMMAND ln -sf ${CHROMIUM_DATADIR}/themes && ln -sf ${CHROMIUM_DATADIR}/themes ../themes)
-
+    ADD_CUSTOM_TARGET(locales ALL COMMAND ln -sf ${CHROMIUM_DATADIR}/locales && ln -sf ${CHROMIUM_DATADIR}/locales ../locales)
+    ADD_CUSTOM_TARGET(resources ALL COMMAND ln -sf ${CHROMIUM_DATADIR}/resources && ln -sf ${CHROMIUM_DATADIR}/resources ../resources)
+    ADD_CUSTOM_TARGET(themes ALL COMMAND ln -sf ${CHROMIUM_DATADIR}/themes && ln -sf ${CHROMIUM_DATADIR}/themes ../themes)
+  ENDIF()
 
 ENDIF(CHROME_FOUND)
