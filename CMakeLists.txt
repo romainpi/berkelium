@@ -23,7 +23,7 @@ FIND_PACKAGE(Chrome)
 
 IF(CHROME_FOUND)
 
-  INCLUDE_DIRECTORIES(${CHROME_INCLUDE_DIRS})
+  INCLUDE_DIRECTORIES(${BERKELIUM_TOP_LEVEL}/include ${CHROME_INCLUDE_DIRS})
   LINK_DIRECTORIES(${CHROME_LIBRARY_DIRS})
   SET(BERKELIUM_SOURCE_NAMES src/Berkelium src/Context src/ContextImpl src/NavigationController src/RenderWidget src/MemoryRenderViewHost src/Root src/Window src/WindowImpl)
 
