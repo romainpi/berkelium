@@ -104,6 +104,10 @@ public:
         int routing_id);
     ~MemoryRenderViewHost();
 
+    void Memory_OnAddMessageToConsole(
+        const std::wstring& message,
+        int32 line_no,
+        const std::wstring& source_id);
     virtual void OnMessageReceived(const IPC::Message& msg);
 };
 

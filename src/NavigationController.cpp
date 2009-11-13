@@ -294,24 +294,29 @@ void NavigationController::GoForward() {
 
 void NavigationController::GoToIndex(int index) {
   if (index < 0 || index >= static_cast<int>(entries_.size())) {
+      std::cout << "Failed to go to index: "<<index<<"; esize is "<<entries_.size() <<std::endl;
     NOTREACHED();
     return;
   }
+  std::cout << "trying to go to index: "<<index<<"; esize is "<<entries_.size() <<std::endl;
 
   if (transient_entry_index_ != -1) {
     if (index == transient_entry_index_) {
       // Nothing to do when navigating to the transient.
+      std::cout << "Nothing to do when navigating to the transient: index is "<<index<<"; tei is "<<transient_entry_index_ << "; ent_count is "<<entry_count()<<std::endl;
       return;
     }
     if (index > transient_entry_index_) {
       // Removing the transient is goint to shift all entries by 1.
       index--;
+      std::cout << "Removing the transient is goint to shift all entries by 1: index is "<<index<<"; tei is "<<transient_entry_index_ << "; ent_count is "<<entry_count()<<std::endl;
     }
   }
 
   DiscardNonCommittedEntries();
 
   pending_entry_index_ = index;
+  std::cout << "NAVIGATE TO PENDING ENTRY false: index is "<<index<<std::endl;
   NavigateToPendingEntry(false);
 }
 
@@ -319,8 +324,10 @@ void NavigationController::GoToOffset(int offset) {
   int index = (transient_entry_index_ != -1) ?
                   transient_entry_index_ + offset :
                   last_committed_entry_index_ + offset;
-  if (index < 0 || index >= entry_count())
+  if (index < 0 || index >= entry_count()) {
+      std::cout << "Failed to go to offset: "<<offset<<": index is "<<index<<"; tei is "<<transient_entry_index_ << "; ent_count is "<<entry_count()<<std::endl;
     return;
+  }
 
   GoToIndex(index);
 }

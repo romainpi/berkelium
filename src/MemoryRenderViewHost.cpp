@@ -64,6 +64,7 @@ void MemoryRenderViewHost::OnMessageReceived(const IPC::Message& msg) {
   IPC_BEGIN_MESSAGE_MAP_EX(MemoryRenderViewHost, msg, msg_is_ok)
     IPC_MESSAGE_HANDLER(ViewHostMsg_ScrollRect, Memory_OnMsgScrollRect)
     IPC_MESSAGE_HANDLER(ViewHostMsg_PaintRect, Memory_OnMsgPaintRect)
+    IPC_MESSAGE_HANDLER(ViewHostMsg_AddMessageToConsole, Memory_OnAddMessageToConsole)
     IPC_MESSAGE_UNHANDLED(RenderViewHost::OnMessageReceived(msg))
   IPC_END_MESSAGE_MAP_EX()
       ;
@@ -73,6 +74,12 @@ void MemoryRenderViewHost::OnMessageReceived(const IPC::Message& msg) {
     // Kill the renderer.
     process()->ReceivedBadMessage(msg.type());
   }
+}
+
+void MemoryRenderViewHost::Memory_OnAddMessageToConsole(const std::wstring& message,
+                                           int32 line_no,
+                                           const std::wstring& source_id) {
+    mWindow->OnAddMessageToConsole(message, line_no, source_id);
 }
 
 

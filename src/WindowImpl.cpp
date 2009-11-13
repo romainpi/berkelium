@@ -446,12 +446,29 @@ void WindowImpl::RenderViewGoneFromRenderManager(
 }
 */
 
+void WindowImpl::OnAddMessageToConsole(
+        const std::wstring& message,
+        int32 line_no,
+        const std::wstring& source_id)
+{
+    std::wstring msg = StringPrintf(L"\"%ls,\" source: %ls (%d)", message.c_str(),
+                                    source_id.c_str(), line_no);
+    if (mDelegate) {
+        std::string error("Javascript console message from ");
+        error += mCurrentURL.GetOrigin().spec()+": "+WideToUTF8(msg);
+        mDelegate->onLoadError(this, error.data(), error.length());
+    }
+}
+
 /******* RenderViewHostDelegate *******/
 
 RenderViewHostDelegate::View* WindowImpl::GetViewDelegate() {
     return this;
 }
 RenderViewHostDelegate::Resource* WindowImpl::GetResourceDelegate() {
+    return this;
+}
+RenderViewHostDelegate::BrowserIntegration* WindowImpl::GetBrowserIntegrationDelegate() {
     return this;
 }
 
@@ -569,6 +586,64 @@ void WindowImpl::RenderViewGone(RenderViewHost* rvh) {
   //view()->OnTabCrashed();
   if (mDelegate) mDelegate->onCrashed(this);
 }
+
+void WindowImpl::OnUserGesture(){
+}
+void WindowImpl::OnFindReply(int request_id,
+                             int number_of_matches,
+                             const gfx::Rect& selection_rect,
+                             int active_match_ordinal,
+                             bool final_update){
+}
+void WindowImpl::GoToEntryAtOffset(int offset) {
+    std::cout << "GOING TO ENTRY AT OFFSET "<<offset<<std::endl;
+    mController.GoToOffset(offset);
+}
+void WindowImpl::GetHistoryListCount(int* back_list_count,
+                                     int* forward_list_count){
+  int current_index = mController.last_committed_entry_index();
+  *back_list_count = current_index;
+  *forward_list_count = mController.entry_count() - current_index - 1;
+}
+void WindowImpl::OnMissingPluginStatus(int status){
+}
+void WindowImpl::OnCrashedPlugin(const FilePath& plugin_path) {
+    DCHECK(!plugin_path.value().empty());
+
+    std::wstring plugin_name = plugin_path.ToWStringHack();
+#if defined(OS_WIN) || defined(OS_MACOSX)
+    scoped_ptr<FileVersionInfo> version_info(
+        FileVersionInfo::CreateFileVersionInfo(plugin_path));
+    if (version_info.get()) {
+        const std::wstring& product_name = version_info->product_name();
+        if (!product_name.empty()) {
+            plugin_name = product_name;
+#if defined(OS_MACOSX)
+            // Many plugins on the Mac have .plugin in the actual name, which looks
+            // terrible, so look for that and strip it off if present.
+            const std::wstring plugin_extension(L".plugin");
+            if (EndsWith(plugin_name, plugin_extension, true))
+                plugin_name.erase(plugin_name.length() - plugin_extension.length());
+#endif  // OS_MACOSX
+        }
+    }
+#endif
+    if (mDelegate) {
+        std::string msg("Plugin Crashed: "+WideToUTF8(plugin_name));
+        mDelegate->onLoadError(this, msg.data(), msg.length());
+    }
+}
+void WindowImpl::OnCrashedWorker(){
+    if (mDelegate) {
+        std::string msg = "Crashed Worker!";
+        mDelegate->onLoadError(this, msg.data(), msg.length());
+    }
+}
+void WindowImpl::OnDidGetApplicationInfo(
+        int32 page_id,
+        const webkit_glue::WebApplicationInfo& app_info){
+}
+
 
 void WindowImpl::ProcessDOMUIMessage(
     const std::string& message, const Value* content,
@@ -738,6 +813,11 @@ void WindowImpl::RunJavaScriptMessage(
     IPC::Message* reply_msg,
     bool* did_suppress_message)
 {
+    if (mDelegate) {
+        std::string msg ("Javascript alert from ");
+        msg += mCurrentURL.GetOrigin().spec()+": "+WideToUTF8(message);
+        mDelegate->onLoadError(this, msg.data(), msg.length());
+    }
     host()->JavaScriptMessageBoxClosed(reply_msg, false, std::wstring());
 }
 

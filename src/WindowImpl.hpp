@@ -56,7 +56,8 @@ class WindowImpl :
         public Window,
         public RenderViewHostDelegate,
         public RenderViewHostDelegate::Resource,
-        public RenderViewHostDelegate::View
+        public RenderViewHostDelegate::View,
+        public RenderViewHostDelegate::BrowserIntegration
 {
 
     void init(SiteInstance *, int routingId);
@@ -137,6 +138,12 @@ public:
                  const unsigned char *sourceBuffer, const Rect &rect,
                  int dx, int dy, const Rect &scrollRect);
     void onWidgetDestroyed(Widget *wid);
+
+    // Called from MemoryRenderViewHost, since RenderViewHost does nothing here?!
+    void OnAddMessageToConsole(
+        const std::wstring& message,
+        int32 line_no,
+        const std::wstring& source_id);
 protected:
     ContextImpl *getContextImpl() const;
 
@@ -146,6 +153,7 @@ protected: /******* RenderViewHostDelegate *******/
 
     virtual RenderViewHostDelegate::View* GetViewDelegate();
     virtual RenderViewHostDelegate::Resource* GetResourceDelegate();
+    virtual RenderViewHostDelegate::BrowserIntegration* GetBrowserIntegrationDelegate();
 
     virtual void RendererUnresponsive(RenderViewHost* render_view_host,
                                       bool is_during_unload);
@@ -265,6 +273,23 @@ protected: /******* RenderViewHostDelegate::View *******/
     virtual void HandleMouseLeave();
     virtual void UpdatePreferredWidth(int pref_width);
     virtual void UpdatePreferredSize(const gfx::Size&);
+
+protected: /******* RenderViewHostDelegate::BrowserIntegration *******/
+    virtual void OnUserGesture();
+    virtual void OnFindReply(int request_id,
+                             int number_of_matches,
+                             const gfx::Rect& selection_rect,
+                             int active_match_ordinal,
+                             bool final_update);
+    virtual void GoToEntryAtOffset(int offset);
+    virtual void GetHistoryListCount(int* back_list_count,
+                                     int* forward_list_count);
+    virtual void OnMissingPluginStatus(int status);
+    virtual void OnCrashedPlugin(const FilePath& plugin_path);
+    virtual void OnCrashedWorker();
+    virtual void OnDidGetApplicationInfo(
+        int32 page_id,
+        const webkit_glue::WebApplicationInfo& app_info);
 
 private:
 
