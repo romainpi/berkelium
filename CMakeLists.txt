@@ -11,13 +11,21 @@ SET(BERKELIUM_TOP_LEVEL ${CMAKE_CURRENT_SOURCE_DIR})
 SET(CMAKE_MODULE_PATH ${BERKELIUM_TOP_LEVEL})
 GET_FILENAME_COMPONENT(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ABSOLUTE)
 IF(NOT CHROME_ROOT)
-  SET(CHROME_ROOT ${BERKELIUM_TOP_LEVEL}/../../dependencies/ch/c)
-  IF(NOT EXISTS ${CHROME_ROOT})
-    SET(CHROME_ROOT ${BERKELIUM_TOP_LEVEL}/chrome)
-    IF(NOT EXISTS ${CHROME_ROOT})
-      SET(CHROME_ROOT ${BERKELIUM_TOP_LEVEL}/chromium)
+  SET(CHROME_ROOT_SEARCH_PATHS
+    ${BERKELIUM_TOP_LEVEL}/../../dependencies/ch/c
+    ${BERKELIUM_TOP_LEVEL}/chrome
+    ${BERKELIUM_TOP_LEVEL}/chromium
+    ${BERKELIUM_TOP_LEVEL}/build/chromium
+    ${BERKELIUM_TOP_LEVEL}/build/c
+    )
+
+  FOREACH(CHROME_ROOT_SEARCH_PATH ${CHROME_ROOT_SEARCH_PATHS})
+    IF(EXISTS ${CHROME_ROOT_SEARCH_PATH})
+      IF(NOT CHROME_ROOT)
+        SET(CHROME_ROOT ${CHROME_ROOT_SEARCH_PATH})
+      ENDIF()
     ENDIF()
-  ENDIF()
+  ENDFOREACH()
 ENDIF()
 FIND_PACKAGE(Chrome)
 
@@ -60,35 +68,91 @@ IF(CHROME_FOUND)
 
   ADD_EXECUTABLE(berkelium ${BERKELIUM_TOP_LEVEL}/subprocess.cpp)
   TARGET_LINK_LIBRARIES(berkelium -L. debug liblibberkelium_d${CHROMIUM_DYLIB_EXT} optimized liblibberkelium${CHROMIUM_DYLIB_EXT} )
-IF(APPLE)
+
+  ADD_DEPENDENCIES(berkelium libberkelium)
+  ADD_DEPENDENCIES(ppmrender libberkelium)
+
+  IF(APPLE)
     ADD_LIBRARY(plugin_carbon_interpose SHARED ${CHROME_ROOT}/src/chrome/browser/plugin_carbon_interpose_mac.cc)
     SET_TARGET_PROPERTIES(plugin_carbon_interpose PROPERTIES COMPILE_FLAGS ${CHROMIUM_CFLAGS})
     SET_TARGET_PROPERTIES(plugin_carbon_interpose PROPERTIES LINK_FLAGS "-framework Carbon")
     TARGET_LINK_LIBRARIES(plugin_carbon_interpose -L. debug liblibberkelium_d.dylib optimized liblibberkelium.dylib )
     ADD_DEPENDENCIES(plugin_carbon_interpose libberkelium)
 
+    ADD_CUSTOM_TARGET(plugin_carbon_interpose.dylib
+                      DEPENDS plugin_carbon_interpose
+                      COMMAND
+                        ln -sf libplugin_carbon_interpose.dylib plugin_carbon_interpose.dylib &&
+                        ln -sf ${CMAKE_CURRENT_BINARY_DIR}/libplugin_carbon_interpose.dylib
+                        ../plugin_carbon_interpose.dylib)
 
-
-    ADD_CUSTOM_TARGET(plugin_carbon_interpose.dylib ALL DEPENDS plugin_carbon_interpose COMMAND ln -sf libplugin_carbon_interpose.dylib plugin_carbon_interpose.dylib && ln -sf ${CMAKE_CURRENT_BINARY_DIR}/libplugin_carbon_interpose.dylib ../plugin_carbon_interpose.dylib)
-  ENDIF()
-
-  ADD_DEPENDENCIES(berkelium libberkelium)
-  ADD_DEPENDENCIES(ppmrender libberkelium)
-
-  IF(APPLE)
     SET(CHROMIUM_FRAMEWORK Chromium\ Framework.framework)
-    ADD_CUSTOM_TARGET(chrome.pak ALL COMMAND ln -sf ${CHROME_ROOT}/src/xcodebuild/Release/${CHROMIUM_FRAMEWORK}/Resources/chrome.pak ../chrome.pak && ln -sf ${CHROME_ROOT}/src/xcodebuild/Release/${CHROMIUM_FRAMEWORK}/Resources/chrome.pak ../chrome.pak)
-    ADD_CUSTOM_TARGET(Versions ALL COMMAND ln -sf ${CHROME_ROOT}/src/xcodebuild/Release/${CHROMIUM_FRAMEWORK}/Versions ../../Versions && ln -sf ${CHROME_ROOT}/src/xcodebuild/Release/${CHROMIUM_FRAMEWORK}/Versions ../Versions && ln -sf ${CHROME_ROOT}/src/xcodebuild/Release/${CHROMIUM_FRAMEWORK}/Versions Versions)
-    ADD_CUSTOM_TARGET(ppmrender.app ALL COMMAND mkdir -p ppmrender.app && mkdir -p ppmrender.app/Contents && mkdir -p ppmrender.app/Contents/Resources && mkdir -p ppmrender.app/Contents/Frameworks && ln -sf ${CMAKE_CURRENT_BINARY_DIR}/ppmrender.app ppmrender.app/Contents/Resources/Berkelium\ Helper.app && ln -sf ${CMAKE_CURRENT_BINARY_DIR}/ppmrender.app/Contents ppmrender.app/Contents/Frameworks/${CHROMIUM_FRAMEWORK} && mkdir -p ppmrender.app/Contents/MacOS && ln -sf ${CMAKE_CURRENT_BINARY_DIR}/ppmrender ppmrender.app/Contents/MacOS && ln -sf berkelium ppmrender.app/Contents/MacOS && ln -sf ${CMAKE_CURRENT_BINARY_DIR}/berkelium ppmrender.app/Contents/MacOS/berkelium && ln -sf ${CHROME_ROOT}/src/xcodebuild/Release/${CHROMIUM_FRAMEWORK}/Resources/chrome.pak ppmrender.app/Contents/Resources/chrome.pak && ln -sf ${CHROME_ROOT}/src/xcodebuild/Release/${CHROMIUM_FRAMEWORK}/Resources/theme.pak ppmrender.app/Contents/Resources/theme.pak && ln -sf ${CHROME_ROOT}/src/xcodebuild/Release/${CHROMIUM_FRAMEWORK}/Resources/linkCursor.png ppmrender.app/Contents/Resources/linkCursor.png  && ln -sf ${CHROME_ROOT}/src/xcodebuild/Release/${CHROMIUM_FRAMEWORK}/Resources/renderer.sb ppmrender.app/Contents/Resources/renderer.sb && ln -sf ${CHROME_ROOT}/src/xcodebuild/Release/${CHROMIUM_FRAMEWORK}/Resources/en_US.lproj ppmrender.app/Contents/Resources/en_US.lproj)
-  ELSE()
-    ADD_CUSTOM_TARGET(chrome.pak ALL COMMAND ln -sf ${CHROMIUM_DATADIR}/chrome.pak ../chrome.pak && ln -sf ${CHROMIUM_DATADIR}/chrome.pak)
-    ADD_CUSTOM_TARGET(libavcodec.so.52 ALL COMMAND ln -sf ${CHROMIUM_DATADIR}/libavcodec.so.52 ../libavcodec.so.52 && ln -sf ${CHROMIUM_DATADIR}/libavcodec.so.52)
-    ADD_CUSTOM_TARGET(libavformat.so.52 ALL COMMAND ln -sf ${CHROMIUM_DATADIR}/libavformat.so.52 ../libavformat.so.52 && ln -sf ${CHROMIUM_DATADIR}/libavformat.so.52)
-    ADD_CUSTOM_TARGET(libavutil.so.52 ALL COMMAND ln -sf ${CHROMIUM_DATADIR}/libavutil.so.52 ../libavutil.so.52 && ln -sf ${CHROMIUM_DATADIR}/libavutil.so.52)
+    ADD_CUSTOM_TARGET(chrome.pak
+                      COMMAND ln -sf ${CHROME_ROOT}/src/xcodebuild/Release/${CHROMIUM_FRAMEWORK}/Resources/chrome.pak ../chrome.pak)
 
-    ADD_CUSTOM_TARGET(locales ALL COMMAND ln -sf ${CHROMIUM_DATADIR}/locales && ln -sf ${CHROMIUM_DATADIR}/locales ../locales)
-    ADD_CUSTOM_TARGET(resources ALL COMMAND ln -sf ${CHROMIUM_DATADIR}/resources && ln -sf ${CHROMIUM_DATADIR}/resources ../resources)
-    ADD_CUSTOM_TARGET(themes ALL COMMAND ln -sf ${CHROMIUM_DATADIR}/themes && ln -sf ${CHROMIUM_DATADIR}/themes ../themes)
+    ADD_CUSTOM_TARGET(Versions
+                      COMMAND
+                        ln -sf ${CHROME_ROOT}/src/xcodebuild/Release/${CHROMIUM_FRAMEWORK}/Versions ../../Versions &&
+                        ln -sf ${CHROME_ROOT}/src/xcodebuild/Release/${CHROMIUM_FRAMEWORK}/Versions ../Versions &&
+                        ln -sf ${CHROME_ROOT}/src/xcodebuild/Release/${CHROMIUM_FRAMEWORK}/Versions Versions)
+
+    ADD_CUSTOM_TARGET(ppmrender.app
+                      COMMAND
+                        mkdir -p ppmrender.app &&
+                        mkdir -p ppmrender.app/Contents &&
+                        mkdir -p ppmrender.app/Contents/Resources &&
+                        mkdir -p ppmrender.app/Contents/Frameworks &&
+                        ln -sf ${CMAKE_CURRENT_BINARY_DIR}/ppmrender.app ppmrender.app/Contents/Resources/Berkelium\ Helper.app &&
+                        ln -sf ${CMAKE_CURRENT_BINARY_DIR}/ppmrender.app/Contents ppmrender.app/Contents/Frameworks/${CHROMIUM_FRAMEWORK} &&
+                        mkdir -p ppmrender.app/Contents/MacOS &&
+                        ln -sf ${CMAKE_CURRENT_BINARY_DIR}/ppmrender ppmrender.app/Contents/MacOS &&
+                        ln -sf berkelium ppmrender.app/Contents/MacOS &&
+                        ln -sf ${CMAKE_CURRENT_BINARY_DIR}/berkelium ppmrender.app/Contents/MacOS/berkelium &&
+                        ln -sf ${CHROME_ROOT}/src/xcodebuild/Release/${CHROMIUM_FRAMEWORK}/Resources/chrome.pak ppmrender.app/Contents/Resources/chrome.pak &&
+                        ln -sf ${CHROME_ROOT}/src/xcodebuild/Release/${CHROMIUM_FRAMEWORK}/Resources/theme.pak ppmrender.app/Contents/Resources/theme.pak &&
+                        ln -sf ${CHROME_ROOT}/src/xcodebuild/Release/${CHROMIUM_FRAMEWORK}/Resources/linkCursor.png ppmrender.app/Contents/Resources/linkCursor.png  &&
+                        ln -sf ${CHROME_ROOT}/src/xcodebuild/Release/${CHROMIUM_FRAMEWORK}/Resources/renderer.sb ppmrender.app/Contents/Resources/renderer.sb &&
+                        ln -sf ${CHROME_ROOT}/src/xcodebuild/Release/${CHROMIUM_FRAMEWORK}/Resources/en_US.lproj ppmrender.app/Contents/Resources/en_US.lproj)
+
+    ADD_CUSTOM_TARGET(osx ALL DEPENDS ppmrender.app)
+    ADD_CUSTOM_TARGET(osx-install DEPENDS plugin_carbon_interpose.dylib chrome.pak Versions)
+  ELSE()
+    ADD_CUSTOM_TARGET(chrome.pak
+                      COMMAND
+                        ln -sf ${CHROMIUM_DATADIR}/chrome.pak ../chrome.pak &&
+                        ln -sf ${CHROMIUM_DATADIR}/chrome.pak)
+
+    ADD_CUSTOM_TARGET(libavcodec.so.52
+                      COMMAND
+                        ln -sf ${CHROMIUM_DATADIR}/libavcodec.so.52 ../libavcodec.so.52 &&
+                        ln -sf ${CHROMIUM_DATADIR}/libavcodec.so.52)
+
+    ADD_CUSTOM_TARGET(libavformat.so.52
+                      COMMAND
+                      ln -sf ${CHROMIUM_DATADIR}/libavformat.so.52 ../libavformat.so.52 &&
+                      ln -sf ${CHROMIUM_DATADIR}/libavformat.so.52)
+
+    ADD_CUSTOM_TARGET(libavutil.so.52
+                      COMMAND
+                      ln -sf ${CHROMIUM_DATADIR}/libavutil.so.52 ../libavutil.so.52 &&
+                      ln -sf ${CHROMIUM_DATADIR}/libavutil.so.52)
+
+    ADD_CUSTOM_TARGET(locales
+                      COMMAND
+                        ln -sf ${CHROMIUM_DATADIR}/locales &&
+                        ln -sf ${CHROMIUM_DATADIR}/locales ../locales)
+
+    ADD_CUSTOM_TARGET(resources
+                      COMMAND
+                        ln -sf ${CHROMIUM_DATADIR}/resources &&
+                        ln -sf ${CHROMIUM_DATADIR}/resources ../resources)
+
+    ADD_CUSTOM_TARGET(themes
+                      COMMAND
+                        ln -sf ${CHROMIUM_DATADIR}/themes &&
+                        ln -sf ${CHROMIUM_DATADIR}/themes ../themes)
+
+    ADD_CUSTON_TARGET(unix DEPENDS chrome.pak libavcodec.so.52 libavformat.so.52 libavutil.so.52 locales resources themes)
   ENDIF()
 
 ENDIF(CHROME_FOUND)
