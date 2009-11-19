@@ -39,6 +39,7 @@
 #include "berkelium/WindowDelegate.hpp"
 
 #include "base/file_util.h"
+#include "base/file_version_info.h"
 #include "base/values.h"
 #include "net/base/net_util.h"
 #include "chrome/browser/renderer_host/render_view_host.h"
@@ -247,7 +248,7 @@ void WindowImpl::SetContainerBounds (const gfx::Rect &rc) {
     }
     RenderViewHost* myhost = host();
     if (myhost) {
-        static_cast<MemoryRenderViewHost*>(myhost)->Memory_WasResized();        
+        static_cast<MemoryRenderViewHost*>(myhost)->Memory_WasResized();
     }
 }
 
@@ -375,7 +376,7 @@ void WindowImpl::onWidgetDestroyed(Widget *wid) {
 bool WindowImpl::CreateRenderViewForRenderManager(
     RenderViewHost* render_view_host) {
 
-  RenderWidget* rwh_view = 
+  RenderWidget* rwh_view =
       static_cast<RenderWidget*>(this->CreateViewForWidget(render_view_host));
 
   if (!render_view_host->CreateRenderView())
