@@ -58,6 +58,7 @@ namespace Berkelium {
 //WindowImpl temp;
 void WindowImpl::init(SiteInstance*site, int routing_id) {
     received_page_title=false;
+    is_crashed_=false;
     mRenderViewHost = RenderViewHostFactory::Create(
         site,
         this,
