@@ -67,7 +67,7 @@ IF(NOT CHROMIUM_ISSCONS)
     SET(CHROMIUM_DATADIR ${CHROMIUM_CHLIBS})
 
     SET(CHROME_LIBRARY_DIRS ${CHROMIUM_CHLIBS})
-    SET(CHROMIUM_TPLIBS ${CHROMIUM_CHLIBS}/libevent.a ${CHROMIUM_CHLIBS}/libxslt.a ${CHROMIUM_CHLIBS}/libjpeg.a ${CHROMIUM_CHLIBS}/libpng.a ${CHROMIUM_CHLIBS}/libz.a ${CHROMIUM_CHLIBS}/libxml2.a ${CHROMIUM_CHLIBS}/libbz2.a ${CHROMIUM_CHLIBS}/libsqlite3.a ${CHROMIUM_CHLIBS}/libprofile_import.a libgoogle_nacl_imc_c)
+    SET(CHROMIUM_TPLIBS ${CHROMIUM_CHLIBS}/libevent.a ${CHROMIUM_CHLIBS}/libxslt.a ${CHROMIUM_CHLIBS}/libjpeg.a ${CHROMIUM_CHLIBS}/libpng.a ${CHROMIUM_CHLIBS}/libz.a ${CHROMIUM_CHLIBS}/libxml2.a ${CHROMIUM_CHLIBS}/libbz2.a ${CHROMIUM_CHLIBS}/libsqlite3.a ${CHROMIUM_CHLIBS}/libprofile_import.a ${CHROMIUM_CHLIBS}/libpcre.a libgoogle_nacl_imc_c)
     IF(CHROME_IS_OVER_VERSION_29000)
         # Uncomment me for experimental 29000 builds (Crash in WebCore calling CoreGraphics after about 3 renders, in __dyld_misaligned_stack_error)
         SET(CHROMIUM_TPLIBS ${CHROMIUM_TPLIBS} base_i18n ${CHROMIUM_CHLIBS}/libsync.a ${CHROMIUM_CHLIBS}/libsyncapi.a ${CHROMIUM_CHLIBS}/libprotobuf_lite.a )
