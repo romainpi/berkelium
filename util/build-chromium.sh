@@ -9,6 +9,8 @@
 # -j[x] - build with x parallel compiler invocations
 # --build-dir x - use x as the build directory for chromium
 # --install-dir x - use x as the install destination for chromium
+# --app-dir x - use x to "install" to, i.e. add symlinks from Chromium that are needed
+#               by the final binary created by linking to libberkelium
 
 platform="`uname -s`"
 proctype="`uname -m`"
@@ -37,6 +39,8 @@ CHROMIUM_BUILD_DIR="${PWD}/build/"
 CHROMIUM_PATCHES_DIR="${PWD}/patches"
 # The directory to install to.  Currently this just ends up being a sym link.
 CHROMIUM_INSTALL_DIR="${PWD}/installed-chromium"
+# The directory to install the app to
+CHROMIUM_APP_DIR=""
 
 FORCE_32BIT=false
 
@@ -99,6 +103,10 @@ do
             shift
             CHROMIUM_INSTALL_DIR="$1"
             ;;
+        --app-dir )
+            shift
+            CHROMIUM_APP_DIR="$1"
+            ;;
     esac
     shift
 done
@@ -146,6 +154,18 @@ if [ x"${platform}" = x"Darwin" ]; then
     cd src/chrome
     xcodebuild -project chrome.xcodeproj -configuration Release -target chrome
 
+
+    # "Install" process, symlinking libraries and data to the appropriate locations
+    if [ x"${CHROMIUM_APP_DIR}" != x ]; then
+        # Make sure the top level build dir is there
+        if [ \! -e ${CHROMIUM_APP_DIR} ]; then
+            user_eval "mkdir -p ${CHROMIUM_APP_DIR}" || true
+        fi
+
+        ln -sf ${CHROMIUM_DATADIR}/chrome.pak ${CHROMIUM_APP_DIR}/chrome.pak
+        ln -sf ${CHROME_ROOT}/src/xcodebuild/Release/${CHROMIUM_FRAMEWORK}/Resources/chrome.pak ${CHROMIUM_APP_DIR}/chrome.pak
+        ln -sf ${CHROME_ROOT}/src/xcodebuild/Release/${CHROMIUM_FRAMEWORK}/Versions ${CHROMIUM_APP_DIR}/Versions
+    fi
 elif [ x"${platform}" = x"Linux" ]; then
 
     # Make sure the top level build dir is there
@@ -293,7 +313,34 @@ elif [ x"${platform}" = x"Linux" ]; then
                      make_symlink ${CHROMIUM_CHECKOUT_DIR}/src/out/$OUTDIR ${CHROMIUM_INSTALL_DIR} && \
                      echo ${OUTDIR} > ${CHROMIUM_BUILD_DIR}/compilemode.txt || \
                      export FAILED="$FAILED chromium"
+
+
+
+        # "Install" process, symlinking libraries and data to the appropriate locations
+        if [ x"${CHROMIUM_APP_DIR}" != x ]; then
+            # Make sure the top level build dir is there
+            if [ \! -e ${CHROMIUM_APP_DIR} ]; then
+                user_eval "mkdir -p ${CHROMIUM_APP_DIR}" || true
+            fi
+
+            user_eval "ln -sf ${CHROMIUM_DATADIR}/chrome.pak ${CHROMIUM_APP_DIR}/chrome.pak
+                       ln -sf ${CHROMIUM_DATADIR}/libavcodec.so.52 ${CHROMIUM_APP_DIR}/libavcodec.so.52
+                       ln -sf ${CHROMIUM_DATADIR}/libavformat.so.52 ${CHROMIUM_APP_DIR}/libavformat.so.52
+                       ln -sf ${CHROMIUM_DATADIR}/libavutil.so.52 ${CHROMIUM_APP_DIR}/libavutil.so.52
+                       ln -sf ${CHROMIUM_DATADIR}/locales ${CHROMIUM_APP_DIR}/locales
+                       ln -sf ${CHROMIUM_DATADIR}/resources ${CHROMIUM_APP_DIR}/resources
+                       ln -sf ${CHROMIUM_DATADIR}/themes ${CHROMIUM_APP_DIR}/themes" || \
+                           export FAILED="$FAILED chromium"
+
+        fi
     else
         export FAILED="$FAILED chromium"
     fi
 fi
+
+if [ x"${FAILED}" != x ]; then
+    echo ${FAILED}
+    exit 1
+fi
+
+exit 0

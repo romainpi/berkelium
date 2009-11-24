@@ -87,15 +87,6 @@ IF(CHROME_FOUND)
                         ../plugin_carbon_interpose.dylib)
 
     SET(CHROMIUM_FRAMEWORK Chromium\ Framework.framework)
-    ADD_CUSTOM_TARGET(chrome.pak
-                      COMMAND ln -sf ${CHROME_ROOT}/src/xcodebuild/Release/${CHROMIUM_FRAMEWORK}/Resources/chrome.pak ../chrome.pak)
-
-    ADD_CUSTOM_TARGET(Versions
-                      COMMAND
-                        ln -sf ${CHROME_ROOT}/src/xcodebuild/Release/${CHROMIUM_FRAMEWORK}/Versions ../../Versions &&
-                        ln -sf ${CHROME_ROOT}/src/xcodebuild/Release/${CHROMIUM_FRAMEWORK}/Versions ../Versions &&
-                        ln -sf ${CHROME_ROOT}/src/xcodebuild/Release/${CHROMIUM_FRAMEWORK}/Versions Versions)
-
     ADD_CUSTOM_TARGET(ppmrender.app
                       COMMAND
                         mkdir -p ppmrender.app &&
@@ -116,43 +107,6 @@ IF(CHROME_FOUND)
 
     ADD_CUSTOM_TARGET(osx ALL DEPENDS ppmrender.app)
     ADD_CUSTOM_TARGET(osx-install DEPENDS plugin_carbon_interpose.dylib chrome.pak Versions)
-  ELSE()
-    ADD_CUSTOM_TARGET(chrome.pak
-                      COMMAND
-                        ln -sf ${CHROMIUM_DATADIR}/chrome.pak ../chrome.pak &&
-                        ln -sf ${CHROMIUM_DATADIR}/chrome.pak)
-
-    ADD_CUSTOM_TARGET(libavcodec.so.52
-                      COMMAND
-                        ln -sf ${CHROMIUM_DATADIR}/libavcodec.so.52 ../libavcodec.so.52 &&
-                        ln -sf ${CHROMIUM_DATADIR}/libavcodec.so.52)
-
-    ADD_CUSTOM_TARGET(libavformat.so.52
-                      COMMAND
-                      ln -sf ${CHROMIUM_DATADIR}/libavformat.so.52 ../libavformat.so.52 &&
-                      ln -sf ${CHROMIUM_DATADIR}/libavformat.so.52)
-
-    ADD_CUSTOM_TARGET(libavutil.so.52
-                      COMMAND
-                      ln -sf ${CHROMIUM_DATADIR}/libavutil.so.52 ../libavutil.so.52 &&
-                      ln -sf ${CHROMIUM_DATADIR}/libavutil.so.52)
-
-    ADD_CUSTOM_TARGET(locales
-                      COMMAND
-                        ln -sf ${CHROMIUM_DATADIR}/locales &&
-                        ln -sf ${CHROMIUM_DATADIR}/locales ../locales)
-
-    ADD_CUSTOM_TARGET(resources
-                      COMMAND
-                        ln -sf ${CHROMIUM_DATADIR}/resources &&
-                        ln -sf ${CHROMIUM_DATADIR}/resources ../resources)
-
-    ADD_CUSTOM_TARGET(themes
-                      COMMAND
-                        ln -sf ${CHROMIUM_DATADIR}/themes &&
-                        ln -sf ${CHROMIUM_DATADIR}/themes ../themes)
-
-    ADD_CUSTON_TARGET(unix DEPENDS chrome.pak libavcodec.so.52 libavformat.so.52 libavutil.so.52 locales resources themes)
   ENDIF()
 
 ENDIF(CHROME_FOUND)
