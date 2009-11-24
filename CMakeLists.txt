@@ -1,3 +1,10 @@
+# Berkelium Build Script
+#
+# Parameters:
+#  BERKELIUM_CHROME_ROOT_SEARCH_PATHS - list of paths to search for berkelium in.  Should be absolute paths.
+#
+# Outputs:
+#  BERKELIUM_CHROME_FOUND - TRUE if Chrome is found and berkelium will be built.
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.4)
 SET(CMAKE_VERBOSE_MAKEFILE OFF)
@@ -12,7 +19,8 @@ SET(CMAKE_MODULE_PATH ${BERKELIUM_TOP_LEVEL})
 GET_FILENAME_COMPONENT(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ABSOLUTE)
 IF(NOT CHROME_ROOT)
   SET(CHROME_ROOT_SEARCH_PATHS
-    ${BERKELIUM_TOP_LEVEL}/../../dependencies/ch/c
+    ${BERKELIUM_CHROME_ROOT_SEARCH_PATHS} # User provided search paths go first
+    # Followed by a few reasonable choices within this directory
     ${BERKELIUM_TOP_LEVEL}/chrome
     ${BERKELIUM_TOP_LEVEL}/chromium
     ${BERKELIUM_TOP_LEVEL}/build/chromium
@@ -28,6 +36,8 @@ IF(NOT CHROME_ROOT)
   ENDFOREACH()
 ENDIF()
 FIND_PACKAGE(Chrome)
+
+SET(BERKELIUM_CHROME_FOUND ${CHROME_FOUND})
 
 IF(CHROME_FOUND)
 
