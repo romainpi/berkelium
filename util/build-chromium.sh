@@ -114,6 +114,11 @@ do
             shift
             CHROMIUM_APP_DIR="$1"
             ;;
+# FIXME should be able to automatically figure this out using PWD and the executable name in the arguments
+        --patch-dir )
+            shift
+            CHROMIUM_PATCHES_DIR="$1"
+            ;;
     esac
     shift
 done
