@@ -79,6 +79,13 @@ function clean_dir {
 }
 
 
+# Usage: careful_patch directory patchfile
+function careful_patch {
+    user_eval "cd $1 && (patch --batch -R -p0 -N --dry-run < $2 || patch --batch -p0 -N < $2)"
+    RET=$?
+    return $RET
+}
+
 ################################################################################################################################
 # Parse command-line arguments
 ################################################################################################################################
@@ -296,13 +303,16 @@ elif [ x"${platform}" = x"Linux" ]; then
                  python -c '"'execfile(".gclient");solutions[0]["custom_deps"]={"src/third_party/WebKit/LayoutTests":None,"src/webkit/data/layout_tests":None,};open(".gclient","w").write("solutions="+repr(solutions));'"' &&
                  export PATH=\"${CHROMIUM_DEPOTTOOLS_DIR}:${PATH}\" &&
                  export GYP_GENERATORS=make &&
-                 gclient sync --force --revision src@${CHROMIUM_REV} &&
-                 ( patch -N -p0 < ${CHROMIUM_PATCHES_DIR}/chromium_mainthread.patch || true ) &&
-                 cd src && ( patch -N -p0 < ${CHROMIUM_PATCHES_DIR}/chromium_sandbox_pic.patch || true ) && cd .. &&
-                 cd src && ( patch -N -p0 < ${CHROMIUM_PATCHES_DIR}/chromium_nacl_inline_pic.patch || true ) && cd .. &&
-                 cd src && ( patch -N -p0 < ${CHROMIUM_PATCHES_DIR}/chromium_transparency_26900.patch || true ) && cd .. &&
-                 cd src && ( patch -N -p0 < ${CHROMIUM_PATCHES_DIR}/chromium_win32_sandbox_exports.patch || true ) && cd .. &&
-                 cd src && ( patch -N -p0 < ${CHROMIUM_PATCHES_DIR}/chromium_wmode_opaque.patch || true ) && cd .. &&
+                 gclient sync --force --revision src@${CHROMIUM_REV}" &&
+        careful_patch "${CHROMIUM_CHECKOUT_DIR}" "${CHROMIUM_PATCHES_DIR}/chromium_mainthread.patch" &&
+        careful_patch "${CHROMIUM_CHECKOUT_DIR}/src" "${CHROMIUM_PATCHES_DIR}/chromium_sandbox_pic.patch" &&
+        careful_patch "${CHROMIUM_CHECKOUT_DIR}/src" "${CHROMIUM_PATCHES_DIR}/chromium_nacl_inline_pic.patch" &&
+        careful_patch "${CHROMIUM_CHECKOUT_DIR}/src" "${CHROMIUM_PATCHES_DIR}/chromium_transparency_26900.patch" &&
+        careful_patch "${CHROMIUM_CHECKOUT_DIR}/src" "${CHROMIUM_PATCHES_DIR}/chromium_win32_sandbox_exports.patch" &&
+        careful_patch "${CHROMIUM_CHECKOUT_DIR}/src" "${CHROMIUM_PATCHES_DIR}/chromium_wmode_opaque.patch" &&
+        user_eval "cd ${CHROMIUM_CHECKOUT_DIR} &&
+                 export PATH=\"${CHROMIUM_DEPOTTOOLS_DIR}:${PATH}\" &&
+                 export GYP_GENERATORS=make &&
                  export CHROMIUM_ROOT="'"$PWD"'" &&
                  export CXX='g++ -fPIC' &&
                  export CC='gcc -fPIC' &&
