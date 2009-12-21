@@ -38,6 +38,11 @@ SET(CHROME_FOUND_QUIETLY TRUE)
 IF(NOT CHROME_SYMLINKS_TARGET)
  SET(BERKELIUM_LOCAL_SYMLINK_TARGET TRUE)
  SET(CHROME_SYMLINKS_TARGET ppmrender)
+#                        ln -sf ${CMAKE_CURRENT_BINARY_DIR}/libplugin_carbon_interpose.dylib ${CHROME_SYMLINKS_TARGET}.app/Contents/MacOS/libplugin_carbon_interpose.dylib &&
+
+ SET(CHROME_SYMLINKS_BINARIES ${CHROME_SYMLINKS_BINARIES} ${CMAKE_CURRENT_BINARY_DIR}/libplugin_carbon_interpose.dylib)
+ SET(CHROME_SYMLINKS_BINARIES ${CHROME_SYMLINKS_BINARIES} ${CMAKE_CURRENT_BINARY_DIR}/ppmrender)
+ SET(CHROME_SYMLINKS_BINARIES ${CHROME_SYMLINKS_BINARIES} ${CMAKE_CURRENT_BINARY_DIR}/berkelium)
 ENDIF()
 FIND_PACKAGE(Chrome)
 IF(BERKELIUM_LOCAL_SYMLINK_TARGET)
@@ -97,13 +102,10 @@ IF(CHROME_FOUND)
     ADD_DEPENDENCIES(plugin_carbon_interpose libberkelium)
 
     ADD_CUSTOM_TARGET(plugin_carbon_interpose.dylib
+                      ALL 
                       DEPENDS plugin_carbon_interpose
                       COMMAND
-                        ln -sf libplugin_carbon_interpose.dylib plugin_carbon_interpose.dylib &&
-                        ln -sf ${CMAKE_CURRENT_BINARY_DIR}/libplugin_carbon_interpose.dylib
-                        ../plugin_carbon_interpose.dylib)
-
-    SET(CHROMIUM_FRAMEWORK Chromium\ Framework.framework)
+                        ln -sf libplugin_carbon_interpose.dylib plugin_carbon_interpose.dylib)
   ENDIF()
 ENDIF(CHROME_FOUND)
 
