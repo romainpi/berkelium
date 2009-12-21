@@ -26,7 +26,6 @@ IF(NOT CHROME_ROOT)
     ${BERKELIUM_TOP_LEVEL}/build/chromium
     ${BERKELIUM_TOP_LEVEL}/build/c
     )
-
   FOREACH(CHROME_ROOT_SEARCH_PATH ${CHROME_ROOT_SEARCH_PATHS})
     IF(EXISTS ${CHROME_ROOT_SEARCH_PATH})
       IF(NOT CHROME_ROOT)
@@ -35,7 +34,15 @@ IF(NOT CHROME_ROOT)
     ENDIF()
   ENDFOREACH()
 ENDIF()
+SET(CHROME_FOUND_QUIETLY TRUE)
+IF(NOT CHROME_SYMLINKS_TARGET)
+ SET(BERKELIUM_LOCAL_SYMLINK_TARGET TRUE)
+ SET(CHROME_SYMLINKS_TARGET ppmrender)
+ENDIF()
 FIND_PACKAGE(Chrome)
+IF(BERKELIUM_LOCAL_SYMLINK_TARGET)
+  ADD_CUSTOM_TARGET(${CHROME_SYMLINKS_COMMAND_TARGET} ALL COMMAND ${CHROME_SYMLINKS_COMMAND})
+ENDIF()
 
 SET(BERKELIUM_CHROME_FOUND ${CHROME_FOUND})
 
@@ -97,26 +104,6 @@ IF(CHROME_FOUND)
                         ../plugin_carbon_interpose.dylib)
 
     SET(CHROMIUM_FRAMEWORK Chromium\ Framework.framework)
-    ADD_CUSTOM_TARGET(ppmrender.app
-                      COMMAND
-                        mkdir -p ppmrender.app &&
-                        mkdir -p ppmrender.app/Contents &&
-                        mkdir -p ppmrender.app/Contents/Resources &&
-                        mkdir -p ppmrender.app/Contents/Frameworks &&
-                        ln -sf ${CMAKE_CURRENT_BINARY_DIR}/ppmrender.app ppmrender.app/Contents/Resources/Berkelium\ Helper.app &&
-                        ln -sf ${CMAKE_CURRENT_BINARY_DIR}/ppmrender.app/Contents ppmrender.app/Contents/Frameworks/${CHROMIUM_FRAMEWORK} &&
-                        mkdir -p ppmrender.app/Contents/MacOS &&
-                        ln -sf ${CMAKE_CURRENT_BINARY_DIR}/ppmrender ppmrender.app/Contents/MacOS &&
-                        ln -sf berkelium ppmrender.app/Contents/MacOS &&
-                        ln -sf ${CMAKE_CURRENT_BINARY_DIR}/berkelium ppmrender.app/Contents/MacOS/berkelium &&
-                        ln -sf ${CHROME_ROOT}/src/xcodebuild/Release/${CHROMIUM_FRAMEWORK}/Resources/chrome.pak ppmrender.app/Contents/Resources/chrome.pak &&
-                        ln -sf ${CHROME_ROOT}/src/xcodebuild/Release/${CHROMIUM_FRAMEWORK}/Resources/theme.pak ppmrender.app/Contents/Resources/theme.pak &&
-                        ln -sf ${CHROME_ROOT}/src/xcodebuild/Release/${CHROMIUM_FRAMEWORK}/Resources/linkCursor.png ppmrender.app/Contents/Resources/linkCursor.png  &&
-                        ln -sf ${CHROME_ROOT}/src/xcodebuild/Release/${CHROMIUM_FRAMEWORK}/Resources/renderer.sb ppmrender.app/Contents/Resources/renderer.sb &&
-                        ln -sf ${CHROME_ROOT}/src/xcodebuild/Release/${CHROMIUM_FRAMEWORK}/Resources/en_US.lproj ppmrender.app/Contents/Resources/en_US.lproj)
-
-    ADD_CUSTOM_TARGET(osx ALL DEPENDS ppmrender.app)
-    ADD_CUSTOM_TARGET(osx-install DEPENDS plugin_carbon_interpose.dylib chrome.pak Versions)
   ENDIF()
-
 ENDIF(CHROME_FOUND)
+

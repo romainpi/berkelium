@@ -119,7 +119,41 @@ FOREACH(CHROMIUMINC ${CHROME_INCLUDE_DIRS})
 ENDFOREACH()
 
 IF(CHROME_FOUND)
-  MESSAGE(STATUS "Found Chrome: headers at ${CHROME_INCLUDE_DIRS}, libraries at ${CHROME_LIBRARY_DIRS}")
-  MESSAGE(STATUS "Found Chrome: LDFLAGS at ${CHROME_LDFLAGS}")
-  MESSAGE(STATUS "Found Chrome: CFLAGS at ${CHROME_CFLAGS}")
+  IF(APPLE)
+     IF(NOT CHROME_SYMLINKS_TARGET)
+       SET(CHROME_SYMLINKS_TARGET chromium)
+     ENDIF()
+     SET(CHROME_SYMLINKS_COMMAND_TARGET ${CHROME_SYMLINKS_TARGET}.app)
+     ADD_CUSTOM_TARGET(${CHROME_SYMLINKS_TARGET}
+                      ALL
+                      COMMAND
+                        mkdir -p ${CHROME_SYMLINKS_TARGET}.app &&
+                        mkdir -p ${CHROME_SYMLINKS_TARGET}.app/Contents &&
+                        mkdir -p ${CHROME_SYMLINKS_TARGET}.app/Contents/Resources &&
+                        mkdir -p ${CHROME_SYMLINKS_TARGET}.app/Contents/Frameworks &&
+                        ln -sf ${CMAKE_CURRENT_BINARY_DIR}/${CHROME_SYMLINKS_TARGET}.app ${CHROME_SYMLINKS_TARGET}.app/Contents/Resources/Berkelium\ Helper.app &&
+                        ln -sf ${CMAKE_CURRENT_BINARY_DIR}/${CHROME_SYMLINKS_TARGET}.app/Contents ${CHROME_SYMLINKS_TARGET}.app/Contents/Frameworks/${CHROMIUM_FRAMEWORK} &&
+                        mkdir -p ${CHROME_SYMLINKS_TARGET}.app/Contents/MacOS &&
+                        "((" ln -sf ${CMAKE_CURRENT_BINARY_DIR}/${CHROME_SYMLINKS_TARGET}_d ${CHROME_SYMLINKS_TARGET}.app/Contents/MacOS && ln -sf ${CMAKE_CURRENT_BINARY_DIR}/${CHROME_SYMLINKS_TARGET} ${CHROME_SYMLINKS_TARGET}.app/Contents/MacOS ")" || ln -sf ${CMAKE_CURRENT_BINARY_DIR}/${CHROME_SYMLINKS_TARGET} ${CHROME_SYMLINKS_TARGET}.app/Contents/MacOS || ln -sf ${CMAKE_CURRENT_BINARY_DIR}/${CHROME_SYMLINKS_TARGET}_d ${CHROME_SYMLINKS_TARGET}.app/Contents/MacOS ")" &&
+                        ln -sf berkelium ${CHROME_SYMLINKS_TARGET}.app/Contents/MacOS &&
+                        ln -sf ${CMAKE_CURRENT_BINARY_DIR}/berkelium ${CHROME_SYMLINKS_TARGET}.app/Contents/MacOS/berkelium &&
+                        ln -sf ${CHROME_ROOT}/src/xcodebuild/Release/${CHROMIUM_FRAMEWORK}/Resources/chrome.pak ${CHROME_SYMLINKS_TARGET}.app/Contents/Resources/chrome.pak &&
+                        ln -sf ${CHROME_ROOT}/src/xcodebuild/Release/${CHROMIUM_FRAMEWORK}/Resources/theme.pak ${CHROME_SYMLINKS_TARGET}.app/Contents/Resources/theme.pak &&
+                        ln -sf ${CHROME_ROOT}/src/xcodebuild/Release/${CHROMIUM_FRAMEWORK}/Resources/linkCursor.png ${CHROME_SYMLINKS_TARGET}.app/Contents/Resources/linkCursor.png  &&
+                        ln -sf ${CHROME_ROOT}/src/xcodebuild/Release/${CHROMIUM_FRAMEWORK}/Resources/renderer.sb ${CHROME_SYMLINKS_TARGET}.app/Contents/Resources/renderer.sb &&
+                        ln -sf ${CHROME_ROOT}/src/xcodebuild/Release/${CHROMIUM_FRAMEWORK}/Resources/en_US.lproj ${CHROME_SYMLINKS_TARGET}.app/Contents/Resources/en_US.lproj)     
+  ELSE()
+   SET(CHROME_SYMLINKS_COMMAND_TARGET chrome.pak)
+   SET(CHROME_SYMLINKS_COMMAND ln -sf ${CHROMIUM_DATADIR}/libavformat.so.52 && ln -sf ${CHROMIUM_DATADIR}/libavutil.so.50 && ln -sf ${CHROMIUM_DATADIR}/libavcodec.so.52 &&ln -sf ${CHROMIUM_DATADIR}/locales && ln -sf ${CHROMIUM_DATADIR}/resources && ln -sf ${CHROMIUM_DATADIR}/themes && ln -sf ${CHROMIUM_DATADIR}/chrome.pak)
+
+  ENDIF()
+
+
+  IF(NOT CHROME_FOUND_QUIETLY)
+    MESSAGE(STATUS "Found Chrome: headers at ${CHROME_INCLUDE_DIRS}, libraries at ${CHROME_LIBRARY_DIRS}")
+    MESSAGE(STATUS "Found Chrome: LDFLAGS at ${CHROME_LDFLAGS}")
+    MESSAGE(STATUS "Found Chrome: CFLAGS at ${CHROME_CFLAGS}")
+  ELSE()
+    MESSAGE(STATUS "Chrome Found ")
+  ENDIF()
 ENDIF(CHROME_FOUND)
