@@ -7,6 +7,12 @@
 #  BERKELIUM_CHROME_FOUND - TRUE if Chrome is found and berkelium will be built.
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.4)
+
+IF(APPLE) 
+  SET(CMAKE_CXX_COMPILER g++-4.0)
+  SET(CMAKE_C_COMPILER gcc-4.0)
+ENDIF()
+
 SET(CMAKE_VERBOSE_MAKEFILE OFF)
 SET(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS TRUE)
 IF(COMMAND CMAKE_POLICY)
@@ -74,11 +80,14 @@ IF(CHROME_FOUND)
   FOREACH(CHROME_CFLAG ${CHROME_CFLAGS})
     SET(CHROMIUM_CFLAGS "${CHROMIUM_CFLAGS} ${CHROME_CFLAG}")
   ENDFOREACH()
-
+  IF(APPLE)
+    ADD_DEFINITIONS(-isysroot /Developer/SDKs/MacOSX10.5.sdk -arch i386 -mmacosx-version-min=10.5 )
+    SET(BERKELIUM_LDFLAGS "-Wl,-syslibroot -Wl,/Developer/SDKs/MacOSX10.5.sdk/")
+  ENDIF()
 
   ADD_LIBRARY(libberkelium SHARED ${BERKELIUM_SOURCES})
   SET_TARGET_PROPERTIES(libberkelium PROPERTIES DEBUG_POSTFIX "_d")
-  SET_TARGET_PROPERTIES(libberkelium PROPERTIES LINK_FLAGS ${CHROMIUM_LDFLAGS})
+  SET_TARGET_PROPERTIES(libberkelium PROPERTIES LINK_FLAGS "${CHROMIUM_LDFLAGS} ${BERKELIUM_LDFLAGS}")
   SET_TARGET_PROPERTIES(libberkelium PROPERTIES COMPILE_FLAGS "${CHROMIUM_CFLAGS}")
   SET_TARGET_PROPERTIES(libberkelium PROPERTIES DEBUG_POSTFIX "_d")
   TARGET_LINK_LIBRARIES(libberkelium ${CHROME_LIBRARIES})
@@ -90,9 +99,10 @@ IF(CHROME_FOUND)
     SET( CHROMIUM_DYLIB_EXT .so)
   ENDIF()
   TARGET_LINK_LIBRARIES(ppmrender -L. debug liblibberkelium_d${CHROMIUM_DYLIB_EXT} optimized liblibberkelium${CHROMIUM_DYLIB_EXT} )
-
+  SET_TARGET_PROPERTIES(ppmrender PROPERTIES LINK_FLAGS "${BERKELIUM_LDFLAGS}")
 
   ADD_EXECUTABLE(berkelium ${BERKELIUM_TOP_LEVEL}/subprocess.cpp)
+  SET_TARGET_PROPERTIES(berkelium PROPERTIES LINK_FLAGS ${BERKELIUM_LDFLAGS})
   TARGET_LINK_LIBRARIES(berkelium -L. debug liblibberkelium_d${CHROMIUM_DYLIB_EXT} optimized liblibberkelium${CHROMIUM_DYLIB_EXT} )
 
   ADD_DEPENDENCIES(berkelium libberkelium)
@@ -101,7 +111,7 @@ IF(CHROME_FOUND)
   IF(APPLE)
     ADD_LIBRARY(plugin_carbon_interpose SHARED ${CHROME_ROOT}/src/chrome/browser/plugin_carbon_interpose_mac.cc)
     SET_TARGET_PROPERTIES(plugin_carbon_interpose PROPERTIES COMPILE_FLAGS ${CHROMIUM_CFLAGS})
-    SET_TARGET_PROPERTIES(plugin_carbon_interpose PROPERTIES LINK_FLAGS "-framework Carbon")
+    SET_TARGET_PROPERTIES(plugin_carbon_interpose PROPERTIES LINK_FLAGS "-framework Carbon ${BERKELIUM_LDFLAGS}")
     TARGET_LINK_LIBRARIES(plugin_carbon_interpose -L. debug liblibberkelium_d.dylib optimized liblibberkelium.dylib )
     ADD_DEPENDENCIES(plugin_carbon_interpose libberkelium)
 
