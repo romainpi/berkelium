@@ -121,5 +121,28 @@ IF(CHROME_FOUND)
                       COMMAND
                         ln -sf libplugin_carbon_interpose.dylib plugin_carbon_interpose.dylib)
   ENDIF()
+  INSTALL(TARGETS
+          libberkelium
+          berkelium
+          RUNTIME
+          DESTINATION bin
+          LIBRARY
+          DESTINATION lib)
+  IF(NOT APPLE)
+    INSTALL(FILES
+          chrome.pak
+            libavcodec.so.52
+            libavformat.so.52
+            libavutil.so.50
+            DESTINATION bin)
+    INSTALL(DIRECTORY
+          themes
+        DESTINATION
+            bin )
+    INSTALL(DIRECTORY locales
+        DESTINATION bin)
+    INSTALL(DIRECTORY resources
+        DESTINATION bin)
+  ENDIF()
 ENDIF(CHROME_FOUND)
 
