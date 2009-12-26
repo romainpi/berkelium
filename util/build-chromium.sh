@@ -325,7 +325,8 @@ elif [ x"${platform}" = x"Linux" ]; then
         careful_patch "${CHROMIUM_CHECKOUT_DIR}/src" "${CHROMIUM_PATCHES_DIR}/chromium_transparency_26900.patch" &&
         careful_patch "${CHROMIUM_CHECKOUT_DIR}/src" "${CHROMIUM_PATCHES_DIR}/chromium_win32_sandbox_exports.patch" &&
         careful_patch "${CHROMIUM_CHECKOUT_DIR}/src" "${CHROMIUM_PATCHES_DIR}/chromium_wmode_opaque.patch" &&
-        user_eval "cd ${CHROMIUM_CHECKOUT_DIR} &&
+        user_eval "gcc --version | grep -q '4\.4' && export GCC_VERSION=44 && export GYP_DEFINES='gcc_version=44 no_strict_aliasing=1';
+                 cd ${CHROMIUM_CHECKOUT_DIR} &&
                  export PATH=\"${CHROMIUM_DEPOTTOOLS_DIR}:${PATH}\" &&
                  export GYP_GENERATORS=make &&
                  export CHROMIUM_ROOT="'"$PWD"'" &&
