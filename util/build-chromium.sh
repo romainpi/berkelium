@@ -190,20 +190,30 @@ elif [ x"${platform}" = x"Linux" ]; then
         if $USE_ROOT ; then
             echo "Installing Chromium Prerequisites. Package listing is from:"
             echo "http://code.google.com/p/chromium/wiki/LinuxBuildInstructionsPrerequisites"
+	    if [[ -n `which apt-get` ]] ; then
+		DISTRO=debian
+	    elif [[ -n `which yum` ]] ; then
+		DISTRO=fedora
+	    else
+        # TODO: Replace with message listing packages that should be installed as root, as per Patrick's suggestion
+		echo "Installing as root is not supported on your distribution."
+		exit
+	    fi
+
             case "$DISTRO" in
                 debian )
-                    apt-get install subversion pkg-config python ruby perl g++ g++-multilib
-                    apt-get install bison flex gperf libnss3-dev libnspr4-dev libgtk2.0-dev libnspr4-0d libasound2-dev
-                    apt-get install msttcorefonts libgconf2-dev libcairo2-dev libdbus-1-dev
-                    apt-get install liborbit2-dev libpopt-dev orbit2
-                    apt-get install libnss3-dev
+                    sudo apt-get install subversion pkg-config python ruby perl g++ g++-multilib
+                    sudo apt-get install bison flex gperf libnss3-dev libnspr4-dev libgtk2.0-dev libnspr4-0d libasound2-dev
+                    sudo apt-get install msttcorefonts libgconf2-dev libcairo2-dev libdbus-1-dev
+                    sudo apt-get install liborbit2-dev libpopt-dev orbit2
+                    sudo apt-get install libnss3-dev
                     ;;
                 fedora )
-                    yum install subversion pkgconfig python perl ruby gcc-c++ bison \
+                    sudo yum install subversion pkgconfig python perl ruby gcc-c++ bison \
                         flex gperf nss-devel nspr-devel gtk2-devel.i386 glib2-devel.i386 \
                         freetype-devel.i386 atk-devel.i386 pango-devel.i386 cairo-devel.i386 \
                         fontconfig-devel.i386 GConf2-devel.i386 dbus-devel.i386 alsa-lib-devel
-                    rpm --force -Uvh /var/cache/yum/updates/packages/pango-devel-1.22.3-1.fc10.i386.rpm
+                    sudo rpm --force -Uvh /var/cache/yum/updates/packages/pango-devel-1.22.3-1.fc10.i386.rpm
                     ;;
             esac
 
@@ -211,11 +221,11 @@ elif [ x"${platform}" = x"Linux" ]; then
             if $FORCE_32BIT; then
                 # make sure /usr/local/lib32 exists
                 if ! [ -e /usr/local/lib32 ]; then
-                    mkdir /usr/local/lib32
+                    sudo mkdir /usr/local/lib32
                 fi
                 if ! [ -e /usr/lib32/libnss3.so -o -e /usr/local/lib32/libnss3.so ] ; then
                     #------------from google's script
-                    mkdir -p /usr/local/lib32
+                    sudo mkdir -p /usr/local/lib32
                     find_curl # make sure curl is available
                     for deb in nspr/libnspr4-0d_4.7.1~beta2-0ubuntu1_i386.deb \
                         nss/libnss3-1d_3.12.0~beta3-0ubuntu1_i386.deb \
@@ -228,10 +238,10 @@ elif [ x"${platform}" = x"Linux" ]; then
                         tar xf data.tar.gz
                         for lib in usr/lib/* ; do
                             libbase=$(basename ${lib})
-                            mv ${lib} /usr/local/lib32/${libbase}
+                            sudo mv ${lib} /usr/local/lib32/${libbase}
                             so=$(echo ${libbase} | sed -e "s/^\\(.*\\.so\\)\\..*$/\\1/")
                             if [ ${so} != ${libbase} ] ; then
-                                ln -s -f ${libbase} /usr/local/lib32/${so}
+                                sudo ln -s -f ${libbase} /usr/local/lib32/${so}
                             fi
                         done
                         popd
@@ -248,19 +258,19 @@ elif [ x"${platform}" = x"Linux" ]; then
                 #ln -s ../local/lib32/libsmime3.so /usr/lib32/
                 #ln -s ../local/lib32/libsqlite3.so /usr/lib32/
                 #ln -s ../local/lib32/libssl3.so /usr/lib32/
-                ln -s /usr/lib32/libcrypto.so.* /usr/local/lib32/libcrypto.so
-                ln -s /usr/lib32/libssl.so.* /usr/local/lib32/libssl.so
-                ln -s /usr/lib32/libgtk-x11-2.0.so.? /usr/local/lib32/libgtk-x11-2.0.so
-                ln -s /usr/lib32/libgdk-x11-2.0.so.? /usr/local/lib32/libgdk-x11-2.0.so
-                ln -s /usr/lib32/libgdk_pixbuf-2.0.so.? /usr/local/lib32/libgdk_pixbuf-2.0.so
-                ln -s /usr/lib32/libatk-1.0.so.? /usr/local/lib32/libatk-1.0.so
+                sudo ln -s /usr/lib32/libcrypto.so.* /usr/local/lib32/libcrypto.so
+                sudo ln -s /usr/lib32/libssl.so.* /usr/local/lib32/libssl.so
+                sudo ln -s /usr/lib32/libgtk-x11-2.0.so.? /usr/local/lib32/libgtk-x11-2.0.so
+                sudo ln -s /usr/lib32/libgdk-x11-2.0.so.? /usr/local/lib32/libgdk-x11-2.0.so
+                sudo ln -s /usr/lib32/libgdk_pixbuf-2.0.so.? /usr/local/lib32/libgdk_pixbuf-2.0.so
+                sudo ln -s /usr/lib32/libatk-1.0.so.? /usr/local/lib32/libatk-1.0.so
                 for lib in gio-2.0.so.0 gdk-x11-2.0.so.0 atk-1.0.so.0 gdk_pixbuf-2.0.so.0 \
                     pangocairo-1.0.so.0 pango-1.0.so.0 pangoft2-1.0.so.0 gthread-2.0.so.0 glib-2.0.so.0 \
                     gobject-2.0.so.0 gmodule-2.0.so.0 glib-2.0.so.0 gtk-x11-2.0.so.0 \
                     cairo.so.2 freetype.so.6 z.so.1 fontconfig.so.1 \
                     X11.so.6 Xrender.so.1 Xext.so.6 gconf-2.so.4 asound.so.2; do
                     so=$(echo ${lib} | sed -e "s/^\\(.*\\.so\\)\\..*$/\\1/")
-                    ln -s /usr/lib32/lib$lib /usr/local/lib32/lib$so
+                    sudo ln -s /usr/lib32/lib$lib /usr/local/lib32/lib$so
                 done
             fi
         fi
