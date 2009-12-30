@@ -121,6 +121,7 @@ IF(CHROME_FOUND)
                       COMMAND
                         ln -sf libplugin_carbon_interpose.dylib plugin_carbon_interpose.dylib)
   ENDIF()
+
   INSTALL(TARGETS
           libberkelium
           berkelium
@@ -146,3 +147,7 @@ IF(CHROME_FOUND)
   ENDIF()
 ENDIF(CHROME_FOUND)
 
+FIND_PACKAGE(Doxygen)
+IF(DOXYGEN_FOUND)
+  ADD_CUSTOM_TARGET(doc ${DOXYGEN_EXECUTABLE} "doc/Doxyfile")
+ENDIF()
