@@ -1,4 +1,34 @@
+# FindChrome.cmake
+# Searches for Chrome and sets up a few helpful macros.
+#
+# Outputs:
+#  CHROME_FOUND - True if Chrome was found
+#  CHROME_INCLUDE_DIRS - List of include directories for Chrome headers
+#  CHROME_CFLAGS - C flags to pass to compiler for Chrome
+#  CHROME_LIBRARY_DIRS - List of library directories for Chrome
+#  CHROME_LDFLAGS - flags to pass to the linker for Chrome
+#
+# Output Macros:
+#  On Mac:
+#
+#  ADD_CHROME_APP - Adds a Chrome .app target for Mac by generating the
+#                   appropriate app structure and symlinking in another target
+#                   as the actual executable
+#   Paramters:
+#    APP - the name of the app to link to, must be a file or existing target
+#    LINKS - additional binaries to link into the .app; this almost certainly
+#            includes the renderer binary
+#
+#  On Linux:
+#  ADD_CHROME_SYMLINK_TARGET - Adds a target which adds symlinks to the
+#                              to the necessary Chrome libraries and resources
+#   Parameters: None
+#
+
 INCLUDE(FindPkgConfig)
+INCLUDE(ListUtil)
+INCLUDE(ParseArguments)
+
 SET(CHROME_FOUND TRUE)
 SET(CHROMIUMDIR ${CHROME_ROOT})
 IF(NOT CHROME_MODE)
@@ -120,30 +150,67 @@ ENDFOREACH()
 
 IF(CHROME_FOUND)
   IF(APPLE)
-     IF(NOT CHROME_SYMLINKS_TARGET)
-       SET(CHROME_SYMLINKS_TARGET chromium)
-     ENDIF()
-     SET(CHROMIUM_FRAMEWORK Chromium\ Framework.framework)
-     SET(CHROME_SYMLINKS_COMMAND_TARGET ${CHROME_SYMLINKS_TARGET}.app)
-     SET(CHROME_SYMLINKS_COMMAND mkdir -p ${CHROME_SYMLINKS_TARGET}.app &&
-                        mkdir -p ${CHROME_SYMLINKS_TARGET}.app/Contents &&
-                        mkdir -p ${CHROME_SYMLINKS_TARGET}.app/Contents/Resources &&
-                        mkdir -p ${CHROME_SYMLINKS_TARGET}.app/Contents/Frameworks &&
-                        ln -sf ${CMAKE_CURRENT_BINARY_DIR}/${CHROME_SYMLINKS_TARGET}.app ${CHROME_SYMLINKS_TARGET}.app/Contents/Resources/Berkelium\ Helper.app &&
-                        ln -sf ${CMAKE_CURRENT_BINARY_DIR}/${CHROME_SYMLINKS_TARGET}.app/Contents ${CHROME_SYMLINKS_TARGET}.app/Contents/Frameworks/${CHROMIUM_FRAMEWORK} &&
-                        mkdir -p ${CHROME_SYMLINKS_TARGET}.app/Contents/MacOS &&
-                        ln -sf ${CHROME_ROOT}/src/xcodebuild/Release/${CHROMIUM_FRAMEWORK}/Resources/chrome.pak ${CHROME_SYMLINKS_TARGET}.app/Contents/Resources/chrome.pak &&
-                        ln -sf ${CHROME_ROOT}/src/xcodebuild/Release/${CHROMIUM_FRAMEWORK}/Resources/theme.pak ${CHROME_SYMLINKS_TARGET}.app/Contents/Resources/theme.pak &&
-                        ln -sf ${CHROME_ROOT}/src/xcodebuild/Release/${CHROMIUM_FRAMEWORK}/Resources/linkCursor.png ${CHROME_SYMLINKS_TARGET}.app/Contents/Resources/linkCursor.png  &&
-                        ln -sf ${CHROME_ROOT}/src/xcodebuild/Release/${CHROMIUM_FRAMEWORK}/Resources/renderer.sb ${CHROME_SYMLINKS_TARGET}.app/Contents/Resources/renderer.sb &&
-                        ln -sf ${CHROME_ROOT}/src/xcodebuild/Release/${CHROMIUM_FRAMEWORK}/Resources/en_US.lproj ${CHROME_SYMLINKS_TARGET}.app/Contents/Resources/en_US.lproj)
-  FOREACH(CHROME_SYMLINK_BINARY ${CHROME_SYMLINKS_BINARIES}) 
-   SET(CHROME_SYMLINKS_COMMAND ${CHROME_SYMLINKS_COMMAND} && ln -sf ${CHROME_SYMLINK_BINARY} ${CHROME_SYMLINKS_TARGET}.app/Contents/MacOS/ )
-  ENDFOREACH()
-  ELSE()
-   SET(CHROME_SYMLINKS_COMMAND_TARGET chrome.pak)
-   SET(CHROME_SYMLINKS_COMMAND ln -sf ${CHROMIUM_DATADIR}/libavformat.so.52 && ln -sf ${CHROMIUM_DATADIR}/libavutil.so.50 && ln -sf ${CHROMIUM_DATADIR}/libavcodec.so.52 &&ln -sf ${CHROMIUM_DATADIR}/locales && ln -sf ${CHROMIUM_DATADIR}/resources && ln -sf ${CHROMIUM_DATADIR}/themes && ln -sf ${CHROMIUM_DATADIR}/chrome.pak)
+    MACRO(ADD_CHROME_APP)
+      PARSE_ARGUMENTS(CHROME_APP "APP;LINKS" "" ${ARGN})
 
+      IF(NOT CHROME_APP_APP)
+        MESSAGE(ERROR "No application name specified as parameter to ADD_CHROME_APP")
+      ELSE()
+        SET(CHROME_APP_NAME ${CHROME_APP_APP}.app)
+      ENDIF()
+
+      SET(CHROMIUM_FRAMEWORK Chromium\ Framework.framework)
+      SET(CHROME_SYMLINKS_COMMAND
+        mkdir -p ${CHROME_APP_NAME} &&
+        mkdir -p ${CHROME_APP_NAME}/Contents &&
+        mkdir -p ${CHROME_APP_NAME}/Contents/Resources &&
+        mkdir -p ${CHROME_APP_NAME}/Contents/Frameworks &&
+        mkdir -p ${CHROME_APP_NAME}/Contents/MacOS &&
+        ln -sf ${CMAKE_CURRENT_BINARY_DIR}/${CHROME_APP_NAME} ${CHROME_APP_NAME}/Contents/Resources/Berkelium\ Helper.app &&
+        ln -sf ${CMAKE_CURRENT_BINARY_DIR}/${CHROME_APP_NAME}/Contents ${CHROME_APP_NAME}/Contents/Frameworks/${CHROMIUM_FRAMEWORK} &&
+        ln -sf ${CHROME_ROOT}/src/xcodebuild/Release/${CHROMIUM_FRAMEWORK}/Resources/chrome.pak ${CHROME_APP_NAME}/Contents/Resources/chrome.pak &&
+        ln -sf ${CHROME_ROOT}/src/xcodebuild/Release/${CHROMIUM_FRAMEWORK}/Resources/theme.pak ${CHROME_APP_NAME}/Contents/Resources/theme.pak &&
+        ln -sf ${CHROME_ROOT}/src/xcodebuild/Release/${CHROMIUM_FRAMEWORK}/Resources/linkCursor.png ${CHROME_APP_NAME}/Contents/Resources/linkCursor.png  &&
+        ln -sf ${CHROME_ROOT}/src/xcodebuild/Release/${CHROMIUM_FRAMEWORK}/Resources/renderer.sb ${CHROME_APP_NAME}/Contents/Resources/renderer.sb &&
+        ln -sf ${CHROME_ROOT}/src/xcodebuild/Release/${CHROMIUM_FRAMEWORK}/Resources/en_US.lproj ${CHROME_APP_NAME}/Contents/Resources/en_US.lproj
+        )
+
+      SET(CHROME_SYMLINKS_COMMAND
+        ${CHROME_SYMLINKS_COMMAND} &&
+        ln -sf ${CMAKE_CURRENT_BINARY_DIR}/${CHROME_APP_APP} ${CHROME_APP_NAME}/Contents/MacOS/
+        )
+      FOREACH(CHROME_SYMLINK_BINARY ${CHROME_APP_LINKS})
+        SET(CHROME_SYMLINKS_COMMAND
+          ${CHROME_SYMLINKS_COMMAND} &&
+          # FIXME currently we link these into both MacOS and Resources because dynamic loading of libraries
+          # could leave us in either of these directories.  There really must be a better solution than this.
+          ln -sf ${CHROME_SYMLINK_BINARY} ${CHROME_APP_NAME}/Contents/MacOS/ &&
+          ln -sf ${CHROME_SYMLINK_BINARY} ${CHROME_APP_NAME}/Contents/Resources/
+          )
+      ENDFOREACH()
+
+      ADD_CUSTOM_TARGET(${CHROME_APP_NAME} ALL
+        COMMAND ${CHROME_SYMLINKS_COMMAND}
+        DEPENDS ${CHROME_APP_APP}
+        )
+    ENDMACRO(ADD_CHROME_APP)
+  ELSE()
+    MACRO(ADD_CHROME_SYMLINK_TARGET)
+      SET(CHROME_SYMLINKS_COMMAND_TARGET chrome_symlinks)
+      SET(CHROME_SYMLINKS_COMMAND
+        ln -sf ${CHROMIUM_DATADIR}/libavformat.so.52 &&
+        ln -sf ${CHROMIUM_DATADIR}/libavutil.so.50 &&
+        ln -sf ${CHROMIUM_DATADIR}/libavcodec.so.52 &&
+        ln -sf ${CHROMIUM_DATADIR}/locales &&
+        ln -sf ${CHROMIUM_DATADIR}/resources &&
+        ln -sf ${CHROMIUM_DATADIR}/themes &&
+        ln -sf ${CHROMIUM_DATADIR}/chrome.pak
+        )
+
+      ADD_CUSTOM_TARGET(${CHROME_SYMLINKS_COMMAND_TARGET}.local ALL
+        COMMAND ${CHROME_SYMLINKS_COMMAND}
+        )
+    ENDMACRO()
   ENDIF()
 
 

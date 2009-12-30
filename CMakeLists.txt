@@ -8,7 +8,7 @@
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.4)
 
-IF(APPLE) 
+IF(APPLE)
   SET(CMAKE_CXX_COMPILER g++-4.0)
   SET(CMAKE_C_COMPILER gcc-4.0)
 ENDIF()
@@ -20,9 +20,16 @@ IF(COMMAND CMAKE_POLICY)
   # old version which adds library search paths unnecessarily
   CMAKE_POLICY(SET CMP0003 NEW)
 ENDIF(COMMAND CMAKE_POLICY)
+
 SET(BERKELIUM_TOP_LEVEL ${CMAKE_CURRENT_SOURCE_DIR})
-SET(CMAKE_MODULE_PATH ${BERKELIUM_TOP_LEVEL})
-GET_FILENAME_COMPONENT(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ABSOLUTE)
+GET_FILENAME_COMPONENT(BERKELIUM_TOP_LEVEL ${BERKELIUM_TOP_LEVEL} ABSOLUTE)
+
+SET(CMAKE_MODULE_PATH
+  ${BERKELIUM_TOP_LEVEL}
+  ${BERKELIUM_TOP_LEVEL}/build/modules/
+)
+
+
 IF(NOT CHROME_ROOT)
   SET(CHROME_ROOT_SEARCH_PATHS
     ${BERKELIUM_CHROME_ROOT_SEARCH_PATHS} # User provided search paths go first
@@ -41,28 +48,12 @@ IF(NOT CHROME_ROOT)
   ENDFOREACH()
 ENDIF()
 SET(CHROME_FOUND_QUIETLY TRUE)
-IF(NOT CHROME_SYMLINKS_TARGET)
- SET(BERKELIUM_LOCAL_SYMLINK_TARGET TRUE)
- SET(CHROME_SYMLINKS_TARGET ppmrender)
-#                        ln -sf ${CMAKE_CURRENT_BINARY_DIR}/libplugin_carbon_interpose.dylib ${CHROME_SYMLINKS_TARGET}.app/Contents/MacOS/libplugin_carbon_interpose.dylib &&
 
- SET(CHROME_SYMLINKS_BINARIES ${CHROME_SYMLINKS_BINARIES} ${CMAKE_CURRENT_BINARY_DIR}/libplugin_carbon_interpose.dylib)
- SET(CHROME_SYMLINKS_BINARIES ${CHROME_SYMLINKS_BINARIES} ${CMAKE_CURRENT_BINARY_DIR}/ppmrender)
- SET(CHROME_SYMLINKS_BINARIES ${CHROME_SYMLINKS_BINARIES} ${CMAKE_CURRENT_BINARY_DIR}/berkelium)
-ENDIF()
 FIND_PACKAGE(Chrome)
-IF(BERKELIUM_LOCAL_SYMLINK_TARGET)
-  ADD_CUSTOM_TARGET(${CHROME_SYMLINKS_COMMAND_TARGET} ALL COMMAND ${CHROME_SYMLINKS_COMMAND})
-ELSE()
-IF(NOT APPLE)
-  ADD_CUSTOM_TARGET(${CHROME_SYMLINKS_COMMAND_TARGET}.local ALL COMMAND ${CHROME_SYMLINKS_COMMAND} && ln -sf ${CHROME_SYMLINKS_COMMAND_TARGET} ${CHROME_SYMLINKS_COMMAND_TARGET}.local)
-ENDIF()
-ENDIF()
 
 SET(BERKELIUM_CHROME_FOUND ${CHROME_FOUND})
 
 IF(CHROME_FOUND)
-
   INCLUDE_DIRECTORIES(${BERKELIUM_TOP_LEVEL}/include ${CHROME_INCLUDE_DIRS})
   LINK_DIRECTORIES(${CHROME_LIBRARY_DIRS})
   SET(BERKELIUM_SOURCE_NAMES src/Berkelium src/Context src/ContextImpl src/NavigationController src/RenderWidget src/MemoryRenderViewHost src/Root src/Window src/WindowImpl)
@@ -85,6 +76,11 @@ IF(CHROME_FOUND)
     SET(BERKELIUM_LDFLAGS "-Wl,-syslibroot -Wl,/Developer/SDKs/MacOSX10.5.sdk/")
   ENDIF()
 
+  IF (NOT APPLE)
+    ADD_CHROME_SYMLINK_TARGET()
+  ENDIF()
+
+  # libberkelium -- core berkelium library
   ADD_LIBRARY(libberkelium SHARED ${BERKELIUM_SOURCES})
   SET_TARGET_PROPERTIES(libberkelium PROPERTIES DEBUG_POSTFIX "_d")
   SET_TARGET_PROPERTIES(libberkelium PROPERTIES LINK_FLAGS "${CHROMIUM_LDFLAGS} ${BERKELIUM_LDFLAGS}")
@@ -107,6 +103,14 @@ IF(CHROME_FOUND)
 
   ADD_DEPENDENCIES(berkelium libberkelium)
   ADD_DEPENDENCIES(ppmrender libberkelium)
+  IF(APPLE)
+    ADD_CHROME_APP(
+      APP ppmrender
+      LINKS
+      ${CMAKE_CURRENT_BINARY_DIR}/libplugin_carbon_interpose.dylib
+      ${CMAKE_CURRENT_BINARY_DIR}/berkelium
+      )
+  ENDIF()
 
   IF(APPLE)
     ADD_LIBRARY(plugin_carbon_interpose SHARED ${CHROME_ROOT}/src/chrome/browser/plugin_carbon_interpose_mac.cc)
@@ -116,7 +120,7 @@ IF(CHROME_FOUND)
     ADD_DEPENDENCIES(plugin_carbon_interpose libberkelium)
 
     ADD_CUSTOM_TARGET(plugin_carbon_interpose.dylib
-                      ALL 
+                      ALL
                       DEPENDS plugin_carbon_interpose
                       COMMAND
                         ln -sf libplugin_carbon_interpose.dylib plugin_carbon_interpose.dylib)
