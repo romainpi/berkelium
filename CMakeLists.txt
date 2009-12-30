@@ -88,20 +88,21 @@ IF(CHROME_FOUND)
   SET_TARGET_PROPERTIES(libberkelium PROPERTIES DEBUG_POSTFIX "_d")
   TARGET_LINK_LIBRARIES(libberkelium ${CHROME_LIBRARIES})
 
-  ADD_EXECUTABLE(ppmrender ${BERKELIUM_TOP_LEVEL}/ppmmain.cpp)
   IF(APPLE)
     SET( CHROMIUM_DYLIB_EXT .dylib)
   ELSE()
     SET( CHROMIUM_DYLIB_EXT .so)
   ENDIF()
-  TARGET_LINK_LIBRARIES(ppmrender -L. debug liblibberkelium_d${CHROMIUM_DYLIB_EXT} optimized liblibberkelium${CHROMIUM_DYLIB_EXT} )
-  SET_TARGET_PROPERTIES(ppmrender PROPERTIES LINK_FLAGS "${BERKELIUM_LDFLAGS}")
 
   ADD_EXECUTABLE(berkelium ${BERKELIUM_TOP_LEVEL}/subprocess.cpp)
   SET_TARGET_PROPERTIES(berkelium PROPERTIES LINK_FLAGS "${BERKELIUM_LDFLAGS}")
   TARGET_LINK_LIBRARIES(berkelium -L. debug liblibberkelium_d${CHROMIUM_DYLIB_EXT} optimized liblibberkelium${CHROMIUM_DYLIB_EXT} )
-
   ADD_DEPENDENCIES(berkelium libberkelium)
+
+  # ppmrender -- demo app
+  ADD_EXECUTABLE(ppmrender ${BERKELIUM_TOP_LEVEL}/demo/ppmrender/ppmmain.cpp)
+  TARGET_LINK_LIBRARIES(ppmrender -L. debug liblibberkelium_d${CHROMIUM_DYLIB_EXT} optimized liblibberkelium${CHROMIUM_DYLIB_EXT} )
+  SET_TARGET_PROPERTIES(ppmrender PROPERTIES LINK_FLAGS "${BERKELIUM_LDFLAGS}")
   ADD_DEPENDENCIES(ppmrender libberkelium)
   IF(APPLE)
     ADD_CHROME_APP(
