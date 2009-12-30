@@ -94,6 +94,7 @@ IF(CHROME_FOUND)
     SET( CHROMIUM_DYLIB_EXT .so)
   ENDIF()
 
+  # berkelium -- renderer binary
   ADD_EXECUTABLE(berkelium ${BERKELIUM_TOP_LEVEL}/subprocess.cpp)
   SET_TARGET_PROPERTIES(berkelium PROPERTIES LINK_FLAGS "${BERKELIUM_LDFLAGS}")
   TARGET_LINK_LIBRARIES(berkelium -L. debug liblibberkelium_d${CHROMIUM_DYLIB_EXT} optimized liblibberkelium${CHROMIUM_DYLIB_EXT} )
@@ -111,6 +112,28 @@ IF(CHROME_FOUND)
       ${CMAKE_CURRENT_BINARY_DIR}/libplugin_carbon_interpose.dylib
       ${CMAKE_CURRENT_BINARY_DIR}/berkelium
       )
+  ENDIF()
+
+  # glut_demo -- demo app
+  FIND_PACKAGE(OpenGL)
+  FIND_PACKAGE(GLUT)
+  IF(OPENGL_FOUND AND GLUT_FOUND)
+    # 2.4 Compatibility requires global include directory instead of target specific
+    INCLUDE_DIRECTORIES(AFTER ${OPENGL_INCLUDE_DIR} ${GLUT_INCLUDE_DIR})
+
+    ADD_EXECUTABLE(glut_demo ${BERKELIUM_TOP_LEVEL}/demo/glut_demo/glut_demo.cpp)
+    TARGET_LINK_LIBRARIES(glut_demo -L. debug liblibberkelium_d${CHROMIUM_DYLIB_EXT} optimized liblibberkelium${CHROMIUM_DYLIB_EXT} )
+    SET_TARGET_PROPERTIES(glut_demo PROPERTIES LINK_FLAGS "${BERKELIUM_LDFLAGS}")
+    TARGET_LINK_LIBRARIES(glut_demo ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES})
+    ADD_DEPENDENCIES(glut_demo libberkelium)
+    IF(APPLE)
+      ADD_CHROME_APP(
+        APP glut_demo
+        LINKS
+        ${CMAKE_CURRENT_BINARY_DIR}/libplugin_carbon_interpose.dylib
+        ${CMAKE_CURRENT_BINARY_DIR}/berkelium
+        )
+    ENDIF()
   ENDIF()
 
   IF(APPLE)
