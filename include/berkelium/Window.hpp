@@ -40,7 +40,6 @@
 
 namespace Berkelium {
 
-class WindowImpl;
 class Widget;
 class WindowDelegate;
 
@@ -231,7 +230,6 @@ public:
     /** Request all data be selected. */
     virtual void selectAll()=0;
 
-    virtual WindowImpl*getImpl()=0;
 protected:
     Context *mContext;
     WindowDelegate *mDelegate;

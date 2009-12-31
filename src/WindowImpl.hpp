@@ -75,7 +75,6 @@ class WindowImpl :
     bool UpdateTitleForEntry(NavigationEntry* ent, const std::wstring&title);
 
 public:
-    WindowImpl *getImpl();
 //    WindowImpl();
     WindowImpl(const Context*otherContext);
     virtual ~WindowImpl();

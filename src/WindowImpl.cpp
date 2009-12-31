@@ -340,9 +340,6 @@ Profile* WindowImpl::profile() const{
     //return Root::getSingleton().getProfile();
     return getContextImpl()->profile();
 }
-WindowImpl* WindowImpl::getImpl() {
-    return this;
-}
 
 ContextImpl *WindowImpl::getContextImpl() const {
     return static_cast<ContextImpl*>(getContext());
