@@ -196,7 +196,7 @@ public:
      *  executing Javascript in the address bar of a regular browser. The
      *  javascript is copied so the caller retains ownership of the string.
      *  \param javascript pointer to a string containing Javascript code
-     *  \param javascripLength length of the Javascript string
+     *  \param javascriptLength length of the Javascript string
      */
     virtual void executeJavascript(const wchar_t* javascript, size_t javascriptLength)=0;
 
