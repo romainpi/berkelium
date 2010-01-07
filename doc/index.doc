@@ -20,11 +20,11 @@
  *
  * <h3> Manual </h3>
  *  - About Berkelium
- *   - \ref faq "Frequently Asked Questions" answers some very common
+ *   - \ref faq answers some very common
  *     questions about Berkelium.
- *   - \ref users Projects using Berkelium and a brief description of how they
+ *   - \ref users and a brief description of how they
  *     are using it.
- *  - The Development Guide gives an overview of how an application ties
+ *  - The \ref dev_guide gives an overview of how an application ties
  *    together Berkelium's components to integrate a browser into your
  *    application.
  *  - The \ref api "API Reference" gives an overview of the public classes used
