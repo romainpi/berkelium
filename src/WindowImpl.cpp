@@ -69,9 +69,9 @@ void WindowImpl::init(SiteInstance*site, int routing_id) {
 }
 
 WindowImpl::WindowImpl(const Context*otherContext):
-        Window(otherContext),
-        mController(this, profile())
+        Window(otherContext)
 {
+    mController = new NavigationController(this, profile());
     mMouseX = 0;
     mMouseY = 0;
     mCurrentURL = GURL("about:blank");
@@ -79,9 +79,9 @@ WindowImpl::WindowImpl(const Context*otherContext):
     init(mContext->getImpl()->getSiteInstance(), MSG_ROUTING_NONE);
 }
 WindowImpl::WindowImpl(const Context*otherContext, int routing_id):
-        Window(otherContext),
-        mController(this, profile())
+        Window(otherContext)
 {
+    mController = new NavigationController(this, profile());
     mMouseX = 0;
     mMouseY = 0;
     mCurrentURL = GURL("about:blank");
@@ -92,6 +92,7 @@ WindowImpl::~WindowImpl() {
     RenderViewHost* render_view_host = mRenderViewHost;
     mRenderViewHost = NULL;
     render_view_host->Shutdown();
+    delete mController;
 }
 
 RenderProcessHost *WindowImpl::process() const {
@@ -272,7 +273,7 @@ bool WindowImpl::doNavigateTo(
     if (view()) {
         view()->Hide();
     }
-    mController.LoadEntry(CreateNavigationEntry(
+    mController->LoadEntry(CreateNavigationEntry(
         newURL,
         referrerURL,
         PageTransition::TYPED));
@@ -302,7 +303,7 @@ NavigationEntry* WindowImpl::CreateNavigationEntry(
 }
 
 bool WindowImpl::NavigateToPendingEntry(bool reload) {
-    const NavigationEntry& entry = *mController.pending_entry();
+    const NavigationEntry& entry = *mController->pending_entry();
 
     if (!host()) {
         return false;  // Unable to create the desired render view host.
@@ -597,13 +598,13 @@ void WindowImpl::OnFindReply(int request_id,
 }
 void WindowImpl::GoToEntryAtOffset(int offset) {
     std::cout << "GOING TO ENTRY AT OFFSET "<<offset<<std::endl;
-    mController.GoToOffset(offset);
+    mController->GoToOffset(offset);
 }
 void WindowImpl::GetHistoryListCount(int* back_list_count,
                                      int* forward_list_count){
-  int current_index = mController.last_committed_entry_index();
+  int current_index = mController->last_committed_entry_index();
   *back_list_count = current_index;
-  *forward_list_count = mController.entry_count() - current_index - 1;
+  *forward_list_count = mController->entry_count() - current_index - 1;
 }
 void WindowImpl::OnMissingPluginStatus(int status){
 }
@@ -705,7 +706,7 @@ void WindowImpl::DidNavigate(RenderViewHost* rvh,
   */
 
   NavigationController::LoadCommittedDetails details;
-  bool did_navigate = mController.RendererDidNavigate(
+  bool did_navigate = mController->RendererDidNavigate(
       params, extra_invalidate_flags, &details);
 
   // Update history. Note that this needs to happen after the entry is complete,
@@ -745,16 +746,16 @@ void WindowImpl::UpdateState(RenderViewHost* rvh,
   // the next page. The navigation controller will look up the appropriate
   // NavigationEntry and update it when it is notified via the delegate.
 
-  int entry_index = mController.GetEntryIndexWithPageID(
+  int entry_index = mController->GetEntryIndexWithPageID(
       GetSiteInstance(), page_id);
   if (entry_index < 0)
     return;
-  NavigationEntry* entry = mController.GetEntryAtIndex(entry_index);
+  NavigationEntry* entry = mController->GetEntryAtIndex(entry_index);
 
   if (state == entry->content_state())
     return;  // Nothing to update.
   entry->set_content_state(state);
-  mController.NotifyEntryChanged(entry, entry_index);
+  mController->NotifyEntryChanged(entry, entry_index);
 }
 
 void WindowImpl::UpdateTitle(RenderViewHost* rvh,
@@ -764,7 +765,7 @@ void WindowImpl::UpdateTitle(RenderViewHost* rvh,
   //SetNotWaitingForResponse();
 
   DCHECK(rvh == host());
-  NavigationEntry* entry = mController.GetEntryWithPageID(GetSiteInstance(),
+  NavigationEntry* entry = mController->GetEntryWithPageID(GetSiteInstance(),
                                                             page_id);
   if (!entry || !UpdateTitleForEntry(entry, title))
     return;
@@ -862,9 +863,9 @@ void WindowImpl::DidRedirectProvisionalLoad(
     // should use page_id to lookup in history
     NavigationEntry *entry;
     if (page_id == -1)
-        entry = mController.pending_entry();
+        entry = mController->pending_entry();
     else
-        entry = mController.GetEntryWithPageID(GetSiteInstance(), page_id);
+        entry = mController->GetEntryWithPageID(GetSiteInstance(), page_id);
     if (!entry || entry->url() != source_url)
         return;
     entry->set_url(target_url);

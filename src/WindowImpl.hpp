@@ -300,7 +300,7 @@ private:
 
     gfx::Rect mRect;
 
-    NavigationController mController;
+    NavigationController *mController;
     scoped_refptr<SelectFileDialog> mSelectFileDialog;
 
     std::map<int, WindowImpl*> mNewlyCreatedWindows;
