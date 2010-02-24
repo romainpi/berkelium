@@ -481,12 +481,9 @@ void WindowImpl::OnAddMessageToConsole(
         int32 line_no,
         const std::wstring& source_id)
 {
-    std::wstring msg = StringPrintf(L"\"%ls,\" source: %ls (%d)", message.c_str(),
-                                    source_id.c_str(), line_no);
     if (mDelegate) {
-        std::wstring error(L"Javascript console message from ");
-        error += UTF8ToWide(mCurrentURL.GetOrigin().spec())+L": "+msg;
-        mDelegate->onLoadError(this, WideString::point_to(error));
+        mDelegate->onConsoleMessage(this, WideString::point_to(message),
+                                    WideString::point_to(source_id), line_no);
     }
 }
 
@@ -699,15 +696,12 @@ void WindowImpl::OnCrashedPlugin(const FilePath& plugin_path) {
     }
 #endif
     if (mDelegate) {
-        std::wstring msg(L"Plugin Crashed: ");
-        msg += plugin_name;
-        mDelegate->onLoadError(this, WideString::point_to(msg));
+        mDelegate->onCrashedPlugin(this, WideString::point_to(plugin_name));
     }
 }
 void WindowImpl::OnCrashedWorker(){
     if (mDelegate) {
-        std::wstring msg(L"Crashed Worker!");
-        mDelegate->onLoadError(this, WideString::point_to(msg));
+        mDelegate->onCrashedWorker(this);
     }
 }
 void WindowImpl::OnDidGetApplicationInfo(
@@ -898,12 +892,22 @@ void WindowImpl::RunJavaScriptMessage(
     IPC::Message* reply_msg,
     bool* did_suppress_message)
 {
+    bool success = false;
+    std::wstring promptstr;
+
     if (mDelegate) {
-        std::wstring msg (L"Javascript alert from ");
-        msg += UTF8ToWide(mCurrentURL.GetOrigin().spec())+L": "+message;
-        mDelegate->onLoadError(this, WideString::point_to(msg));
+        std::string frame_url_str (frame_url.spec());
+        WideString prompt = WideString::empty();
+        mDelegate->onScriptAlert(
+            this, WideString::point_to(message),
+            WideString::point_to(default_prompt),
+            URLString::point_to(frame_url_str),
+            flags, success, prompt
+        );
+        prompt.get(promptstr);
+        mDelegate->freeLastScriptAlert(prompt);
     }
-    host()->JavaScriptMessageBoxClosed(reply_msg, false, std::wstring());
+    host()->JavaScriptMessageBoxClosed(reply_msg, success, promptstr);
 }
 
 

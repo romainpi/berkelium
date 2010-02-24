@@ -82,8 +82,18 @@ public:
     virtual void onAddressBarChanged(Window *win, URLString newURL) {}
     virtual void onStartLoading(Window *win, URLString newURL) {}
     virtual void onLoad(Window *win) {}
-    virtual void onLoadError(Window *win, WideString error) {}
+    virtual void onCrashedWorker(Window *win) {}
+    virtual void onCrashedPlugin(Window *win, WideString pluginName) {}
     virtual void onProvisionalLoadError(Window *win, URLString url, int errorCode, bool isMainFrame) {}
+    virtual void onConsoleMessage(Window *win, WideString message, WideString sourceId, int line_no) {}
+    virtual void onScriptAlert(Window *win, WideString message, WideString defaultValue, URLString url, int flags, bool &success, WideString &value) {}
+    /**
+     * Frees resources from the most recent onScriptAlert call, if necessary.
+     * Guaranteed to be called within the span of the same update() call, so
+     * the WindowDelegate can safely use a variable to hold the string instance
+     * while waiting to free it.
+     */
+    virtual void freeLastScriptAlert(WideString lastValue) {}
     virtual void onNavigationRequested(Window *win, URLString newUrl, URLString referrer, bool isNewWindow, bool &cancelDefaultAction) {}
     virtual void onLoadingStateChanged(Window *win, bool isLoading) {}
     virtual void onTitleChanged(Window *win, WideString title) {}
