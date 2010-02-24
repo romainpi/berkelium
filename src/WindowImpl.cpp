@@ -423,26 +423,6 @@ bool WindowImpl::CreateRenderViewForRenderManager(
 }
 
 
-
-// See 'Browser::BeforeUnloadFired' in chrome/browser/browser.cc
-// for an example of how to properly handle beforeUnload and unload
-// in the case of the user closing a whole window.
-/*
-void WindowImpl::BeforeUnloadFiredFromRenderManager(
-    bool proceed,
-    bool* proceed_to_fire_unload)
-{
-    *proceed_to_fire_unload = proceed;
-    if (mDelegate) {
-        if (proceed) {
-            mDelegate->onBeforeUnload(this, proceed_to_fire_unload);
-        } else {
-            mDelegate->onCancelUnload(this);
-        }
-    }
-}
-*/
-
 void WindowImpl::DidStartLoading() {
 
     SetIsLoading(true);
@@ -888,9 +868,34 @@ void WindowImpl::RunFileChooser(bool multiple_files,
 
 void WindowImpl::RequestOpenURL(const GURL& url, const GURL& referrer,
                                  WindowOpenDisposition disposition) {
-    /* if (disposition == NEW_WINDOW) {
-     */
-// if (disposition == CURRENT_TAB)
+  bool isNewWindow = false;
+  bool cancelDefault = false;
+
+  switch (disposition) {
+    case NEW_FOREGROUND_TAB:
+    case NEW_BACKGROUND_TAB:
+    case NEW_POPUP:
+    case NEW_WINDOW:
+      isNewWindow = true;
+      break;
+    default:
+      break;
+  }
+
+  if (mDelegate) {
+    std::wstring urlString, referrerString;
+    UTF8ToWide(url.spec().c_str(), url.spec().length(), &urlString);
+    UTF8ToWide(referrer.spec().c_str(), referrer.spec().length(), &referrerString);
+
+    mDelegate->onNavigationRequested(
+      this,
+      urlString.c_str(), urlString.length(),
+      referrerString.c_str(), referrerString.length(),
+      isNewWindow, cancelDefault
+    );
+  }
+
+  if (!cancelDefault)
     doNavigateTo(url, referrer, NavigationController::NO_RELOAD);
 }
 
