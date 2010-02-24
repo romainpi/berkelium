@@ -253,6 +253,22 @@ void WindowImpl::refresh() {
     doNavigateTo(mCurrentURL, GURL(), NavigationController::RELOAD);
 }
 
+void WindowImpl::goBack() {
+  mController->GoBack();
+}
+
+void WindowImpl::goForward() {
+  mController->GoForward();
+}
+
+bool WindowImpl::canGoBack() const {
+  return mController->CanGoBack();
+}
+
+bool WindowImpl::canGoForward() const {
+  return mController->CanGoForward();
+}
+
 void WindowImpl::SetContainerBounds (const gfx::Rect &rc) {
     mRect = rc;
     RenderWidgetHostView* myview = view();
@@ -976,6 +992,9 @@ void WindowImpl::DidFailProvisionalLoadWithError(
         int error_code,
         const GURL& url,
         bool showing_repost_interstitial) {
+    if (mDelegate) {
+      mDelegate->onProvisionalLoadError(this, url.spec().c_str(), url.spec().length(), error_code, is_main_frame);
+    }
 }
 
 void WindowImpl::DocumentLoadedInFrame() {

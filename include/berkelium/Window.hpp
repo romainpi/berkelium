@@ -210,6 +210,12 @@ public:
     /** Request that the page be reloaded. */
     virtual void refresh()=0;
 
+    virtual void goBack() = 0;
+    virtual void goForward() = 0;
+
+    virtual bool canGoBack() const = 0;
+    virtual bool canGoForward() const = 0;
+
     /** Cut the currently selected data to the clipboard. */
     virtual void cut()=0;
     /** Copy the currently selected data to the clipboard. */

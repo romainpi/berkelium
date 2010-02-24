@@ -88,6 +88,7 @@ public:
     // DocumentLoadedInFrame
     virtual void onLoad(Window *win) {}
     virtual void onLoadError(Window *win, const char* error, size_t errorLength) {}
+    virtual void onProvisionalLoadError(Window *win, const char * url, size_t urlLength, int errorCode, bool isMainFrame) {}
 
     virtual void onBeforeUnload(Window *win, bool *proceed) {}
     virtual void onCancelUnload(Window *win) {}

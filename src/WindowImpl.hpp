@@ -131,6 +131,12 @@ public:
         const GURL &referrerURL,
         NavigationController::ReloadType reload);
 
+    virtual void goBack();
+    virtual void goForward();
+
+    virtual bool canGoBack() const;
+    virtual bool canGoForward() const;
+
     void SetContainerBounds(const gfx::Rect &rc);
     void resize(int width, int height);
 
