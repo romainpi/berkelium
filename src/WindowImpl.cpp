@@ -64,6 +64,7 @@
 namespace Berkelium {
 //WindowImpl temp;
 void WindowImpl::init(SiteInstance*site, int routing_id) {
+    mId = routing_id;
     received_page_title_=false;
     is_crashed_=false;
     mRenderViewHost = RenderViewHostFactory::Create(
@@ -481,6 +482,23 @@ void WindowImpl::UpdateCursor(const WebCursor& cursor) {
     Cursor new_cursor;
 #endif
     if (mDelegate) mDelegate->onCursorUpdated(new_cursor);
+}
+
+void WindowImpl::OnSetCookie(
+  const GURL& url, const GURL& policy_url,
+  const std::string& cookie)
+{
+    if (mDelegate) {
+      std::wstring urlString, policyUrlString, cookieString;
+      UTF8ToWide(url.spec().c_str(), url.spec().length(), &urlString);
+      UTF8ToWide(policy_url.spec().c_str(), policy_url.spec().length(), &policyUrlString);
+      UTF8ToWide(cookie.c_str(), cookie.length(), &cookieString);
+      mDelegate->onSetCookie(
+        this, urlString.c_str(), urlString.length(),
+        policyUrlString.c_str(), policyUrlString.length(),
+        cookieString.c_str(), cookieString.length()
+      );
+    }
 }
 
 /******* RenderViewHostDelegate *******/
@@ -923,8 +941,8 @@ void WindowImpl::RunJavaScriptMessage(
 
 /******* RenderViewHostDelegate::Resource *******/
 
-RenderWidgetHostView* WindowImpl::CreateViewForWidget(RenderWidgetHost*render_widget_host) {
-    RenderWidget *wid = new RenderWidget(this);
+RenderWidgetHostView* WindowImpl::CreateViewForWidget(RenderWidgetHost * render_widget_host) {
+    RenderWidget *wid = new RenderWidget(this, mId);
     wid->setHost(render_widget_host);
     return wid;
 }
@@ -1021,7 +1039,7 @@ void WindowImpl::CreateNewWindow(int route_id, WindowContainerType container_typ
     // reference it.
     //WINDOW_CONTAINER_TYPE_PERSISTENT,
 
-    std::cout<<"Created window "<<route_id<<std::endl;
+    // std::cout<<"Created window "<<route_id<<std::endl;
     mNewlyCreatedWindows.insert(
         std::pair<int, WindowImpl*>(route_id, new WindowImpl(getContext(), route_id)));
 }
@@ -1030,8 +1048,8 @@ void WindowImpl::CreateNewWidget(int route_id, WebKit::WebPopupType popup_type) 
     //WebPopupTypeSelect, // A HTML select (combo-box) popup.
     //WebPopupTypeSuggestion, // An autofill/autocomplete popup.
 
-    std::cout<<"Created widget "<<route_id<<std::endl;
-    RenderWidget* wid = new RenderWidget(this);
+    // std::cout<<"Created widget "<<route_id<<std::endl;
+    RenderWidget* wid = new RenderWidget(this, route_id);
     wid->setHost(new MemoryRenderWidgetHost(this, wid, process(), route_id));
     //wid->set_activatable(activatable); // ???????
     mNewlyCreatedWidgets.insert(
@@ -1041,7 +1059,7 @@ void WindowImpl::ShowCreatedWindow(int route_id,
                                    WindowOpenDisposition disposition,
                                    const gfx::Rect& initial_pos,
                                    bool user_gesture) {
-    std::cout<<"Show Created window "<<route_id<<std::endl;
+    // std::cout<<"Show Created window "<<route_id<<std::endl;
     std::map<int, WindowImpl*>::iterator iter = mNewlyCreatedWindows.find(route_id);
     assert(iter != mNewlyCreatedWindows.end());
     WindowImpl *newwin = iter->second;
@@ -1063,7 +1081,7 @@ void WindowImpl::ShowCreatedWindow(int route_id,
 }
 void WindowImpl::ShowCreatedWidget(int route_id,
                                    const gfx::Rect& initial_pos) {
-    std::cout<<"Show Created widget "<<route_id<<std::endl;
+    // std::cout<<"Show Created widget "<<route_id<<std::endl;
     std::map<int, RenderWidget*>::iterator iter = mNewlyCreatedWidgets.find(route_id);
     assert(iter != mNewlyCreatedWidgets.end());
     RenderWidget *wid = iter->second;
@@ -1200,6 +1218,10 @@ void WindowImpl::UpdatePreferredSize(const gfx::Size&) {
 bool WindowImpl::PreHandleKeyboardEvent(const NativeWebKeyboardEvent& event, bool* is_keyboard_shortcut) {
     *is_keyboard_shortcut = false;
     return false;
+}
+
+int WindowImpl::getId() const {
+  return mId;
 }
 
 }

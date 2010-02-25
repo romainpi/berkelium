@@ -73,7 +73,7 @@ protected:
     /** Construct a completely uninitialized Window -- it will have no backing
      *  renderer or delegate and use a new Context.
      */
-    Window();
+    Window ();
     /** Construct a Window which uses the specified Context for rendering.
      *  \param otherContext an existing rendering Context to use
      */
@@ -147,6 +147,8 @@ public:
      *           at that point
      */
     Widget *getWidgetAtPoint(int xPos, int yPos, bool returnRootIfOutside=false) const;
+
+    virtual int getId() const = 0;
 
     virtual void setTransparent(bool istrans)=0;
 

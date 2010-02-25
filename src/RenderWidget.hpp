@@ -48,11 +48,15 @@ class WindowImpl;
 class RenderWidget : public RenderWidgetHostView, public Widget {
 
 public:
-    RenderWidget(WindowImpl *winImpl);
+    RenderWidget(WindowImpl *winImpl, int id);
     ~RenderWidget();
+
+    int getId() const;
 
     void focus();
     void unfocus();
+    bool hasFocus() const;
+
     void mouseMoved(int xPos, int yPos);
     void mouseButton(uint32 buttonID, bool down);
     void mouseWheel(int xScroll, int yScroll);
@@ -224,6 +228,7 @@ private:
     RenderWidgetHost *mHost;
     bool mFocused;
     BackingStore* mBacking;
+    int mId;
 
     WindowImpl* mWindow;
 

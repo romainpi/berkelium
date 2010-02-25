@@ -188,9 +188,7 @@ public:
         int dx, int dy,
         const Rect &scrollRect) {}
 };
-extern "C" void _chkstk() {}
-#define WIDTH 1024
-#define HEIGHT 768
+
 int main (int argc, char **argv) {
     printf("RUNNING MAIN!\n");
     Berkelium::init();
@@ -238,8 +236,10 @@ int main (int argc, char **argv) {
 #endif
         }
     }
+/*
     char *buffer = new char[WIDTH*HEIGHT*3];
     int retval=Berkelium::renderToBuffer(&buffer[0],WIDTH,HEIGHT);
     delete []buffer;
+*/
     return retval;
 }

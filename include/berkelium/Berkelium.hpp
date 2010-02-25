@@ -42,6 +42,17 @@ enum DepEnforcement;
 }
 namespace Berkelium {
 
+class BERKELIUM_EXPORT ErrorDelegate {
+public:
+    virtual ~ErrorDelegate() {}
+
+    virtual void onPureCall() {}
+    virtual void onInvalidParameter(const wchar_t *expression, const wchar_t *function, const wchar_t *file, unsigned int line) {}
+    virtual void onOutOfMemory() {}
+    virtual void onAssertion(const char *assertMessage) {}
+
+};
+
 /* TODO: Allow forkedProcessHook to be called without requiring the
    library to be initialized/in memory (unless this is a sub-process).
    i.e. an inline function that first searches for "--type=" in argv,
@@ -60,9 +71,9 @@ void BERKELIUM_EXPORT forkedProcessHook(int argc, char **argv);
 void BERKELIUM_EXPORT init();
 void BERKELIUM_EXPORT destroy();
 
-void BERKELIUM_EXPORT update();
+void BERKELIUM_EXPORT setErrorHandler(ErrorDelegate * errorHandler);
 
-int BERKELIUM_EXPORT renderToBuffer(char *buffer, int width, int height);
+void BERKELIUM_EXPORT update();
 
 }
 

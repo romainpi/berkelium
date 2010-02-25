@@ -109,6 +109,8 @@ public:
 
     virtual void setTransparent(bool istrans);
 
+    virtual int getId() const;
+
     virtual void focus();
     virtual void unfocus();
     virtual void mouseMoved(int xPos, int yPos);
@@ -150,6 +152,9 @@ public:
         const std::wstring& message,
         int32 line_no,
         const std::wstring& source_id);
+    void OnSetCookie(
+        const GURL& url, const GURL& policy_url,
+        const std::string& cookie);
 
     void UpdateCursor(const WebCursor& cursor);
 protected:
@@ -325,6 +330,7 @@ private:
 
     GURL mCurrentURL;
     int zIndex;
+    int mId;
 
     int mMouseX;
     int mMouseY;

@@ -55,7 +55,7 @@
 
 namespace Berkelium {
 
-RenderWidget::RenderWidget(WindowImpl *winImpl) {
+RenderWidget::RenderWidget(WindowImpl *winImpl, int id) {
     mFocused = true;
     mBacking = NULL;
     mWindow = winImpl;
@@ -63,6 +63,11 @@ RenderWidget::RenderWidget(WindowImpl *winImpl) {
     mMouseX=mMouseY=0;
     mModifiers=0;
 
+    mId = id;
+}
+
+int RenderWidget::getId() const {
+    return mId;
 }
 
 void RenderWidget::setHost(RenderWidgetHost *host) {
@@ -407,6 +412,10 @@ void RenderWidget::focus() {
 }
 void RenderWidget::unfocus() {
     mHost->Blur();
+}
+
+bool RenderWidget::hasFocus() const {
+    return mFocused;
 }
 
 template<class T>

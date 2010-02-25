@@ -50,6 +50,7 @@ class DnsGlobalInit;
 namespace Berkelium {
 
 class MemoryRenderViewHostFactory;
+class ErrorDelegate;
 
 //singleton class that contains chromium singletons. Not visible outside of Berkelium library core
 class Root:public AutoSingleton<Root> {
@@ -66,6 +67,8 @@ class Root:public AutoSingleton<Root> {
     base::ScopedNSAutoreleasePool mAutoreleasePool;
     HistogramSynchronizer *mHistogramSynchronizer;
     StatisticsRecorder *mStatistics;
+
+    ErrorDelegate *mErrorHandler;
 public:
     Root();
     ~Root();
@@ -73,6 +76,14 @@ public:
 //    void runUntilStopped();
 //    void stopRunning();
     void update();
+
+    void setErrorHandler(ErrorDelegate *errorHandler) {
+        mErrorHandler = errorHandler;
+    }
+
+    ErrorDelegate * getErrorHandler () const {
+        return mErrorHandler;
+    }
 
     ProcessSingleton *getProcessSingleton(){
         return mProcessSingleton;

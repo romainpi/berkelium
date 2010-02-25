@@ -41,8 +41,11 @@ class BERKELIUM_EXPORT Widget {
 public:
     virtual ~Widget() {}
 
+    virtual int getId() const = 0;
+
     virtual void focus()=0;
     virtual void unfocus()=0;
+    virtual bool hasFocus() const = 0;
 
     virtual void mouseMoved(int xPos, int yPos)=0;
     virtual void mouseButton(unsigned int buttonID, bool down)=0;

@@ -177,7 +177,7 @@ void Root::SetUpGLibLogHandler() {
 #endif  // defined(OS_POSIX) && !defined(OS_MACOSX)
 
 
-Root::Root (){
+Root::Root () {
 
     new base::AtExitManager();
 
@@ -275,6 +275,7 @@ Root::Root (){
     mSysMon = new SystemMonitor;
     mTimerMgr = new HighResolutionTimerManager;
     mUIThread = new ChromeThread(ChromeThread::UI, mMessageLoop);
+    mErrorHandler = 0;
 
     //mProcessSingleton= new ProcessSingleton(homedirpath);
     BrowserProcessImpl *browser_process;

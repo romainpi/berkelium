@@ -113,6 +113,13 @@ public:
         int dx, int dy,
         const Rect &scrollRect) {}
 
+    virtual void onSetCookie(
+        Window *win,
+        const wchar_t * url, size_t urlLength,
+        const wchar_t * policyUrl, size_t policyUrlLength,
+        const wchar_t * cookie, size_t cookieLength
+    ) {}
+
     /** Linux only. uses an OpenGL texture.
      * If not using OpenGL, each srcRect will get its own call to 'onPaint'
      * It should be possible to paint plugins directly onto the canvas.
