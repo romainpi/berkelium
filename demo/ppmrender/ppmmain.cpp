@@ -138,7 +138,7 @@ public:
         std::cout << "*** onCrashed "<<mURL<<std::endl;
     }
 
-    virtual void onCreatedWindow(Window *win, Window *newWindow) {
+    virtual void onCreatedWindow(Window *win, Window *newWindow, const Rect &initialRect) {
         std::cout << "*** onCreatedWindow from source "<<mURL<<std::endl;
         newWindow->setDelegate(new TestDelegate);
     }
@@ -213,7 +213,9 @@ int main (int argc, char **argv) {
     win3->navigateTo(url.data(),url.length());
 */
 
-    std::auto_ptr<Window> win4(Window::create());
+    Context *context = Context::create();
+    std::auto_ptr<Window> win4(Window::create(context));
+    delete context;
     win4->resize(800,600);
     win4->setDelegate(new TestDelegate);
     if (argc < 2) {
@@ -241,5 +243,5 @@ int main (int argc, char **argv) {
     int retval=Berkelium::renderToBuffer(&buffer[0],WIDTH,HEIGHT);
     delete []buffer;
 */
-    return retval;
+    return 0;
 }

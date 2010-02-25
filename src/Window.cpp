@@ -38,11 +38,9 @@
 #include "chrome/browser/profile.h"
 
 namespace Berkelium {
-Window* Window::create() {
-    return new WindowImpl(new ContextImpl(Root::getSingleton().getProfile()));
-}
-Window* Window::create(const Context &otherContext) {
-    return new WindowImpl(&otherContext);
+
+Window* Window::create(const Context * context) {
+    return new WindowImpl(context);
 }
 
 Widget *Window::getWidgetAtPoint(int xPos, int yPos, bool returnRootIfOutside) const {

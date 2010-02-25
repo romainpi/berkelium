@@ -36,8 +36,8 @@
 namespace Berkelium {
 
 struct Rect {
-    int mTop;
     int mLeft;
+    int mTop;
     int mWidth;
     int mHeight;
 

@@ -80,17 +80,13 @@ protected:
     Window (const Context*otherContext);
 
 public:
-    /** Create a new Window with all default properties -- a zero sized window
-     *  and a default local web page.
-     */
-    static Window* create();
     /** Create a new Window with all default properties which uses an existing
      *  Context for rendering.  It will be zero sized and use a default local
      *  web page.
-     *  \param otherContext an existing context to use for rendering
+     *  \param context an existing context to use for rendering
      *  \returns a new Window or NULL on failure
      */
-    static Window* create(const Context&otherContext);
+    static Window* create (const Context * context);
 
     virtual ~Window();
 

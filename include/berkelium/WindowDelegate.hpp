@@ -104,7 +104,7 @@ public:
         const Data* content,
         size_t numContents) {}
 
-    virtual void onCreatedWindow(Window *win, Window *newWindow) {}
+    virtual void onCreatedWindow(Window *win, Window *newWindow, const Rect &initialRect) {}
 
     virtual void onPaint(
         Window *win,

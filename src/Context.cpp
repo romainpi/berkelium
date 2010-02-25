@@ -31,18 +31,19 @@
  */
 
 #include "berkelium/Platform.hpp"
+#include "Root.hpp"
 #include "ContextImpl.hpp"
 
 namespace Berkelium {
-
-
 
 Context::Context() {
 }
 Context::~Context() {
 }
 
-
-
+Context * Context::create () {
+  ContextImpl * result = new ContextImpl(Root::getSingleton().getProfile());
+  return result;
+}
 
 }

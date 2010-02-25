@@ -134,6 +134,7 @@ NavigationController::NavigationController(WindowImpl* contents,
           dom_storage_context()->AllocateSessionStorageNamespaceId()),
       pending_reload_(NO_RELOAD) {
   DCHECK(profile_);
+  SetWindowID(SessionID::SessionID());
 }
 
 NavigationController::~NavigationController() {

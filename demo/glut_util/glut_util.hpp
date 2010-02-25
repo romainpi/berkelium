@@ -252,7 +252,9 @@ public:
 
         scroll_buffer = new char[width*height*4];
 
-        bk_window = Berkelium::Window::create();
+        Berkelium::Context *context = Berkelium::Context::create();
+        bk_window = Berkelium::Window::create(context);
+        delete context;
         bk_window->setDelegate(this);
         bk_window->resize(width, height);
     }

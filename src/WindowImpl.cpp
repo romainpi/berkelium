@@ -134,8 +134,7 @@ void WindowImpl::SetIsLoading(bool is_loading) {
     host()->SetIsLoading(is_loading);
 }
 int WindowImpl::GetBrowserWindowID() const {
-    // FIXME!!!!
-    return 0;
+    return mController->window_id().id();
 }
 
 ViewType::Type WindowImpl::GetRenderViewType()const {
@@ -406,6 +405,9 @@ bool WindowImpl::CreateRenderViewForRenderManager(
   RenderWidget* rwh_view =
       static_cast<RenderWidget*>(this->CreateViewForWidget(render_view_host));
 
+  // If we're creating a renderview for a window that was opened by the
+  //  renderer process remotely, calling CreateRenderView will crash the
+  //  renderer by attempting to create a second copy of the window
   if (!remote_view_exists) {
       if (!render_view_host->CreateRenderView(Root::getSingleton().getDefaultRequestContext()))
       return false;
@@ -425,34 +427,11 @@ bool WindowImpl::CreateRenderViewForRenderManager(
 
 
 void WindowImpl::DidStartLoading() {
-
     SetIsLoading(true);
-
-    if (mDelegate) {
-//        mDelegate->onStartLoading(this);
-    }
 }
 void WindowImpl::DidStopLoading() {
-
     SetIsLoading(false);
-
-/*
-    if (mDelegate) {
-        mDelegate->onStopLoading(this);
-    }
-*/
 }
-/*
-void WindowImpl::RenderViewGoneFromRenderManager(
-    RenderViewHost* render_view_host) {
-    if (render_view_host != static_cast<RenderViewHost*>(host())) {
-        return; // The pending destination page crashed: don't care.
-    }
-    if (mDelegate) {
-        mDelegate->onCrashed(this);
-    }
-}
-*/
 
 void WindowImpl::OnAddMessageToConsole(
         const std::wstring& message,
@@ -1040,8 +1019,11 @@ void WindowImpl::CreateNewWindow(int route_id, WindowContainerType container_typ
     //WINDOW_CONTAINER_TYPE_PERSISTENT,
 
     // std::cout<<"Created window "<<route_id<<std::endl;
+    Context * context = getContext();
+    WindowImpl * newWindow = new WindowImpl(context, route_id);
+
     mNewlyCreatedWindows.insert(
-        std::pair<int, WindowImpl*>(route_id, new WindowImpl(getContext(), route_id)));
+        std::pair<int, WindowImpl*>(route_id, newWindow));
 }
 void WindowImpl::CreateNewWidget(int route_id, WebKit::WebPopupType popup_type) {
     //WebPopupTypeNone, // Not a popup.
@@ -1076,7 +1058,12 @@ void WindowImpl::ShowCreatedWindow(int route_id,
     }
 
     if (mDelegate) {
-        mDelegate->onCreatedWindow(this, newwin);
+        Rect rect;
+        rect.mLeft = initial_pos.x();
+        rect.mTop = initial_pos.y();
+        rect.mWidth = initial_pos.width();
+        rect.mHeight = initial_pos.height();
+        mDelegate->onCreatedWindow(this, newwin, rect);
     }
 }
 void WindowImpl::ShowCreatedWidget(int route_id,
