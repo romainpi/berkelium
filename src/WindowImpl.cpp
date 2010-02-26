@@ -253,6 +253,10 @@ void WindowImpl::refresh() {
     doNavigateTo(mCurrentURL, GURL(), NavigationController::RELOAD);
 }
 
+void WindowImpl::stop() {
+  host()->Stop();
+}
+
 void WindowImpl::goBack() {
   mController->GoBack();
 }
@@ -284,6 +288,15 @@ void WindowImpl::SetContainerBounds (const gfx::Rect &rc) {
 void WindowImpl::executeJavascript(const wchar_t *javascript, size_t javascriptLength) {
     if (host()) {
         host()->ExecuteJavascriptInWebFrame(std::wstring(), std::wstring(javascript, javascriptLength));
+    }
+}
+
+void WindowImpl::insertCSS(const wchar_t *css, size_t cssLength, const wchar_t *id, size_t idLength) {
+    if (host()) {
+        std::string cssUtf8, idUtf8;
+        WideToUTF8(css, cssLength, &cssUtf8);
+        WideToUTF8(id, idLength, &idUtf8);
+        host()->InsertCSSInWebFrame(std::wstring(), cssUtf8, idUtf8);
     }
 }
 
@@ -428,9 +441,17 @@ bool WindowImpl::CreateRenderViewForRenderManager(
 
 void WindowImpl::DidStartLoading() {
     SetIsLoading(true);
+
+    if (mDelegate) {
+        mDelegate->onLoadingStateChanged(this, true);
+    }
 }
 void WindowImpl::DidStopLoading() {
     SetIsLoading(false);
+
+    if (mDelegate) {
+        mDelegate->onLoadingStateChanged(this, false);
+    }
 }
 
 void WindowImpl::OnAddMessageToConsole(
@@ -562,6 +583,10 @@ bool WindowImpl::UpdateTitleForEntry(NavigationEntry* entry,
 
     // Don't allow the title to be saved again for explicitly set ones.
     received_page_title_ = explicit_set;
+  }
+
+  if (mDelegate) {
+    mDelegate->onTitleChanged(this, final_title.c_str(), final_title.length());
   }
 
   // Lastly, set the title for the view.

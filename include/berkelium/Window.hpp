@@ -196,7 +196,9 @@ public:
      *  \param javascript pointer to a string containing Javascript code
      *  \param javascriptLength length of the Javascript string
      */
-    virtual void executeJavascript(const wchar_t* javascript, size_t javascriptLength)=0;
+    virtual void executeJavascript (const wchar_t* javascript, size_t javascriptLength) = 0;
+
+    virtual void insertCSS (const wchar_t *css, size_t cssLength, const wchar_t *id, size_t idLength) = 0;
 
     /** Request navigation to a URL.  The URL string is copied so the caller
      *  retains ownership of the string.
@@ -206,7 +208,8 @@ public:
     virtual bool navigateTo(const char *url, size_t urlLength)=0;
 
     /** Request that the page be reloaded. */
-    virtual void refresh()=0;
+    virtual void refresh() = 0;
+    virtual void stop() = 0;
 
     virtual void goBack() = 0;
     virtual void goForward() = 0;

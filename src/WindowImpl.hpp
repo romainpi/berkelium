@@ -98,6 +98,7 @@ public:
     void SetIsLoading(bool is_loading);
 
     void executeJavascript(const wchar_t *javascript, size_t javascriptLength);
+    void insertCSS (const wchar_t *css, size_t cssLength, const wchar_t *id, size_t idLength);
     bool navigateTo(const char* url, size_t urlLength);
 
     Profile *profile() const;
@@ -120,6 +121,7 @@ public:
     virtual void keyEvent(bool pressed, int mods, int vk_code, int scancode);
 
     virtual void refresh();
+    virtual void stop();
     virtual void cut();
     virtual void copy();
     virtual void paste();

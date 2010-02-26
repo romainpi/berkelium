@@ -79,17 +79,14 @@ class BERKELIUM_EXPORT WindowDelegate {
 public:
     virtual ~WindowDelegate() {}
 
-    // DidStartProvisionalLoadForFrame
-    // DidRedirectProvisionalLoad
     virtual void onAddressBarChanged(Window *win, const char* newURL, size_t newURLSize) {}
-
-    // DidStartProvisionalLoadForFrame
     virtual void onStartLoading(Window *win, const char *newURL, size_t newURLSize) {}
-    // DocumentLoadedInFrame
     virtual void onLoad(Window *win) {}
     virtual void onLoadError(Window *win, const char* error, size_t errorLength) {}
     virtual void onProvisionalLoadError(Window *win, const char * url, size_t urlLength, int errorCode, bool isMainFrame) {}
     virtual void onNavigationRequested(Window *win, const wchar_t *newUrl, size_t newUrlLength, const wchar_t *referrer, size_t referrerLength, bool isNewWindow, bool &cancelDefaultAction) {}
+    virtual void onLoadingStateChanged(Window *win, bool isLoading) {}
+    virtual void onTitleChanged(Window *win, const wchar_t *title, size_t titleLength) {}
 
     virtual void onCrashed(Window *win) {}
     virtual void onUnresponsive(Window *win) {}
@@ -120,30 +117,15 @@ public:
         const wchar_t * cookie, size_t cookieLength
     ) {}
 
-    /** Linux only. uses an OpenGL texture.
-     * If not using OpenGL, each srcRect will get its own call to 'onPaint'
-     * It should be possible to paint plugins directly onto the canvas.
-     * If this is not possible, then plugins may be created as widgets with
-     * a negative z-index (i.e. below anything else on the screen).
-
-    virtual void onPaintPluginTexture(
-        Window *win,
-        void* sourceGLTexture,
-        const std::vector<Rect> srcRects, // relative to destRect
-        const Rect &destRect)=0;
-    */
-////////// WIDGET FUNCTIONS //////////
     virtual void onWidgetCreated(Window *win, Widget *newWidget, int zIndex) {}
     virtual void onWidgetDestroyed(Window *win, Widget *newWidget) {}
 
-    // Will be called before the first call to paint.
     virtual void onWidgetResize(
         Window *win,
         Widget *wid,
         int newWidth,
         int newHeight) {}
 
-    // Never called for the main window.
     virtual void onWidgetMove(
         Window *win,
         Widget *wid,
