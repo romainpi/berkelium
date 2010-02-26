@@ -177,7 +177,7 @@ void Root::SetUpGLibLogHandler() {
 #endif  // defined(OS_POSIX) && !defined(OS_MACOSX)
 
 
-Root::Root () {
+Root::Root (const wchar_t * homeDirectory, size_t homeDirectoryLength) {
 
     new base::AtExitManager();
 
@@ -248,17 +248,25 @@ Root::Root () {
     chrome::RegisterPathProvider();
     app::RegisterPathProvider();
     FilePath homedirpath;
-#if defined(OS_WIN)||defined(OS_MACOSX)
-#else
-    {
-        char homeDirPath[128];
-        FilePath tmpPath;
-        file_util::GetTempDir(&tmpPath);
-        sprintf(homeDirPath,"chrome.%d",getpid());
-        tmpPath=tmpPath.Append(homeDirPath);
-        PathService::Override(chrome::DIR_USER_DATA,tmpPath);
-    }
+
+    if (homeDirectory && homeDirectoryLength) {
+        std::wstring homeDirectoryStr((homeDirectory), homeDirectoryLength);
+        FilePath homeDirectoryPath = FilePath::FromWStringHack(homeDirectoryStr);
+        PathService::Override(chrome::DIR_USER_DATA, homeDirectoryPath);
+        PathService::Override(chrome::DIR_LOGS, homeDirectoryPath);
+#if defined(OS_POSIX)
+        PathService::Override(base::DIR_USER_CACHE, homeDirectoryPath);
 #endif
+    } else {
+        FilePath tmpPath;
+        if (file_util::CreateNewTempDirectory("berkeliumyyyy", &tmpPath)) {
+            PathService::Override(chrome::DIR_USER_DATA, tmpPath);
+            PathService::Override(chrome::DIR_LOGS, tmpPath);
+#if defined(OS_POSIX)
+            PathService::Override(base::DIR_USER_CACHE, tmpPath);
+#endif
+        }
+    }
     PathService::Get(chrome::DIR_USER_DATA,&homedirpath);
     bool SINGLE_PROCESS=false;
 #if defined(OS_MACOSX)

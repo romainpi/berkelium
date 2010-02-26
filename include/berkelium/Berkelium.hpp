@@ -68,7 +68,7 @@ void BERKELIUM_EXPORT forkedProcessHook(
 void BERKELIUM_EXPORT forkedProcessHook(int argc, char **argv);
 #endif
 
-void BERKELIUM_EXPORT init();
+void BERKELIUM_EXPORT init(const wchar_t * homeDirectory, size_t homeDirectoryLength);
 void BERKELIUM_EXPORT destroy();
 
 void BERKELIUM_EXPORT setErrorHandler(ErrorDelegate * errorHandler);

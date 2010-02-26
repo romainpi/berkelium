@@ -196,7 +196,7 @@ int main (int argc, char** argv) {
     glutIdleFunc(idle);
 
     // Initialize Berkelium and create a window
-    Berkelium::init();
+    Berkelium::init(NULL, 0);
     bk_texture_window = new GLTextureWindow(WIDTH, HEIGHT);
 
     if (argc < 2) {

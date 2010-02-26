@@ -191,7 +191,7 @@ public:
 
 int main (int argc, char **argv) {
     printf("RUNNING MAIN!\n");
-    Berkelium::init();
+    Berkelium::init(NULL, 0);
     std::string url;
 /*
     std::auto_ptr<Window> win(Window::create());

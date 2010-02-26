@@ -70,7 +70,7 @@ class Root : public AutoSingleton<Root> {
 
     ErrorDelegate *mErrorHandler;
 public:
-    Root();
+    Root(const wchar_t * homeDirectory, size_t homeDirectoryLength);
     ~Root();
 
 //    void runUntilStopped();

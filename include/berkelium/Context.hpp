@@ -44,13 +44,12 @@ class BERKELIUM_EXPORT Context {
     Context();
 
 public:
-
     static Context* create();
 
     virtual ~Context();
-    virtual Context* clone()const=0;
-    virtual ContextImpl *getImpl()=0;
-    virtual const ContextImpl *getImpl()const=0;
+    virtual Context* clone() const = 0;
+    virtual ContextImpl* getImpl() = 0;
+    virtual const ContextImpl* getImpl() const = 0;
 };
 
 }

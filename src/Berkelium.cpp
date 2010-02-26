@@ -621,16 +621,18 @@ void forkedProcessHook(int argc, char **argv)
   logging::CleanupChromeLogging();
 }
 
-void init() {
-    new Root();
+void init (const wchar_t * homeDirectory, size_t homeDirectoryLength) {
+    new Root(
+      homeDirectory, homeDirectoryLength
+    );
 }
-void destroy() {
+void destroy () {
     Root::destroy();
 }
-void update() {
+void update () {
     Root::getSingleton().update();
 }
-void setErrorHandler(ErrorDelegate *errorHandler) {
+void setErrorHandler (ErrorDelegate *errorHandler) {
     Root::getSingleton().setErrorHandler(errorHandler);
 }
 
