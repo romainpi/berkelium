@@ -65,7 +65,6 @@ void MemoryRenderViewHost::OnMessageReceived(const IPC::Message& msg) {
   IPC_BEGIN_MESSAGE_MAP_EX(MemoryRenderViewHost, msg, msg_is_ok)
     IPC_MESSAGE_HANDLER(ViewHostMsg_UpdateRect, Memory_OnMsgUpdateRect)
     IPC_MESSAGE_HANDLER(ViewHostMsg_AddMessageToConsole, Memory_OnAddMessageToConsole)
-    IPC_MESSAGE_HANDLER(ViewHostMsg_SetCookie, Memory_OnSetCookie)
     IPC_MESSAGE_UNHANDLED(RenderViewHost::OnMessageReceived(msg))
   IPC_END_MESSAGE_MAP_EX()
       ;
@@ -81,12 +80,6 @@ void MemoryRenderViewHost::Memory_OnAddMessageToConsole(const std::wstring& mess
                                            int32 line_no,
                                            const std::wstring& source_id) {
     mWindow->OnAddMessageToConsole(message, line_no, source_id);
-}
-
-void MemoryRenderViewHost::Memory_OnSetCookie(
-  const GURL& url, const GURL& policy_url,
-  const std::string& cookie) {
-    mWindow->OnSetCookie(url, policy_url, cookie);
 }
 
 

@@ -110,13 +110,6 @@ public:
         int dx, int dy,
         const Rect &scrollRect) {}
 
-    virtual void onSetCookie(
-        Window *win,
-        const wchar_t * url, size_t urlLength,
-        const wchar_t * policyUrl, size_t policyUrlLength,
-        const wchar_t * cookie, size_t cookieLength
-    ) {}
-
     virtual void onWidgetCreated(Window *win, Widget *newWidget, int zIndex) {}
     virtual void onWidgetDestroyed(Window *win, Widget *newWidget) {}
 

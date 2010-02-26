@@ -484,23 +484,6 @@ void WindowImpl::UpdateCursor(const WebCursor& cursor) {
     if (mDelegate) mDelegate->onCursorUpdated(new_cursor);
 }
 
-void WindowImpl::OnSetCookie(
-  const GURL& url, const GURL& policy_url,
-  const std::string& cookie)
-{
-    if (mDelegate) {
-      std::wstring urlString, policyUrlString, cookieString;
-      UTF8ToWide(url.spec().c_str(), url.spec().length(), &urlString);
-      UTF8ToWide(policy_url.spec().c_str(), policy_url.spec().length(), &policyUrlString);
-      UTF8ToWide(cookie.c_str(), cookie.length(), &cookieString);
-      mDelegate->onSetCookie(
-        this, urlString.c_str(), urlString.length(),
-        policyUrlString.c_str(), policyUrlString.length(),
-        cookieString.c_str(), cookieString.length()
-      );
-    }
-}
-
 /******* RenderViewHostDelegate *******/
 
 RenderViewHostDelegate::View* WindowImpl::GetViewDelegate() {

@@ -107,9 +107,6 @@ public:
         int32 line_no,
         const std::wstring& source_id);
     virtual void OnMessageReceived(const IPC::Message& msg);
-    virtual void Memory_OnSetCookie(
-        const GURL& url, const GURL& policy_url,
-        const std::string& cookie);
 };
 
 class MemoryRenderViewHostFactory : public RenderViewHostFactory {
