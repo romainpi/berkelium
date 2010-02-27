@@ -190,6 +190,9 @@ public:
      */
     virtual void resize(int width, int height)=0;
 
+    // -1 to zoom out, 0 to reset zoom, 1 to zoom in
+    virtual void adjustZoom (int mode)=0;
+
     /** Execute Javascript in the context of the Window. This is equivalent to
      *  executing Javascript in the address bar of a regular browser. The
      *  javascript is copied so the caller retains ownership of the string.

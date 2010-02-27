@@ -269,6 +269,10 @@ void WindowImpl::stop() {
   host()->Stop();
 }
 
+void WindowImpl::adjustZoom(int mode) {
+  host()->Zoom((PageZoom::Function)mode);
+}
+
 void WindowImpl::goBack() {
   mController->GoBack();
 }

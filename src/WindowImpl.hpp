@@ -121,6 +121,8 @@ public:
     virtual void textEvent(const wchar_t *evt, size_t evtLength);
     virtual void keyEvent(bool pressed, int mods, int vk_code, int scancode);
 
+    virtual void adjustZoom (int mode);
+
     virtual void refresh();
     virtual void stop();
     virtual void cut();
