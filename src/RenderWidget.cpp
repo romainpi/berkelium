@@ -210,6 +210,12 @@ void RenderWidget::Destroy(){
   // Tells the View that the tooltip text for the current mouse position over
   // the page has changed.
 void RenderWidget::SetTooltipText(const std::wstring& tooltip_text){
+    // Chromium absolutely spams us with this event even when the text hasn't changed
+    if (mTooltip.compare(tooltip_text) != 0) {
+      mTooltip = tooltip_text;
+      if (mWindow)
+        mWindow->TooltipChanged(tooltip_text);
+    }
 }
 
   // Notifies the View that the renderer text selection has changed.

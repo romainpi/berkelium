@@ -87,6 +87,7 @@ public:
     virtual void onNavigationRequested(Window *win, const wchar_t *newUrl, size_t newUrlLength, const wchar_t *referrer, size_t referrerLength, bool isNewWindow, bool &cancelDefaultAction) {}
     virtual void onLoadingStateChanged(Window *win, bool isLoading) {}
     virtual void onTitleChanged(Window *win, const wchar_t *title, size_t titleLength) {}
+    virtual void onTooltipChanged(Window *win, const wchar_t *text, size_t textLength) {}
 
     virtual void onCrashed(Window *win) {}
     virtual void onUnresponsive(Window *win) {}

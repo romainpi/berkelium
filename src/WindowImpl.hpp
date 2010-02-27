@@ -96,6 +96,7 @@ public:
     // |details| is used to provide details on the load that just finished
     // (but can be null if not applicable). Can be overridden.
     void SetIsLoading(bool is_loading);
+    void TooltipChanged(const std::wstring& tooltipText);
 
     void executeJavascript(const wchar_t *javascript, size_t javascriptLength);
     void insertCSS (const wchar_t *css, size_t cssLength, const wchar_t *id, size_t idLength);

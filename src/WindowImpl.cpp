@@ -188,17 +188,29 @@ void WindowImpl::unfocus() {
 }
 
 void WindowImpl::mouseMoved(int xPos, int yPos) {
+    int oldX = mMouseX, oldY = mMouseY;
     mMouseX = xPos;
     mMouseY = yPos;
+    bool notifiedOld = false, notifiedNew = false;
+
     for (FrontToBackIter iter = frontIter(); iter != frontEnd(); ++iter) {
         Rect r = (*iter)->getRect();
-        (*iter)->mouseMoved(xPos - r.left(), yPos - r.top());
+        if (!notifiedOld && r.contains(oldX, oldY)) {
+            notifiedOld = true;
+            (*iter)->mouseMoved(xPos - r.left(), yPos - r.top());
+        } else if (!notifiedNew && r.contains(xPos, yPos)) {
+            notifiedNew = true;
+            (*iter)->mouseMoved(xPos - r.left(), yPos - r.top());
+        }
+
+        if (notifiedOld && notifiedNew)
+            break;
     }
 }
 void WindowImpl::mouseButton(unsigned int buttonID, bool down) {
-    FrontToBackIter iter = frontIter();
-    if (iter != frontEnd()) {
-        (*iter)->mouseButton(buttonID, down);
+    Widget *wid = getWidgetAtPoint(mMouseX, mMouseY, true);
+    if (wid) {
+        (wid)->mouseButton(buttonID, down);
     }
 }
 void WindowImpl::mouseWheel(int xScroll, int yScroll) {
@@ -304,6 +316,12 @@ bool WindowImpl::navigateTo(const char *url, size_t urlLength) {
     this->mCurrentURL = GURL(std::string(url,urlLength));
     return doNavigateTo(this->mCurrentURL, GURL(), NavigationController::NO_RELOAD);
 }
+
+void WindowImpl::TooltipChanged(const std::wstring& tooltipText) {
+   if (mDelegate)
+       mDelegate->onTooltipChanged(this, tooltipText.c_str(), tooltipText.length());
+}
+
 bool WindowImpl::doNavigateTo(
         const GURL &newURL,
         const GURL &referrerURL,

@@ -229,6 +229,7 @@ private:
     bool mFocused;
     BackingStore* mBacking;
     int mId;
+    std::wstring mTooltip;
 
     WindowImpl* mWindow;
 
