@@ -570,8 +570,13 @@ bool WindowImpl::UpdateTitleForEntry(NavigationEntry* entry,
     explicit_set = true;
   }
 
-  if (final_title == UTF16ToWideHack(entry->title()))
+  if (final_title == UTF16ToWideHack(entry->title())) {
+    if (mDelegate) {
+      mDelegate->onTitleChanged(this, final_title.c_str(), final_title.length());
+    }
+
     return false;  // Nothing changed, don't bother.
+  }
 
   entry->set_title(WideToUTF16Hack(final_title));
 
