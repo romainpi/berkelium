@@ -65,7 +65,6 @@ void WindowImpl::init(SiteInstance*site, int routing_id) {
         routing_id);
     host()->AllowBindings(
         BindingsPolicy::DOM_UI);
-    CreateRenderViewForRenderManager(host());
 }
 
 WindowImpl::WindowImpl(const Context*otherContext):
@@ -77,6 +76,7 @@ WindowImpl::WindowImpl(const Context*otherContext):
     mCurrentURL = GURL("about:blank");
     zIndex = 0;
     init(mContext->getImpl()->getSiteInstance(), MSG_ROUTING_NONE);
+    CreateRenderViewForRenderManager(host(), false);
 }
 WindowImpl::WindowImpl(const Context*otherContext, int routing_id):
         Window(otherContext)
@@ -87,6 +87,7 @@ WindowImpl::WindowImpl(const Context*otherContext, int routing_id):
     mCurrentURL = GURL("about:blank");
     zIndex = 0;
     init(mContext->getImpl()->getSiteInstance(), routing_id);
+    CreateRenderViewForRenderManager(host(), true);
 }
 WindowImpl::~WindowImpl() {
     RenderViewHost* render_view_host = mRenderViewHost;
@@ -374,13 +375,16 @@ void WindowImpl::onWidgetDestroyed(Widget *wid) {
 /******* RenderViewHostManager::Delegate *******/
 
 bool WindowImpl::CreateRenderViewForRenderManager(
-    RenderViewHost* render_view_host) {
+    RenderViewHost* render_view_host,
+    bool remote_view_exists) {
 
   RenderWidget* rwh_view =
       static_cast<RenderWidget*>(this->CreateViewForWidget(render_view_host));
 
-  if (!render_view_host->CreateRenderView())
-    return false;
+  if (!remote_view_exists) {
+    if (!render_view_host->CreateRenderView())
+      return false;
+  }
 
   // Now that the RenderView has been created, we need to tell it its size.
   rwh_view->SetSize(this->GetContainerSize());
@@ -903,11 +907,14 @@ void WindowImpl::DocumentLoadedInFrame() {
 
 
 /******* RenderViewHostDelegate::View *******/
-void WindowImpl::CreateNewWindow(int route_id,
-                                 base::WaitableEvent* modal_dialog_event) {
+void WindowImpl::CreateNewWindow(int route_id) {
     std::cout<<"Created window "<<route_id<<std::endl;
     mNewlyCreatedWindows.insert(
         std::pair<int, WindowImpl*>(route_id, new WindowImpl(getContext(), route_id)));
+}
+void WindowImpl::CreateNewWindow(int route_id,
+                                 base::WaitableEvent* modal_dialog_event) {
+    WindowImpl::CreateNewWindow(route_id);
 }
 void WindowImpl::CreateNewWidget(int route_id, bool activatable) {
     std::cout<<"Created widget "<<route_id<<std::endl;

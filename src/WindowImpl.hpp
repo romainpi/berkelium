@@ -146,7 +146,9 @@ public:
 protected:
     ContextImpl *getContextImpl() const;
 
-    bool CreateRenderViewForRenderManager(RenderViewHost* render_view_host);
+    bool CreateRenderViewForRenderManager(
+        RenderViewHost* render_view_host,
+        bool remote_view_exists);
 
 protected: /******* RenderViewHostDelegate *******/
 
@@ -170,7 +172,6 @@ protected: /******* RenderViewHostDelegate *******/
     virtual bool IsReservedAccelerator(const NativeWebKeyboardEvent&) {return false;}
     virtual void DidDisplayInsecureContent(){}
     virtual void DidRunInsecureContent(const std::string&){}
-    virtual void CreateNewWindow(int){}
     virtual void DidStartLoading(RenderViewHost* render_view_host);
     virtual void DidStopLoading(RenderViewHost* render_view_host);
 
@@ -253,6 +254,7 @@ protected: /******* RenderViewHostDelegate::Resource *******/
 protected: /******* RenderViewHostDelegate::View *******/
     virtual void CreateNewWindow(int route_id,
                                  base::WaitableEvent* modal_dialog_event);
+    virtual void CreateNewWindow(int route_id);
     virtual void CreateNewWidget(int route_id, bool activatable);
     virtual void ShowCreatedWindow(int route_id,
                                    WindowOpenDisposition disposition,
