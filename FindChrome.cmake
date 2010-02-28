@@ -122,9 +122,9 @@ ENDIF(NOT CHROMIUM_ISSCONS)
 SET(CHROMIUMLIBS ${CHROMIUMLDFLAGS} ${CHROMIUM_TPLIBS}  dl m common browser debugger renderer utility printing app_base base icui18n icuuc icudata skia net googleurl sdch modp_b64 v8_snapshot v8_base glue pcre wtf webkit webcore media ffmpeg hunspell plugin  appcache ipc worker database common_constants npGoogleNaClPluginChrome nonnacl_srpc platform sel sel_ldr_launcher nonnacl_util_chrome nrd_xfer gio expiration nacl)
 SET(CHROMIUM_ARCHFLAGS)
 # Flags that affect both compiling and linking
-SET(CHROMIUM_CLIBFLAGS ${CHROMIUM_ARCHFLAGS} -fvisibility=hidden -fvisibility-inlines-hidden -fPIC -pthread -Wall -fno-rtti)
+SET(CHROMIUM_CLIBFLAGS ${CHROMIUM_ARCHFLAGS} -fvisibility=hidden -fvisibility-inlines-hidden -fPIC -pthread -fno-rtti)
 SET(CHROME_INCLUDE_DIRS ${GENINCLUDES} ${CHROMIUMDIR}/src/ ${CHROMIUMDIR}/src/third_party/npapi ${CHROMIUMDIR}/src/third_party/WebKit/JavaScriptCore ${CHROMIUMDIR}/src/third_party/icu/public/common ${CHROMIUMDIR}/src/skia/config ${CHROMIUMDIR}/src/third_party/skia/include/core ${CHROMIUMDIR}/src/webkit/api/public ${CHROMIUMDIR}/src/third_party/WebKit/WebCore/platform/text)
-SET(CHROME_CFLAGS ${CHROMIUM_DEBUGFLAGS} ${CHROMIUM_CLIBFLAGS} ${CHROMIUM_PLAT_CFLAGS} -Wall -DNVALGRIND -D_REENTRANT -D__STDC_FORMAT_MACROS -DCHROMIUM_BUILD -DU_STATIC_IMPLEMENTATION -g )
+SET(CHROME_CFLAGS ${CHROMIUM_DEBUGFLAGS} ${CHROMIUM_CLIBFLAGS} ${CHROMIUM_PLAT_CFLAGS} -Wall -Wno-non-virtual-dtor -DNVALGRIND -D_REENTRANT -D__STDC_FORMAT_MACROS -DCHROMIUM_BUILD -DU_STATIC_IMPLEMENTATION -g )
 
 SET(CHROME_LIBRARIES ${CHROMIUM_START_GROUP} ${CHROMIUM_PLAT_LDFLAGS} ${CHROMIUMLIBS} ${CHROMIUM_END_GROUP})
 SET(CHROME_LDFLAGS -g -shared ${CHROMIUM_CLIBFLAGS})
