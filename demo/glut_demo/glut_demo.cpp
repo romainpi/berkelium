@@ -41,6 +41,8 @@
 #include "berkelium/WindowDelegate.hpp"
 #include "berkelium/Context.hpp"
 
+#include <glut_util/glut_util.hpp>
+
 #include <string>
 #include <cmath>
 #include <cstring>
@@ -58,16 +60,7 @@
 using namespace Berkelium;
 
 // Some global data:
-// The Berkelium window, i.e. our web page
-Window* bk_window = NULL;
-// The delegate that handles window events
-WindowDelegate* bk_delegate = NULL;
-// Storage for a texture
-unsigned int web_texture = 0;
-// Bool indicating when we need to refresh the entire image
-bool needs_full_refresh = true;
-// Buffer used to store data for scrolling
-char* scroll_buffer = NULL;
+GLTextureWindow* bk_texture_window = NULL;
 
 // Current angle for animations
 float angle = 0;
@@ -78,16 +71,10 @@ float angle = 0;
 
 
 void loadRandomPage() {
-    if (bk_window == NULL)
+    if (bk_texture_window == NULL)
         return;
 
-    // Black out the page
-    unsigned char black = 0;
-    glBindTexture(GL_TEXTURE_2D, web_texture);
-    glTexImage2D(GL_TEXTURE_2D, 0, 3, 1, 1, 0,
-        GL_LUMINANCE, GL_UNSIGNED_BYTE, &black);
-
-    glutPostRedisplay();
+    bk_texture_window->clear();
 
     // And navigate to a new one
 #define NUM_SITES 4
@@ -98,95 +85,10 @@ void loadRandomPage() {
         std::string("http://slashdot.org")
     };
 
-    needs_full_refresh = true;
-
     unsigned int x = rand() % NUM_SITES;
     std::string url = sites[x];
-    bk_window->navigateTo(url.data(), url.length());
+    bk_texture_window->getWindow()->navigateTo(url.data(), url.length());
 }
-
-class GLUTDelegate : public WindowDelegate {
-public:
-    virtual void onPaint(Window *wini, const unsigned char *bitmap_in, const Rect &bitmap_rect,
-        int dx, int dy, const Rect &scroll_rect) {
-
-        glBindTexture(GL_TEXTURE_2D, web_texture);
-
-        // If we've reloaded the page and need a full update, ignore updates
-        // until a full one comes in.  This handles out of date updates due to
-        // delays in event processing.
-        if (needs_full_refresh) {
-            if (bitmap_rect.left() != 0 ||
-                bitmap_rect.top() != 0 ||
-                bitmap_rect.right() != WIDTH ||
-                bitmap_rect.bottom() != HEIGHT) {
-                return;
-            }
-
-            glTexImage2D(GL_TEXTURE_2D, 0, 3, WIDTH, HEIGHT, 0,
-                GL_BGRA, GL_UNSIGNED_BYTE, bitmap_in);
-            glutPostRedisplay();
-            needs_full_refresh = false;
-            return;
-        }
-
-
-        // Now, we first handle scrolling. We need to do this first since it
-        // requires shifting existing data, some of which will be overwritten by
-        // the regular dirty rect update.
-        if (dx != 0 || dy != 0) {
-            // scroll_rect contains the Rect we need to move
-            // First we figure out where the the data is moved to by translating it
-            Berkelium::Rect scrolled_rect = scroll_rect.translate(-dx, -dy);
-            // Next we figure out where they intersect, giving the scrolled
-            // region
-            Berkelium::Rect scrolled_shared_rect = scroll_rect.intersect(scrolled_rect);
-            // Only do scrolling if they have non-zero intersection
-            if (scrolled_shared_rect.width() > 0 && scrolled_shared_rect.height() > 0) {
-                // And the scroll is performed by moving shared_rect by (dx,dy)
-                Berkelium::Rect shared_rect = scrolled_shared_rect.translate(dx, dy);
-
-                // Copy the data out of the texture
-                glGetTexImage(
-                    GL_TEXTURE_2D, 0,
-                    GL_BGRA, GL_UNSIGNED_BYTE,
-                    scroll_buffer
-                );
-
-                // Annoyingly, OpenGL doesn't provide convenient primitives, so
-                // we manually copy out the region to the beginning of the
-                // buffer
-                int wid = scrolled_shared_rect.width();
-                int hig = scrolled_shared_rect.height();
-                for(int jj = 0; jj < hig; jj++) {
-                    memcpy(
-                        scroll_buffer + (jj*wid * 4),
-                        scroll_buffer + ((scrolled_shared_rect.top()+jj)*WIDTH + scrolled_shared_rect.left()) * 4,
-                        wid*4
-                    );
-                }
-
-                // And finally, we push it back into the texture in the right
-                // location
-                glTexSubImage2D(GL_TEXTURE_2D, 0,
-                    shared_rect.left(), shared_rect.top(),
-                    shared_rect.width(), shared_rect.height(),
-                    GL_BGRA, GL_UNSIGNED_BYTE, scroll_buffer
-                );
-            }
-        }
-
-        // Finally, we perform the main update, just copying the rect that is
-        // marked as dirty but not from scrolled data.
-        glTexSubImage2D(GL_TEXTURE_2D, 0,
-            bitmap_rect.left(), bitmap_rect.top(),
-            bitmap_rect.width(), bitmap_rect.height(),
-            GL_BGRA, GL_UNSIGNED_BYTE, bitmap_in
-        );
-
-        glutPostRedisplay();
-    }
-};
 
 void display( void )
 {
@@ -200,13 +102,17 @@ void display( void )
     glRotatef(angle*2.f, 0.f, 0.f, 1.f);
 
     glColor3f(1.f, 1.f, 1.f);
-    glBindTexture(GL_TEXTURE_2D, web_texture);
+
+    bk_texture_window->bind();
+
     glBegin(GL_QUADS);
     glTexCoord2f(0.f, 0.f); glVertex3f(-1.f, -1.f, 0.f);
     glTexCoord2f(0.f, 1.f); glVertex3f(-1.f,  1.f, 0.f);
     glTexCoord2f(1.f, 1.f); glVertex3f( 1.f,  1.f, 0.f);
     glTexCoord2f(1.f, 0.f); glVertex3f( 1.f, -1.f, 0.f);
     glEnd();
+
+    bk_texture_window->bind();
 
     glPopMatrix();
 
@@ -232,13 +138,8 @@ void reshape( int w, int h )
 void keyboard( unsigned char key, int x, int y )
 {
     if (key == 27 || key == 'q') { // ESC
-        delete bk_window;
-        delete bk_delegate;
-
+        delete bk_texture_window;
         Berkelium::destroy();
-
-        delete scroll_buffer;
-
         exit(0);
     }
     else if (key == 'n' || key == ' ') {
@@ -250,13 +151,13 @@ void keyboard( unsigned char key, int x, int y )
 
 void special_keyboard(int key, int x, int y) {
     if (key == GLUT_KEY_LEFT)
-        bk_window->mouseWheel(20, 0);
+        bk_texture_window->getWindow()->mouseWheel(20, 0);
     else if (key == GLUT_KEY_RIGHT)
-        bk_window->mouseWheel(-20, 0);
+        bk_texture_window->getWindow()->mouseWheel(-20, 0);
     else if (key == GLUT_KEY_UP)
-        bk_window->mouseWheel(0, 20);
+        bk_texture_window->getWindow()->mouseWheel(0, 20);
     else if (key == GLUT_KEY_DOWN)
-        bk_window->mouseWheel(0, -20);
+        bk_texture_window->getWindow()->mouseWheel(0, -20);
 
     glutPostRedisplay();
 }
@@ -297,20 +198,9 @@ int main (int argc, char** argv) {
     glutSpecialFunc(special_keyboard);
     glutIdleFunc(idle);
 
-    // Create texture to hold rendered view
-    glGenTextures(1, &web_texture);
-    glBindTexture(GL_TEXTURE_2D, web_texture);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-
     // Initialize Berkelium and create a window
     Berkelium::init();
-    bk_window = Window::create();
-    bk_delegate = new GLUTDelegate;
-    bk_window->setDelegate( bk_delegate );
-    bk_window->resize(WIDTH, HEIGHT);
-
-    scroll_buffer = new char[WIDTH*HEIGHT*4];
+    bk_texture_window = new GLTextureWindow(WIDTH, HEIGHT);
 
     loadRandomPage();
 

@@ -114,12 +114,15 @@ IF(CHROME_FOUND)
       )
   ENDIF()
 
+  # demo directory, so we can share some implementation between demos
+  SET(DEMO_DIR ${BERKELIUM_TOP_LEVEL}/demo)
+
   # glut_demo -- demo app
   FIND_PACKAGE(OpenGL)
   FIND_PACKAGE(GLUT)
   IF(OPENGL_FOUND AND GLUT_FOUND)
     # 2.4 Compatibility requires global include directory instead of target specific
-    INCLUDE_DIRECTORIES(AFTER ${OPENGL_INCLUDE_DIR} ${GLUT_INCLUDE_DIR})
+    INCLUDE_DIRECTORIES(AFTER ${OPENGL_INCLUDE_DIR} ${GLUT_INCLUDE_DIR} ${DEMO_DIR})
 
     ADD_EXECUTABLE(glut_demo ${BERKELIUM_TOP_LEVEL}/demo/glut_demo/glut_demo.cpp)
     TARGET_LINK_LIBRARIES(glut_demo -L. debug liblibberkelium_d${CHROMIUM_DYLIB_EXT} optimized liblibberkelium${CHROMIUM_DYLIB_EXT} )
