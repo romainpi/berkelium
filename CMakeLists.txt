@@ -100,9 +100,12 @@ IF(CHROME_FOUND)
   TARGET_LINK_LIBRARIES(berkelium -L. debug liblibberkelium_d${CHROMIUM_DYLIB_EXT} optimized liblibberkelium${CHROMIUM_DYLIB_EXT} )
   ADD_DEPENDENCIES(berkelium libberkelium)
 
+  # Useful values for setting up demo apps
+  SET(BERKELIUM_LINK_LIBS -L. debug liblibberkelium_d${CHROMIUM_DYLIB_EXT} optimized liblibberkelium${CHROMIUM_DYLIB_EXT} )
+
   # ppmrender -- demo app
   ADD_EXECUTABLE(ppmrender ${BERKELIUM_TOP_LEVEL}/demo/ppmrender/ppmmain.cpp)
-  TARGET_LINK_LIBRARIES(ppmrender -L. debug liblibberkelium_d${CHROMIUM_DYLIB_EXT} optimized liblibberkelium${CHROMIUM_DYLIB_EXT} )
+  TARGET_LINK_LIBRARIES(ppmrender ${BERKELIUM_LINK_LIBS})
   SET_TARGET_PROPERTIES(ppmrender PROPERTIES LINK_FLAGS "${BERKELIUM_LDFLAGS}")
   ADD_DEPENDENCIES(ppmrender libberkelium)
   IF(APPLE)
@@ -117,21 +120,41 @@ IF(CHROME_FOUND)
   # demo directory, so we can share some implementation between demos
   SET(DEMO_DIR ${BERKELIUM_TOP_LEVEL}/demo)
 
-  # glut_demo -- demo app
+  # GL Demos
   FIND_PACKAGE(OpenGL)
   FIND_PACKAGE(GLUT)
   IF(OPENGL_FOUND AND GLUT_FOUND)
     # 2.4 Compatibility requires global include directory instead of target specific
     INCLUDE_DIRECTORIES(AFTER ${OPENGL_INCLUDE_DIR} ${GLUT_INCLUDE_DIR} ${DEMO_DIR})
+  ENDIF()
 
+  # glut_demo -- demo app
+  IF(OPENGL_FOUND AND GLUT_FOUND)
     ADD_EXECUTABLE(glut_demo ${BERKELIUM_TOP_LEVEL}/demo/glut_demo/glut_demo.cpp)
-    TARGET_LINK_LIBRARIES(glut_demo -L. debug liblibberkelium_d${CHROMIUM_DYLIB_EXT} optimized liblibberkelium${CHROMIUM_DYLIB_EXT} )
+    TARGET_LINK_LIBRARIES(glut_demo ${BERKELIUM_LINK_LIBS})
     SET_TARGET_PROPERTIES(glut_demo PROPERTIES LINK_FLAGS "${BERKELIUM_LDFLAGS}")
     TARGET_LINK_LIBRARIES(glut_demo ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES})
     ADD_DEPENDENCIES(glut_demo libberkelium)
     IF(APPLE)
       ADD_CHROME_APP(
         APP glut_demo
+        LINKS
+        ${CMAKE_CURRENT_BINARY_DIR}/libplugin_carbon_interpose.dylib
+        ${CMAKE_CURRENT_BINARY_DIR}/berkelium
+        )
+    ENDIF()
+  ENDIF()
+
+  # glut_input -- glut demo app which also handles input
+  IF(OPENGL_FOUND AND GLUT_FOUND)
+    ADD_EXECUTABLE(glut_input ${BERKELIUM_TOP_LEVEL}/demo/glut_input/glut_input.cpp)
+    TARGET_LINK_LIBRARIES(glut_input ${BERKELIUM_LINK_LIBS})
+    SET_TARGET_PROPERTIES(glut_input PROPERTIES LINK_FLAGS "${BERKELIUM_LDFLAGS}")
+    TARGET_LINK_LIBRARIES(glut_input ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES})
+    ADD_DEPENDENCIES(glut_input libberkelium)
+    IF(APPLE)
+      ADD_CHROME_APP(
+        APP glut_input
         LINKS
         ${CMAKE_CURRENT_BINARY_DIR}/libplugin_carbon_interpose.dylib
         ${CMAKE_CURRENT_BINARY_DIR}/berkelium

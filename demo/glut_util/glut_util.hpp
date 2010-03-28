@@ -88,7 +88,6 @@ bool mapOnPaintToTexture(
 
         glTexImage2D(GL_TEXTURE_2D, 0, 3, dest_texture_width, dest_texture_height, 0,
             GL_BGRA, GL_UNSIGNED_BYTE, bitmap_in);
-        glutPostRedisplay();
         ignore_partial = false;
         return true;
     }
@@ -149,7 +148,7 @@ bool mapOnPaintToTexture(
 
     glBindTexture(GL_TEXTURE_2D, 0);
 
-    glutPostRedisplay();
+    return true;
 }
 
 
@@ -193,8 +192,6 @@ public:
             GL_LUMINANCE, GL_UNSIGNED_BYTE, &black);
 
         needs_full_refresh = true;
-
-        glutPostRedisplay();
     }
 
     void bind() {
