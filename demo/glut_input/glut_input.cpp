@@ -66,24 +66,16 @@ GLTextureWindow* bk_texture_window = NULL;
 #define WIDTH 512
 #define HEIGHT 512
 
+unsigned int win_width = WIDTH;
+unsigned int win_height = HEIGHT;
 
-void loadRandomPage() {
+void loadGoogle() {
     if (bk_texture_window == NULL)
         return;
 
     bk_texture_window->clear();
 
-    // And navigate to a new one
-#define NUM_SITES 4
-    static std::string sites[NUM_SITES] = {
-        std::string("http://berkelium.org"),
-        std::string("http://google.com"),
-        std::string("http://xkcd.com"),
-        std::string("http://slashdot.org")
-    };
-
-    unsigned int x = rand() % NUM_SITES;
-    std::string url = sites[x];
+    std::string url("http://www.google.com");
     bk_texture_window->getWindow()->navigateTo(url.data(), url.length());
 
     glutPostRedisplay();
@@ -91,7 +83,6 @@ void loadRandomPage() {
 
 void display( void )
 {
-    printf("x\n");
     glClear( GL_COLOR_BUFFER_BIT );
 
     glColor3f(1.f, 1.f, 1.f);
@@ -112,6 +103,9 @@ void display( void )
 
 void reshape( int w, int h )
 {
+    win_width = w;
+    win_height = h;
+
     glClearColor( .3, .3, .3, 1 );
 
     glEnable(GL_TEXTURE_2D);
@@ -128,13 +122,27 @@ void reshape( int w, int h )
 
 void keyboard( unsigned char key, int x, int y )
 {
-    if (key == 27 || key == 'q') { // ESC
+    if (key == 27) { // ESC
         delete bk_texture_window;
         Berkelium::destroy();
         exit(0);
     }
-    else if (key == 'n' || key == ' ') {
-        loadRandomPage();
+
+    // Some keys that come through this are actually special keys, despite being
+    // represented as ASCII characters.
+    if (isASCIISpecialToBerkelium(key)) {
+        bool pressed = true;
+        int wvmods = mapGLUTModsToBerkeliumMods(glutGetModifiers());
+        int vk_code = key;
+        int scancode = 0;
+
+        bk_texture_window->getWindow()->keyEvent(pressed, wvmods, vk_code, scancode);
+    }
+    else { // Regular text can be sent via textEvent
+        wchar_t outchars[2];
+        outchars[0] = key;
+        outchars[1] = 0;
+        bk_texture_window->getWindow()->textEvent(outchars,1);
     }
 
     glutPostRedisplay();
@@ -149,8 +157,54 @@ void special_keyboard(int key, int x, int y) {
         bk_texture_window->getWindow()->mouseWheel(0, 20);
     else if (key == GLUT_KEY_DOWN)
         bk_texture_window->getWindow()->mouseWheel(0, -20);
+    else {
+        bool pressed = true;
+        int wvmods = mapGLUTModsToBerkeliumMods(glutGetModifiers());
+        int vk_code = mapGLUTKeyToBerkeliumKey(key);
+        int scancode = 0;
+
+        bk_texture_window->getWindow()->keyEvent(pressed, wvmods, vk_code, scancode);
+    }
 
     glutPostRedisplay();
+}
+
+void mouse(int button, int state, int x, int y) {
+    unsigned int tex_coord_x = mapGLUTCoordToTexCoord(x, win_width, WIDTH);
+    unsigned int tex_coord_y = mapGLUTCoordToTexCoord(y, win_height, HEIGHT);
+
+    // Make sure Berkelium knows the mouse has moved over the where the event is happening
+    bk_texture_window->getWindow()->mouseMoved(tex_coord_x, tex_coord_y);
+
+// GLUT can generate these buttons, but doesn't define them
+#define _GLUT_SCROLL_UP_BUTTON 3
+#define _GLUT_SCROLL_DOWN_BUTTON 4
+
+    // And figure out precisely what to inject
+    if (button == GLUT_LEFT_BUTTON || button == GLUT_MIDDLE_BUTTON || button == GLUT_RIGHT_BUTTON) {
+        bk_texture_window->getWindow()->mouseButton(
+            button,
+            (state == GLUT_DOWN)
+        );
+    }
+    else if (button == _GLUT_SCROLL_UP_BUTTON) {
+        bk_texture_window->getWindow()->mouseWheel(0, 20);
+    }
+    else if (button == _GLUT_SCROLL_DOWN_BUTTON) {
+        bk_texture_window->getWindow()->mouseWheel(0, -20);
+    }
+}
+
+void motion(int x, int y) {
+    unsigned int tex_coord_x = mapGLUTCoordToTexCoord(x, win_width, WIDTH);
+    unsigned int tex_coord_y = mapGLUTCoordToTexCoord(y, win_height, HEIGHT);
+    bk_texture_window->getWindow()->mouseMoved(tex_coord_x, tex_coord_y);
+}
+
+void passive_motion(int x, int y) {
+    unsigned int tex_coord_x = mapGLUTCoordToTexCoord(x, win_width, WIDTH);
+    unsigned int tex_coord_y = mapGLUTCoordToTexCoord(y, win_height, HEIGHT);
+    bk_texture_window->getWindow()->mouseMoved(tex_coord_x, tex_coord_y);
 }
 
 void idle() {
@@ -177,15 +231,21 @@ int main (int argc, char** argv) {
     glutCreateWindow( "Berkelium Demo" );
     glutDisplayFunc(display);
     glutReshapeFunc(reshape);
+
     glutKeyboardFunc(keyboard);
     glutSpecialFunc(special_keyboard);
+
+    glutMouseFunc(mouse);
+    glutMotionFunc(motion);
+    glutPassiveMotionFunc(passive_motion);
+
     glutIdleFunc(idle);
 
     // Initialize Berkelium and create a window
     Berkelium::init();
     bk_texture_window = new GLTextureWindow(WIDTH, HEIGHT);
 
-    loadRandomPage();
+    loadGoogle();
 
     // Start the main rendering loop
     glutMainLoop();

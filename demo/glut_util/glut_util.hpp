@@ -48,6 +48,8 @@
 #include "berkelium/Berkelium.hpp"
 #include "berkelium/Window.hpp"
 
+#include <cstring>
+
 /** Handles an onPaint call by mapping the results into an OpenGL texture. The
  *  first parameters are the same as Berkelium::WindowDelegate::onPaint.  The
  *  additional parameters and return value are:
@@ -152,6 +154,80 @@ bool mapOnPaintToTexture(
 }
 
 
+/** Maps an input coordinate to a texture coordinate for injection into
+ *  Berkelium.
+ *  \param glut_size the size of the GLUT window
+ *  \param glut_coord the coordinate value received from GLUT
+ *  \param tex_size the size of the texture/Berkelium window
+ *  \returns the coordinate transformed to the correct value for the texture /
+ *           Berkelium window
+ */
+unsigned int mapGLUTCoordToTexCoord(
+    unsigned int glut_coord, unsigned int glut_size,
+    unsigned int tex_size) {
+
+    return (glut_coord * tex_size) / glut_size;
+}
+
+/** Given modifiers retrieved from GLUT (e.g. glutGetModifiers), convert to a
+ *  form that can be passed to Berkelium.
+ */
+int mapGLUTModsToBerkeliumMods(int modifiers) {
+    int wvmods = 0;
+
+    if (modifiers & GLUT_ACTIVE_SHIFT)
+        wvmods |= Berkelium::SHIFT_MOD;
+    if (modifiers & GLUT_ACTIVE_CTRL)
+        wvmods |= Berkelium::CONTROL_MOD;
+    if (modifiers & GLUT_ACTIVE_ALT)
+        wvmods |= Berkelium::ALT_MOD;
+
+    // Note: GLUT doesn't expose Berkelium::META_MOD
+
+    return wvmods;
+}
+
+/** Returns true if the ASCII value is considered a special input to Berkelium
+ *  which cannot be handled directly via the textEvent method and must be
+ *  handled using keyEvent instead.
+ */
+unsigned int isASCIISpecialToBerkelium(unsigned char glut_char) {
+    unsigned char ASCII_BACKSPACE = 8;
+    unsigned char ASCII_TAB       = 9;
+    unsigned char ASCII_ESCAPE    = 27;
+    unsigned char ASCII_DELETE    = 127;
+
+    return (glut_char == ASCII_BACKSPACE ||
+        glut_char == ASCII_TAB ||
+        glut_char == ASCII_ESCAPE ||
+        glut_char == ASCII_DELETE
+    );
+}
+
+// A few of the most useful keycodes handled below.
+enum VirtKeys {
+BK_KEYCODE_PRIOR = 0x21,
+BK_KEYCODE_NEXT = 0x22,
+BK_KEYCODE_END = 0x23,
+BK_KEYCODE_HOME = 0x24,
+BK_KEYCODE_INSERT = 0x2D,
+};
+
+/** Given an input key from GLUT, convert it to a form that can be passed to
+ *  Berkelium.
+ */
+unsigned int mapGLUTKeyToBerkeliumKey(int glut_key) {
+    switch(glut_key) {
+#define MAP_VK(X, Y) case GLUT_KEY_##X: return BK_KEYCODE_##Y;
+        MAP_VK(INSERT, INSERT);
+        MAP_VK(HOME, HOME);
+        MAP_VK(END, END);
+        MAP_VK(PAGE_UP, PRIOR);
+        MAP_VK(PAGE_DOWN, NEXT);
+      default: return 0;
+    }
+}
+
 /** GLTextureWindow handles rendering a window into a GL texture.  Unlike the
  *  utility methods, this takes care of the entire process and cleanup.
  */
@@ -229,4 +305,4 @@ private:
     char* scroll_buffer;
 };
 
-#endif _BERKELIUM_GLUT_UTIL_HPP_
+#endif //_BERKELIUM_GLUT_UTIL_HPP_
