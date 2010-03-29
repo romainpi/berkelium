@@ -48,7 +48,8 @@
  *  and pass them onto your drawing layer
  *  \code
  *  class MyDelegate : public Berkelium::WindowDelegate {
- *    virtual void onPaint(Window *wini, const unsigned char *bitmap_in, const Rect &bitmap_rect,
+ *    virtual void onPaint(Window *wini,
+ *        const unsigned char *bitmap_in, const Rect &bitmap_rect,
  *        int dx, int dy, const Rect &scroll_rect) {
  *      // handle paint events...
  *    }
