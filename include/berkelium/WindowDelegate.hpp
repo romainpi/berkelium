@@ -43,6 +43,8 @@ class Window;
 
 class RenderWidget; // FIXME: private interface.
 
+class Cursor;
+
 class BERKELIUM_EXPORT WindowDelegate {
 public:
     virtual ~WindowDelegate() {}
@@ -119,6 +121,9 @@ public:
         const Rect &rect,
         int dx, int dy,
         const Rect &scrollRect) {}
+
+    /** Invoked when the Window requests that the mouse cursor be updated. */
+    virtual void onCursorUpdated(const Cursor& newCursor) {}
 
 /**************************
    Might want messages for:

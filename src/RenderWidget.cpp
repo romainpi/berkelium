@@ -147,6 +147,7 @@ gfx::Rect RenderWidget::GetViewBounds() const{
 
   // Sets the cursor to the one associated with the specified cursor_type
 void RenderWidget::UpdateCursor(const WebCursor& cursor){
+    mWindow->UpdateCursor(cursor);
 }
 
   // Indicates whether the page has finished loading.
@@ -457,7 +458,7 @@ void RenderWidget::keyEvent(bool pressed, int modifiers, int vk_code, int scanco
 
 	// keep track of persistent modifiers.
     unsigned int test=(WebKit::WebInputEvent::LeftButtonDown|WebKit::WebInputEvent::MiddleButtonDown|WebKit::WebInputEvent::RightButtonDown);
-	mModifiers = ((mModifiers&test) |  (event.modifiers& (Berkelium::SHIFT_MOD|Berkelium::CONTROL_MOD|Berkelium::ALT_MOD|Berkelium::META_MOD)));    
+	mModifiers = ((mModifiers&test) |  (event.modifiers& (Berkelium::SHIFT_MOD|Berkelium::CONTROL_MOD|Berkelium::ALT_MOD|Berkelium::META_MOD)));
 }
 
 
@@ -490,5 +491,3 @@ void RenderWidget::textEvent(const wchar_t * text, size_t textLength) {
 }
 
 }
-
-

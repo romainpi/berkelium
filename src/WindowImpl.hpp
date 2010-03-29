@@ -143,6 +143,8 @@ public:
         const std::wstring& message,
         int32 line_no,
         const std::wstring& source_id);
+
+    void UpdateCursor(const WebCursor& cursor);
 protected:
     ContextImpl *getContextImpl() const;
 

@@ -37,6 +37,7 @@
 #include "MemoryRenderViewHost.hpp"
 #include "Root.hpp"
 #include "berkelium/WindowDelegate.hpp"
+#include "berkelium/Cursor.hpp"
 
 #include "base/file_util.h"
 #include "base/file_version_info.h"
@@ -54,6 +55,7 @@
 #include "chrome/common/native_web_keyboard_event.h"
 #include "chrome/browser/renderer_host/render_process_host.h"
 #include "chrome/common/bindings_policy.h"
+
 namespace Berkelium {
 //WindowImpl temp;
 void WindowImpl::init(SiteInstance*site, int routing_id) {
@@ -463,6 +465,21 @@ void WindowImpl::OnAddMessageToConsole(
         error += mCurrentURL.GetOrigin().spec()+": "+WideToUTF8(msg);
         mDelegate->onLoadError(this, error.data(), error.length());
     }
+}
+
+void WindowImpl::UpdateCursor(const WebCursor& cursor) {
+#if BERKELIUM_PLATFORM == PLATFORM_WINDOWS
+    Cursor new_cursor;
+#elif BERKELIUM_PLATFORM == PLATFORM_LINUX
+    GdkCursorType cursorType = cursor.GetCursorType();
+    GdkCursor* cursorPtr = cursorType == GDK_CURSOR_IS_PIXMAP ? cursor.GetCustomCursor() : NULL;
+    Cursor new_cursor(cursorType, cursorPtr);
+#elif BERKELIUM_PLATFORM == PLATFORM_MAC
+    Cursor new_cursor;
+#else
+    Cursor new_cursor;
+#endif
+    if (mDelegate) mDelegate->onCursorUpdated(new_cursor);
 }
 
 /******* RenderViewHostDelegate *******/
