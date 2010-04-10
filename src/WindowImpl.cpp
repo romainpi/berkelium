@@ -492,7 +492,12 @@ void WindowImpl::OnAddMessageToConsole(
 
 void WindowImpl::UpdateCursor(const WebCursor& cursor) {
 #if BERKELIUM_PLATFORM == PLATFORM_WINDOWS
-    Cursor new_cursor;
+    // Normally you'd pass a handle to chrome.dll (or for us, berkelium.dll) to GetCursor
+    //  so it could pull out cursor resources, but we don't link resources into berkelium.dll.
+    // Also: augh, why is GetCursor not const on windows?
+    WebCursor& cursor_ = const_cast<WebCursor&>(cursor);
+    HCURSOR cursorHandle = cursor_.GetCursor(0);
+    Cursor new_cursor(cursorHandle);
 #elif BERKELIUM_PLATFORM == PLATFORM_LINUX
     // Returns an int to avoid including Gdk headers--so we have to cast.
     GdkCursorType cursorType = (GdkCursorType)cursor.GetCursorType();

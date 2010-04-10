@@ -34,10 +34,19 @@
 
 namespace Berkelium {
 
-Cursor::Cursor() {}
-
+Cursor::Cursor() {
+}
 
 #if BERKELIUM_PLATFORM == PLATFORM_WINDOWS
+
+Cursor::Cursor(const HCURSOR handle)
+ : mHandle(handle) {
+}
+
+HCURSOR Cursor::GetCursor() const {
+  return mHandle;
+}
+
 #elif BERKELIUM_PLATFORM == PLATFORM_LINUX
 
 Cursor::Cursor(const GdkCursorEnum& _type, GdkCursorPtr _cursor)
