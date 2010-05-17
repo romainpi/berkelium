@@ -111,6 +111,7 @@ IF(CHROME_FOUND)
   IF(APPLE)
     ADD_CHROME_APP(
       APP ppmrender
+      DEPENDS ppmrender
       LINKS
       ${CMAKE_CURRENT_BINARY_DIR}/libplugin_carbon_interpose.dylib
       ${CMAKE_CURRENT_BINARY_DIR}/berkelium
@@ -138,6 +139,7 @@ IF(CHROME_FOUND)
     IF(APPLE)
       ADD_CHROME_APP(
         APP glut_demo
+        DEPENDS glut_demo
         LINKS
         ${CMAKE_CURRENT_BINARY_DIR}/libplugin_carbon_interpose.dylib
         ${CMAKE_CURRENT_BINARY_DIR}/berkelium
