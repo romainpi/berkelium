@@ -45,14 +45,13 @@ class MemoryRenderHostBase {
     MemoryRenderHostBase() {}
     virtual ~MemoryRenderHostBase() {}
 
-    virtual void Memory_OnMsgScrollRect(const ViewHostMsg_ScrollRect_Params&params)=0;
-    virtual void Memory_OnMsgPaintRect(const ViewHostMsg_PaintRect_Params&params)=0;
-    virtual void Memory_ScrollBackingStoreRect(TransportDIB* bitmap,
+    virtual void Memory_OnMsgUpdateRect(const ViewHostMsg_UpdateRect_Params&params)=0;
+    virtual void Memory_PaintBackingStoreRect(TransportDIB* bitmap,
                                       const gfx::Rect& bitmap_rect,
+                                      const std::vector<gfx::Rect>& copy_rects,
+                                      const gfx::Size& view_size,
                                       int dx, int dy,
                                       const gfx::Rect& clip_rect)=0;
-    virtual void Memory_PaintBackingStoreRect(TransportDIB* bitmap,
-                                      const gfx::Rect& bitmap_rect)=0;
 
 };
 
@@ -66,14 +65,13 @@ protected:
 
 public:
     void Memory_WasResized();
-    void Memory_OnMsgScrollRect(const ViewHostMsg_ScrollRect_Params&params);
-    void Memory_OnMsgPaintRect(const ViewHostMsg_PaintRect_Params&params);
-    void Memory_ScrollBackingStoreRect(TransportDIB* bitmap,
+    void Memory_OnMsgUpdateRect(const ViewHostMsg_UpdateRect_Params&params);
+    virtual void Memory_PaintBackingStoreRect(TransportDIB* bitmap,
                                       const gfx::Rect& bitmap_rect,
+                                      const std::vector<gfx::Rect>& copy_rects,
+                                      const gfx::Size& view_size,
                                       int dx, int dy,
                                       const gfx::Rect& clip_rect);
-    void Memory_PaintBackingStoreRect(TransportDIB* bitmap,
-                                      const gfx::Rect& bitmap_rect);
 protected:
     WindowImpl *mWindow;
     RenderWidget *mWidget;
@@ -91,8 +89,7 @@ public:
         int routing_id);
     ~MemoryRenderWidgetHost();
     virtual void OnMessageReceived(const IPC::Message& msg);
-    virtual void Memory_OnMsgPaintRect(const ViewHostMsg_PaintRect_Params&params);
-    virtual void Memory_OnMsgScrollRect(const ViewHostMsg_ScrollRect_Params&params);
+    virtual void Memory_OnMsgUpdateRect(const ViewHostMsg_UpdateRect_Params&params);
 
 };
 
@@ -101,7 +98,8 @@ public:
     MemoryRenderViewHost(
         SiteInstance* instance,
         RenderViewHostDelegate* delegate,
-        int routing_id);
+        int routing_id,
+        int64 session_storage_namespace_id);
     ~MemoryRenderViewHost();
 
     void Memory_OnAddMessageToConsole(
@@ -120,7 +118,8 @@ public:
     virtual RenderViewHost* CreateRenderViewHost(
         SiteInstance* instance,
         RenderViewHostDelegate* delegate,
-        int routing_id);
+        int routing_id,
+        int64 session_storage_namespace_id);
 };
 
 

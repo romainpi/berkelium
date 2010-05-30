@@ -35,8 +35,8 @@
 #include "berkelium/Widget.hpp"
 #include "berkelium/Window.hpp"
 #include "NavigationController.hpp"
-#include "base/gfx/rect.h"
-#include "base/gfx/size.h"
+#include "gfx/rect.h"
+#include "gfx/size.h"
 #include "chrome/browser/renderer_host/render_widget_host.h"
 #include "chrome/browser/renderer_host/render_view_host.h"
 #include "chrome/browser/renderer_host/render_view_host_delegate.h"
@@ -168,14 +168,15 @@ protected: /******* RenderViewHostDelegate *******/
 
 
     void ProcessDOMUIMessage(const std::string& message,
-                             const Value* content,
+                             const ListValue* content,
+                             const GURL& source_url,
                              int request_id,
                              bool has_callback);
     virtual bool IsReservedAccelerator(const NativeWebKeyboardEvent&) {return false;}
     virtual void DidDisplayInsecureContent(){}
     virtual void DidRunInsecureContent(const std::string&){}
-    virtual void DidStartLoading(RenderViewHost* render_view_host);
-    virtual void DidStopLoading(RenderViewHost* render_view_host);
+    virtual void DidStartLoading();
+    virtual void DidStopLoading();
 
     virtual void DidNavigate(RenderViewHost* render_view_host,
                              const ViewHostMsg_FrameNavigate_Params& params);

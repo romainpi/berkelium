@@ -30,7 +30,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "chrome/browser/renderer_host/backing_store.h"
+#include "chrome/browser/renderer_host/backing_store_manager.h"
 #if defined(OS_LINUX)
 #include "webkit/glue/plugins/gtk_plugin_container_manager.h"
 #include "webkit/glue/plugins/gtk_plugin_container.h"
@@ -85,7 +85,7 @@ Rect RenderWidget::getRect() const {
 
 RenderWidget::~RenderWidget() {
     if (mBacking) {
-        delete mBacking;
+        BackingStoreManager::RemoveBackingStore(mHost);
     }
     mWindow->onWidgetDestroyed(this);
 }
@@ -213,7 +213,7 @@ BackingStore* RenderWidget::AllocBackingStore(const gfx::Size& size) {
     SetSize(size);
 
     if (!mBacking) {
-        mBacking = new BackingStore(mHost, size); // will ignore paints on linux!
+        mBacking = BackingStoreManager::GetBackingStore(mHost, size); // will ignore paints on linux!
     }
     return mBacking;
 }

@@ -49,8 +49,9 @@ namespace Berkelium {
 MemoryRenderViewHost::MemoryRenderViewHost(
         SiteInstance* instance,
         RenderViewHostDelegate* delegate,
-        int routing_id)
-    : MemoryRenderHostImpl<RenderViewHost>(instance, delegate, routing_id) {
+        int routing_id,
+        int64 ssn_id) // session_storage_namespace_id
+    : MemoryRenderHostImpl<RenderViewHost>(instance, delegate, routing_id, ssn_id) {
 
     mWindow = static_cast<WindowImpl*>(delegate);
     mWidget = NULL;
@@ -62,8 +63,7 @@ MemoryRenderViewHost::~MemoryRenderViewHost() {
 void MemoryRenderViewHost::OnMessageReceived(const IPC::Message& msg) {
   bool msg_is_ok = true;
   IPC_BEGIN_MESSAGE_MAP_EX(MemoryRenderViewHost, msg, msg_is_ok)
-    IPC_MESSAGE_HANDLER(ViewHostMsg_ScrollRect, Memory_OnMsgScrollRect)
-    IPC_MESSAGE_HANDLER(ViewHostMsg_PaintRect, Memory_OnMsgPaintRect)
+    IPC_MESSAGE_HANDLER(ViewHostMsg_UpdateRect, Memory_OnMsgUpdateRect)
     IPC_MESSAGE_HANDLER(ViewHostMsg_AddMessageToConsole, Memory_OnAddMessageToConsole)
     IPC_MESSAGE_UNHANDLED(RenderViewHost::OnMessageReceived(msg))
   IPC_END_MESSAGE_MAP_EX()
@@ -105,9 +105,8 @@ MemoryRenderWidgetHost::~MemoryRenderWidgetHost() {
 void MemoryRenderWidgetHost::OnMessageReceived(const IPC::Message& msg) {
   bool msg_is_ok = true;
   IPC_BEGIN_MESSAGE_MAP_EX(MemoryRenderWidgetHost, msg, msg_is_ok)
-      IPC_MESSAGE_HANDLER(ViewHostMsg_ScrollRect, Memory_OnMsgScrollRect)
-      IPC_MESSAGE_HANDLER(ViewHostMsg_PaintRect, Memory_OnMsgPaintRect)
-      IPC_MESSAGE_UNHANDLED(this->RenderWidgetHost::OnMessageReceived(msg))
+    IPC_MESSAGE_HANDLER(ViewHostMsg_UpdateRect, Memory_OnMsgUpdateRect)
+    IPC_MESSAGE_UNHANDLED(this->RenderWidgetHost::OnMessageReceived(msg))
   IPC_END_MESSAGE_MAP_EX()
       ;
 
@@ -124,48 +123,10 @@ void MemoryRenderWidgetHost::OnMessageReceived(const IPC::Message& msg) {
 
 ///////// MemoryRenderHostImpl common functions /////////
 
-void MemoryRenderWidgetHost::Memory_OnMsgScrollRect(const ViewHostMsg_ScrollRect_Params&params){
-    this->MemoryRenderHostImpl<RenderWidgetHost>::Memory_OnMsgScrollRect(params);    
+void MemoryRenderWidgetHost::Memory_OnMsgUpdateRect(const ViewHostMsg_UpdateRect_Params&params){
+    this->MemoryRenderHostImpl<RenderWidgetHost>::Memory_OnMsgUpdateRect(params);
 }
-void MemoryRenderWidgetHost::Memory_OnMsgPaintRect(const ViewHostMsg_PaintRect_Params&params){
-    this->MemoryRenderHostImpl<RenderWidgetHost>::Memory_OnMsgPaintRect(params);
-}
-template <class T> void MemoryRenderHostImpl<T>::Memory_OnMsgScrollRect(
-    const ViewHostMsg_ScrollRect_Params& params) {
 
-  DCHECK(!params.view_size.IsEmpty());
-
-  const size_t size = params.bitmap_rect.height() *
-                      params.bitmap_rect.width() * 4;
-  TransportDIB* dib = this->process()->GetTransportDIB(params.bitmap);
-  if (dib) {
-    if (dib->size() < size) {
-      LOG(WARNING) << "Transport DIB too small for given rectangle";
-      this->process()->ReceivedBadMessage(ViewHostMsg_PaintRect__ID);
-    } else {
-      // Scroll the backing store.
-      Memory_ScrollBackingStoreRect(
-          dib, params.bitmap_rect,
-          params.dx, params.dy,
-          params.clip_rect);
-    }
-  }
-
-  // ACK early so we can prefetch the next ScrollRect if there is a next one.
-  // This must be done AFTER we're done painting with the bitmap supplied by the
-  // renderer. This ACK is a signal to the renderer that the backing store can
-  // be re-used, so the bitmap may be invalid after this call.
-  this->process()->Send(new ViewMsg_ScrollRect_ACK(this->routing_id()));
-
-  // Paint the view. Watch out: it might be destroyed already.
-  if (this->view()) {
-    //PRIV//view_being_painted_ = true;
-    this->view()->MovePluginWindows(params.plugin_window_moves);
-    this->view()->DidScrollRect(params.clip_rect, params.dx, params.dy);
-    //PRIV//view_being_painted_ = false;
-  }
-
-}
 template <class T> void MemoryRenderHostImpl<T>::init() {
     mResizeAckPending=true;
     mWidget=NULL;
@@ -197,8 +158,8 @@ template <class T> void MemoryRenderHostImpl<T>::Memory_WasResized() {
     else
         mInFlightSize = new_size;
 }
-template <class T> void MemoryRenderHostImpl<T>::Memory_OnMsgPaintRect(
-    const ViewHostMsg_PaintRect_Params&params)
+template <class T> void MemoryRenderHostImpl<T>::Memory_OnMsgUpdateRect(
+    const ViewHostMsg_UpdateRect_Params&params)
 {
   current_size_ = params.view_size;
 
@@ -206,7 +167,7 @@ template <class T> void MemoryRenderHostImpl<T>::Memory_OnMsgPaintRect(
     DCHECK(!params.view_size.IsEmpty());
 
     bool is_resize_ack =
-        ViewHostMsg_PaintRect_Flags::is_resize_ack(params.flags);
+        ViewHostMsg_UpdateRect_Flags::is_resize_ack(params.flags);
 
     // resize_ack_pending_ needs to be cleared before we call DidPaintRect, since
     // that will end up reaching GetBackingStore.
@@ -219,9 +180,6 @@ template <class T> void MemoryRenderHostImpl<T>::Memory_OnMsgPaintRect(
         //PRIV//in_flight_size_.SetSize(0, 0);
     }
 
-//    bool is_repaint_ack =
-        ViewHostMsg_PaintRect_Flags::is_repaint_ack(params.flags);
-
 
   DCHECK(!params.bitmap_rect.IsEmpty());
   DCHECK(!params.view_size.IsEmpty());
@@ -232,12 +190,15 @@ template <class T> void MemoryRenderHostImpl<T>::Memory_OnMsgPaintRect(
   if (dib) {
     if (dib->size() < size) {
       DLOG(WARNING) << "Transport DIB too small for given rectangle";
-      this->process()->ReceivedBadMessage(ViewHostMsg_PaintRect__ID);
+      this->process()->ReceivedBadMessage(ViewHostMsg_UpdateRect__ID);
     } else {
       // Paint the backing store. This will update it with the renderer-supplied
       // bits. The view will read out of the backing store later to actually
       // draw to the screen.
-      Memory_PaintBackingStoreRect(dib, params.bitmap_rect);
+      Memory_PaintBackingStoreRect(dib, params.bitmap_rect,
+        params.copy_rects, params.view_size,
+        params.dx, params.dy, params.scroll_rect);
+      // FIXME: Difference between scroll_rect + params.view_size and clip_rect
     }
   }
 
@@ -245,13 +206,18 @@ template <class T> void MemoryRenderHostImpl<T>::Memory_OnMsgPaintRect(
   // This must be done AFTER we're done painting with the bitmap supplied by the
   // renderer. This ACK is a signal to the renderer that the backing store can
   // be re-used, so the bitmap may be invalid after this call.
-  this->process()->Send(new ViewMsg_PaintRect_ACK(this->routing_id()));
+  this->process()->Send(new ViewMsg_UpdateRect_ACK(this->routing_id()));
 
   // Now paint the view. Watch out: it might be destroyed already.
   if (this->view()) {
     this->view()->MovePluginWindows(params.plugin_window_moves);
     //PRIV//view_being_painted_ = true;
-    this->view()->DidPaintRect(params.bitmap_rect);
+    if (!params.scroll_rect.IsEmpty()) {
+      this->view()->DidScrollBackingStoreRect(params.scroll_rect,
+                                       params.dx,
+                                       params.dy);
+    }
+    this->view()->DidPaintBackingStoreRects(params.copy_rects);
     //PRIV//view_being_painted_ = false;
   }
 
@@ -266,9 +232,11 @@ template <class T> void MemoryRenderHostImpl<T>::Memory_OnMsgPaintRect(
 
 }
 
-template <class T> void MemoryRenderHostImpl<T>::Memory_ScrollBackingStoreRect(
+template <class T> void MemoryRenderHostImpl<T>::Memory_PaintBackingStoreRect(
     TransportDIB* bitmap,
     const gfx::Rect& bitmap_rect,
+    const std::vector<gfx::Rect>& copy_rects,
+    const gfx::Size& view_size,
     int dx, int dy,
     const gfx::Rect& clip_rect)
 {
@@ -292,13 +260,6 @@ template <class T> void MemoryRenderHostImpl<T>::Memory_ScrollBackingStoreRect(
         dy,
         clipRect);
 
-}
-
-template <class T> void MemoryRenderHostImpl<T>::Memory_PaintBackingStoreRect(
-    TransportDIB* bitmap,
-    const gfx::Rect& bitmap_rect)
-{
-    Memory_ScrollBackingStoreRect(bitmap, bitmap_rect, 0, 0, gfx::Rect());
 }
 
 /*
@@ -336,10 +297,11 @@ MemoryRenderViewHostFactory::~MemoryRenderViewHostFactory() {
 RenderViewHost* MemoryRenderViewHostFactory::CreateRenderViewHost(
     SiteInstance* instance,
     RenderViewHostDelegate* delegate,
-    int routing_id)
+    int routing_id,
+    int64 ssn_id)
 {
     return new MemoryRenderViewHost(instance, delegate,
-                                    routing_id);
+                                    routing_id, ssn_id);
 }
 
 

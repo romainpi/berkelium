@@ -50,11 +50,13 @@
 #include "chrome/browser/process_singleton.h"
 #include "chrome/browser/profile_manager.h"
 #include "chrome/browser/plugin_service.h"
+#include "chrome/browser/renderer_host/resource_dispatcher_host.h"
 #include "chrome/browser/renderer_host/browser_render_process_host.h"
 #include "chrome/browser/chrome_thread.h"
 #include "chrome/browser/browser_url_handler.h"
 #include "app/resource_bundle.h"
 #include "app/app_paths.h"
+#include "chrome/browser/pref_service.h"
 #include "chrome/common/pref_names.h"
 #include "chrome/common/logging_chrome.h"
 #include "base/logging.h"
@@ -173,7 +175,7 @@ Root::Root (){
         RenderProcessHost::set_run_renderer_in_process(true);
     }
     mMessageLoop = new MessageLoop(MessageLoop::TYPE_UI);
-    mUIThread = new ChromeThread();
+    mUIThread = new ChromeThread(ChromeThread::UI, mMessageLoop);
 
     mProcessSingleton= new ProcessSingleton(homedirpath);
     BrowserProcess *browser_process;
@@ -222,7 +224,6 @@ Root::Root (){
 
     ResourceBundle::InitSharedInstance(L"en-US");// FIXME: lookup locale
     // We only load the theme dll in the browser process.
-    ResourceBundle::GetSharedInstance().LoadThemeResources();
     net::CookieMonster::EnableFileScheme();
     ProfileManager* profile_manager = browser_process->profile_manager();
     mProf = profile_manager->GetDefaultProfile(homedirpath);
@@ -243,7 +244,7 @@ Root::Root (){
     BrowserURLHandler::InitURLHandlers();
 
     ResourceDispatcherHost *resDispatcher =
-        new ResourceDispatcherHost(ChromeThread::GetMessageLoop(ChromeThread::IO));
+        new ResourceDispatcherHost();
     resDispatcher->Initialize();
     {
 #ifndef OS_WIN
@@ -289,8 +290,8 @@ void Root::update() {
 }
 
 Root::~Root(){
-    //  
-    g_browser_process->profile_manager()->RemoveProfile(mProf);
+    // FIXME: RemoveProfile gone--do we leak profiles?
+    //g_browser_process->profile_manager()->RemoveProfile(mProf);
 
     g_browser_process->EndSession();
     mProcessSingleton->Cleanup();

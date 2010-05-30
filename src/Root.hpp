@@ -48,7 +48,7 @@ class MemoryRenderViewHostFactory;
 //singleton class that contains chromium singletons. Not visible outside of Berkelium library core
 class Root:public AutoSingleton<Root> {
     Profile*mProf;
-    URLRequestContext *mDefaultRequestContext;
+    URLRequestContextGetter *mDefaultRequestContext;
     MessageLoop* mMessageLoop;
     NotificationService*mNotificationService;
     ProcessSingleton *mProcessSingleton;

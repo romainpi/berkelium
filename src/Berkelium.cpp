@@ -82,7 +82,7 @@
 #include "chrome/app/breakpad_mac.h"
 #endif
 #if defined(OS_LINUX)
-#include "base/nss_init.h"
+#include "base/nss_util.h"
 #endif
 #if defined(USE_LINUX_BREAKPAD)
 #include "chrome/app/breakpad_linux.h"

@@ -20,7 +20,7 @@
 #include "chrome/common/navigation_types.h"
 #include "chrome/common/notification_service.h"
 #include "chrome/common/pref_names.h"
-#include "chrome/common/pref_service.h"
+#include "chrome/browser/pref_service.h"
 #include "chrome/common/render_messages.h"
 #include "chrome/common/url_constants.h"
 #include "net/base/escape.h"
@@ -68,7 +68,7 @@ void ConfigureEntriesForRestore(
     // Use a transition type of reload so that we don't incorrectly increase
     // the typed count.
     (*entries)[i]->set_transition_type(PageTransition::RELOAD);
-    (*entries)[i]->set_restored(true);
+    (*entries)[i]->set_restore_type(NavigationEntry::RESTORE_LAST_SESSION);
     // NOTE(darin): This code is only needed for backwards compat.
     SetContentStateIfEmpty((*entries)[i].get());
   }
@@ -364,12 +364,15 @@ NavigationEntry* NavigationController::CreateNavigationEntry(
   // will actually be loaded. This real URL won't be shown to the user, just
   // used internally.
   GURL loaded_url(url);
-  BrowserURLHandler::RewriteURLIfNecessary(&loaded_url, profile_);
+  bool reverse_on_redirect=false;
+  BrowserURLHandler::RewriteURLIfNecessary(
+    &loaded_url, profile_, &reverse_on_redirect);
 
   NavigationEntry* entry = new NavigationEntry(NULL, -1, loaded_url, referrer,
                                                string16(), transition);
   entry->set_virtual_url(url);
   entry->set_user_typed_url(url);
+  entry->set_update_virtual_url_with_url(reverse_on_redirect);
   if (url.SchemeIsFile()) {
     std::wstring languages = profile()->GetPrefs()->GetString(
         prefs::kAcceptLanguages);
