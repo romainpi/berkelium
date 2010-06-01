@@ -13,18 +13,23 @@
 #include "chrome/browser/browser_about_handler.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/browser_url_handler.h"
+#include "chrome/browser/in_process_webkit/dom_storage_context.h"
+#include "chrome/browser/in_process_webkit/webkit_context.h"
+#include "chrome/browser/pref_service.h"
+#include "chrome/common/pref_names.h"
 #include "chrome/browser/profile.h"
 #include "chrome/browser/renderer_host/site_instance.h"
 #include "chrome/browser/sessions/session_types.h"
+#include "chrome/browser/tab_contents/interstitial_page.h"
 #include "chrome/browser/tab_contents/navigation_entry.h"
+#include "chrome/common/chrome_constants.h"
 #include "chrome/common/navigation_types.h"
 #include "chrome/common/notification_service.h"
-#include "chrome/common/pref_names.h"
-#include "chrome/browser/pref_service.h"
 #include "chrome/common/render_messages.h"
 #include "chrome/common/url_constants.h"
 #include "net/base/escape.h"
 #include "net/base/net_util.h"
+#include "net/base/mime_util.h"
 #include "webkit/glue/webkit_glue.h"
 
 namespace {
@@ -63,12 +68,15 @@ void SetContentStateIfEmpty(NavigationEntry* entry) {
 // Configure all the NavigationEntries in entries for restore. This resets
 // the transition type to reload and makes sure the content state isn't empty.
 void ConfigureEntriesForRestore(
-    std::vector<linked_ptr<NavigationEntry> >* entries) {
+    std::vector<linked_ptr<NavigationEntry> >* entries,
+    bool from_last_session) {
   for (size_t i = 0; i < entries->size(); ++i) {
     // Use a transition type of reload so that we don't incorrectly increase
     // the typed count.
     (*entries)[i]->set_transition_type(PageTransition::RELOAD);
-    (*entries)[i]->set_restore_type(NavigationEntry::RESTORE_LAST_SESSION);
+    (*entries)[i]->set_restore_type(from_last_session ?
+        NavigationEntry::RESTORE_LAST_SESSION :
+        NavigationEntry::RESTORE_CURRENT_SESSION);
     // NOTE(darin): This code is only needed for backwards compat.
     SetContentStateIfEmpty((*entries)[i].get());
   }
@@ -76,8 +84,15 @@ void ConfigureEntriesForRestore(
 
 // See NavigationController::IsURLInPageNavigation for how this works and why.
 bool AreURLsInPageNavigation(const GURL& existing_url, const GURL& new_url) {
-  if (existing_url == new_url || !new_url.has_ref())
+  if (existing_url == new_url || !new_url.has_ref()) {
+    // TODO(jcampan): what about when navigating back from a ref URL to the top
+    // non ref URL? Nothing is loaded in that case but we return false here.
+    // The user could also navigate from the ref URL to the non ref URL by
+    // entering the non ref URL in the location bar or through a bookmark, in
+    // which case there would be a load.  I am not sure if the non-load/load
+    // scenarios can be differentiated with the TransitionType.
     return false;
+  }
 
   url_canon::Replacements<char> replacements;
   replacements.ClearRef();
@@ -93,31 +108,16 @@ const base::TimeDelta kMaxAutoNavigationTimeDelta =
 
 }  // namespace
 
-// NavigationController ---------------------------------------------------
-
 namespace Berkelium {
 
+// NavigationController ---------------------------------------------------
+
 // static
-size_t NavigationController::max_entry_count_ = 50;
+size_t NavigationController::max_entry_count_ =
+    chrome::kMaxSessionHistoryEntries;
 
 // static
 bool NavigationController::check_for_repost_ = true;
-
-// Creates a new NavigationEntry for each TabNavigation in navigations, adding
-// the NavigationEntry to entries. This is used during session restore.
-/*
-static void CreateNavigationEntriesFromTabNavigations(
-    const std::vector<TabNavigation>& navigations,
-    std::vector<linked_ptr<NavigationEntry> >* entries) {
-  // Create a NavigationEntry for each of the navigations.
-  int page_id = 0;
-  for (std::vector<TabNavigation>::const_iterator i =
-           navigations.begin(); i != navigations.end(); ++i, ++page_id) {
-    entries->push_back(
-        linked_ptr<NavigationEntry>(i->ToNavigationEntry(page_id)));
-  }
-}
-*/
 
 NavigationController::NavigationController(WindowImpl* contents,
                                            Profile* profile)
@@ -129,7 +129,10 @@ NavigationController::NavigationController(WindowImpl* contents,
       tab_contents_(contents),
       max_restored_page_id_(-1),
       needs_reload_(false),
-      user_gesture_observed_(false) {
+      user_gesture_observed_(false),
+      session_storage_namespace_id_(profile->GetWebKitContext()->
+          dom_storage_context()->AllocateSessionStorageNamespaceId()),
+      pending_reload_(NO_RELOAD) {
   DCHECK(profile_);
 }
 
@@ -140,12 +143,17 @@ NavigationController::~NavigationController() {
       NotificationType::TAB_CLOSED,
       Source<NavigationController>(this),
       NotificationService::NoDetails());
+
+  // When we go away, the session storage namespace will no longer be reachable.
+  profile_->GetWebKitContext()->DeleteSessionStorageNamespace(
+      session_storage_namespace_id_);
 }
 
 /*
 void NavigationController::RestoreFromState(
     const std::vector<TabNavigation>& navigations,
-    int selected_navigation) {
+    int selected_navigation,
+    bool from_last_session) {
   // Verify that this controller is unused and that the input is valid.
   DCHECK(entry_count() == 0 && !pending_entry());
   DCHECK(selected_navigation >= 0 &&
@@ -153,41 +161,106 @@ void NavigationController::RestoreFromState(
 
   // Populate entries_ from the supplied TabNavigations.
   needs_reload_ = true;
-  CreateNavigationEntriesFromTabNavigations(navigations, &entries_);
+  //CreateNavigationEntriesFromTabNavigations(navigations, &entries_);
 
   // And finish the restore.
-  FinishRestore(selected_navigation);
+  FinishRestore(selected_navigation, from_last_session);
 }
 */
 
 void NavigationController::Reload(bool check_for_repost) {
+  ReloadInternal(check_for_repost, RELOAD);
+}
+void NavigationController::ReloadIgnoringCache(bool check_for_repost) {
+  ReloadInternal(check_for_repost, RELOAD_IGNORING_CACHE);
+}
+
+void NavigationController::ReloadInternal(bool check_for_repost,
+                                          ReloadType reload_type) {
   // Reloading a transient entry does nothing.
   if (transient_entry_index_ != -1)
     return;
 
   DiscardNonCommittedEntriesInternal();
   int current_index = GetCurrentEntryIndex();
-  if (check_for_repost_ && check_for_repost && current_index != -1 &&
+  // If we are no where, then we can't reload.  TODO(darin): We should add a
+  // CanReload method.
+  if (current_index == -1) {
+    return;
+  }
+
+  if (check_for_repost_ && check_for_repost &&
       GetEntryAtIndex(current_index)->has_post_data()) {
     // The user is asking to reload a page with POST data. Prompt to make sure
     // they really want to do this. If they do, the dialog will call us back
     // with check_for_repost = false.
+    NotificationService::current()->Notify(
+        NotificationType::REPOST_WARNING_SHOWN,
+        Source<NavigationController>(this),
+        NotificationService::NoDetails());
+
+    pending_reload_ = reload_type;
     tab_contents_->ShowRepostFormWarningDialog();
   } else {
-    // Base the navigation on where we are now...
-    int current_index = GetCurrentEntryIndex();
-
-    // If we are no where, then we can't reload.  TODO(darin): We should add a
-    // CanReload method.
-    if (current_index == -1)
-      return;
-
     DiscardNonCommittedEntriesInternal();
 
     pending_entry_index_ = current_index;
     entries_[pending_entry_index_]->set_transition_type(PageTransition::RELOAD);
-    NavigateToPendingEntry(true);
+    NavigateToPendingEntry(reload_type);
   }
+}
+
+void NavigationController::CancelPendingReload() {
+  DCHECK(pending_reload_ != NO_RELOAD);
+  pending_reload_ = NO_RELOAD;
+}
+
+void NavigationController::ContinuePendingReload() {
+  if (pending_reload_ == NO_RELOAD) {
+    NOTREACHED();
+  } else {
+    ReloadInternal(false, pending_reload_);
+    pending_reload_ = NO_RELOAD;
+  }
+}
+
+bool NavigationController::IsInitialNavigation() {
+  return last_document_loaded_.is_null();
+}
+
+// static
+NavigationEntry* NavigationController::CreateNavigationEntry(
+    const GURL& url, const GURL& referrer, PageTransition::Type transition,
+    Profile* profile) {
+  // Allow the browser URL handler to rewrite the URL. This will, for example,
+  // remove "view-source:" from the beginning of the URL to get the URL that
+  // will actually be loaded. This real URL won't be shown to the user, just
+  // used internally.
+  GURL loaded_url(url);
+  bool reverse_on_redirect = false;
+  BrowserURLHandler::RewriteURLIfNecessary(
+      &loaded_url, profile, &reverse_on_redirect);
+
+  NavigationEntry* entry = new NavigationEntry(
+      NULL,  // The site instance for tabs is sent on navigation
+             // (TabContents::GetSiteInstance).
+      -1,
+      loaded_url,
+      referrer,
+      string16(),
+      transition);
+  entry->set_virtual_url(url);
+  entry->set_user_typed_url(url);
+  entry->set_update_virtual_url_with_url(reverse_on_redirect);
+  if (url.SchemeIsFile()) {
+
+    std::wstring languages = profile->GetPrefs()->GetString(
+        prefs::kAcceptLanguages);
+
+    entry->set_title(WideToUTF16Hack(
+        file_util::GetFilenameFromPath(net::FormatUrl(url, languages))));
+  }
+  return entry;
 }
 
 NavigationEntry* NavigationController::GetEntryWithPageID(
@@ -211,7 +284,7 @@ void NavigationController::LoadEntry(NavigationEntry* entry) {
       NotificationType::NAV_ENTRY_PENDING,
       Source<NavigationController>(this),
       NotificationService::NoDetails());
-  NavigateToPendingEntry(false);
+  NavigateToPendingEntry(NO_RELOAD);
 }
 
 NavigationEntry* NavigationController::GetActiveEntry() const {
@@ -234,6 +307,13 @@ NavigationEntry* NavigationController::GetLastCommittedEntry() const {
   if (last_committed_entry_index_ == -1)
     return NULL;
   return entries_[last_committed_entry_index_].get();
+}
+
+bool NavigationController::CanViewSource() const {
+  bool is_supported_mime_type = true; // HACK: Was contents_mime_type()
+  NavigationEntry* active_entry = GetActiveEntry();
+  return active_entry && !active_entry->IsViewSourceMode() &&
+    is_supported_mime_type;
 }
 
 NavigationEntry* NavigationController::GetEntryAtOffset(int offset) const {
@@ -261,13 +341,20 @@ void NavigationController::GoBack() {
     return;
   }
 
+  // If an interstitial page is showing, going back is equivalent to hiding the
+  // interstitial.
+  /*if (tab_contents_->interstitial_page()) {
+    tab_contents_->interstitial_page()->DontProceed();
+    return;
+  }*/
+
   // Base the navigation on where we are now...
   int current_index = GetCurrentEntryIndex();
 
   DiscardNonCommittedEntries();
 
   pending_entry_index_ = current_index - 1;
-  NavigateToPendingEntry(false);
+  NavigateToPendingEntry(NO_RELOAD);
 }
 
 void NavigationController::GoForward() {
@@ -275,6 +362,14 @@ void NavigationController::GoForward() {
     NOTREACHED();
     return;
   }
+
+  // If an interstitial page is showing, the previous renderer is blocked and
+  // cannot make new requests.  Unblock (and disable) it to allow this
+  // navigation to succeed.  The interstitial will stay visible until the
+  // resulting DidNavigate.
+  /*if (tab_contents_->interstitial_page()) {
+    tab_contents_->interstitial_page()->CancelForNavigation();
+  }*/
 
   bool transient = (transient_entry_index_ != -1);
 
@@ -289,12 +384,12 @@ void NavigationController::GoForward() {
   if (!transient)
     pending_entry_index_++;
 
-  NavigateToPendingEntry(false);
+  NavigateToPendingEntry(NO_RELOAD);
 }
 
 void NavigationController::GoToIndex(int index) {
   if (index < 0 || index >= static_cast<int>(entries_.size())) {
-      std::cout << "Failed to go to index: "<<index<<"; esize is "<<entries_.size() <<std::endl;
+    std::cout << "Failed to go to index: "<<index<<"; esize is "<<entries_.size() <<std::endl;
     NOTREACHED();
     return;
   }
@@ -313,21 +408,35 @@ void NavigationController::GoToIndex(int index) {
     }
   }
 
+  // If an interstitial page is showing, the previous renderer is blocked and
+  // cannot make new requests.
+  /*
+  if (tab_contents_->interstitial_page()) {
+    if (index == GetCurrentEntryIndex() - 1) {
+      // Going back one entry is equivalent to hiding the interstitial.
+      tab_contents_->interstitial_page()->DontProceed();
+      return;
+    } else {
+      // Unblock the renderer (and disable the interstitial) to allow this
+      // navigation to succeed.  The interstitial will stay visible until the
+      // resulting DidNavigate.
+      tab_contents_->interstitial_page()->CancelForNavigation();
+    }
+  }*/
+
   DiscardNonCommittedEntries();
 
   pending_entry_index_ = index;
   std::cout << "NAVIGATE TO PENDING ENTRY false: index is "<<index<<std::endl;
-  NavigateToPendingEntry(false);
+  NavigateToPendingEntry(NO_RELOAD);
 }
 
 void NavigationController::GoToOffset(int offset) {
   int index = (transient_entry_index_ != -1) ?
                   transient_entry_index_ + offset :
                   last_committed_entry_index_ + offset;
-  if (index < 0 || index >= entry_count()) {
-      std::cout << "Failed to go to offset: "<<offset<<": index is "<<index<<"; tei is "<<transient_entry_index_ << "; ent_count is "<<entry_count()<<std::endl;
+  if (index < 0 || index >= entry_count())
     return;
-  }
 
   GoToIndex(index);
 }
@@ -346,7 +455,7 @@ void NavigationController::RemoveEntryAtIndex(int index,
     // We removed the currently shown entry, so we have to load something else.
     if (last_committed_entry_index_ != -1) {
       pending_entry_index_ = last_committed_entry_index_;
-      NavigateToPendingEntry(false);
+      NavigateToPendingEntry(NO_RELOAD);
     } else {
       // If there is nothing to show, show a default page.
       LoadURL(default_url.is_empty() ? GURL("about:blank") : default_url,
@@ -357,29 +466,13 @@ void NavigationController::RemoveEntryAtIndex(int index,
   }
 }
 
-NavigationEntry* NavigationController::CreateNavigationEntry(
-    const GURL& url, const GURL& referrer, PageTransition::Type transition) {
-  // Allow the browser URL handler to rewrite the URL. This will, for example,
-  // remove "view-source:" from the beginning of the URL to get the URL that
-  // will actually be loaded. This real URL won't be shown to the user, just
-  // used internally.
-  GURL loaded_url(url);
-  bool reverse_on_redirect=false;
-  BrowserURLHandler::RewriteURLIfNecessary(
-    &loaded_url, profile_, &reverse_on_redirect);
-
-  NavigationEntry* entry = new NavigationEntry(NULL, -1, loaded_url, referrer,
-                                               string16(), transition);
-  entry->set_virtual_url(url);
-  entry->set_user_typed_url(url);
-  entry->set_update_virtual_url_with_url(reverse_on_redirect);
-  if (url.SchemeIsFile()) {
-    std::wstring languages = profile()->GetPrefs()->GetString(
-        prefs::kAcceptLanguages);
-    entry->set_title(WideToUTF16Hack(
-        file_util::GetFilenameFromPath(net::FormatUrl(url, languages))));
+void NavigationController::UpdateVirtualURLToURL(
+    NavigationEntry* entry, const GURL& new_url) {
+  GURL new_virtual_url(new_url);
+  if (BrowserURLHandler::ReverseURLRewrite(
+          &new_virtual_url, entry->virtual_url(), profile_)) {
+    entry->set_virtual_url(new_virtual_url);
   }
-  return entry;
 }
 
 void NavigationController::AddTransientEntry(NavigationEntry* entry) {
@@ -397,7 +490,8 @@ void NavigationController::LoadURL(const GURL& url, const GURL& referrer,
   // The user initiated a load, we don't need to reload anymore.
   needs_reload_ = false;
 
-  NavigationEntry* entry = CreateNavigationEntry(url, referrer, transition);
+  NavigationEntry* entry = CreateNavigationEntry(url, referrer, transition,
+                                                 profile_);
 
   LoadEntry(entry);
 }
@@ -431,8 +525,13 @@ bool NavigationController::RendererDidNavigate(
   // TODO(brettw) this seems slightly bogus as we don't really know if the
   // pending entry is what this navigation is for. There is a similar TODO
   // w.r.t. the pending entry in RendererDidNavigateToNewPage.
-  if (pending_entry_index_ >= 0)
+  if (pending_entry_index_ >= 0) {
     pending_entry_->set_site_instance(tab_contents_->GetSiteInstance());
+    pending_entry_->set_restore_type(NavigationEntry::RESTORE_NONE);
+  }
+
+  // is_in_page must be computed before the entry gets committed.
+  details->is_in_page = IsURLInPageNavigation(params.url);
 
   // Do navigation-type specific actions. These will make and commit an entry.
   details->type = ClassifyNavigation(params);
@@ -485,14 +584,11 @@ bool NavigationController::RendererDidNavigate(
 
   // Now prep the rest of the details for the notification and broadcast.
   details->entry = GetActiveEntry();
-  details->is_in_page = IsURLInPageNavigation(params.url);
   details->is_main_frame = PageTransition::IsMainFrame(params.transition);
   details->serialized_security_info = params.security_info;
   details->is_content_filtered = params.is_content_filtered;
   details->http_status_code = params.http_status_code;
   NotifyNavigationEntryCommitted(details, extra_invalidate_flags);
-
-  user_gesture_observed_ = false;
 
   return true;
 }
@@ -553,6 +649,15 @@ NavigationType::Type NavigationController::ClassifyNavigation(
   }
   NavigationEntry* existing_entry = entries_[existing_entry_index].get();
 
+  if (!PageTransition::IsMainFrame(params.transition)) {
+    // All manual subframes would get new IDs and were handled above, so we
+    // know this is auto. Since the current page was found in the navigation
+    // entry list, we're guaranteed to have a last committed entry.
+    DCHECK(GetLastCommittedEntry());
+    return NavigationType::AUTO_SUBFRAME;
+  }
+
+  // Anything below here we know is a main frame navigation.
   if (pending_entry_ &&
       existing_entry != pending_entry_ &&
       pending_entry_->page_id() == -1) {
@@ -564,14 +669,6 @@ NavigationType::Type NavigationController::ClassifyNavigation(
     // this). In this case, we want to just ignore the pending entry and go
     // back to where we were (the "existing entry").
     return NavigationType::SAME_PAGE;
-  }
-
-  if (!PageTransition::IsMainFrame(params.transition)) {
-    // All manual subframes would get new IDs and were handled above, so we
-    // know this is auto. Since the current page was found in the navigation
-    // entry list, we're guaranteed to have a last committed entry.
-    DCHECK(GetLastCommittedEntry());
-    return NavigationType::AUTO_SUBFRAME;
   }
 
   // Any toplevel navigations with the same base (minus the reference fragment)
@@ -622,6 +719,8 @@ void NavigationController::RendererDidNavigateToNewPage(
   }
 
   new_entry->set_url(params.url);
+  if (new_entry->update_virtual_url_with_url())
+    UpdateVirtualURLToURL(new_entry, params.url);
   new_entry->set_referrer(params.referrer);
   new_entry->set_page_id(params.page_id);
   new_entry->set_transition_type(params.transition);
@@ -657,9 +756,13 @@ void NavigationController::RendererDidNavigateToExistingPage(
   // be the same except during session restore, when no site instance will be
   // assigned.
   entry->set_url(params.url);
+  if (entry->update_virtual_url_with_url())
+    UpdateVirtualURLToURL(entry, params.url);
   DCHECK(entry->site_instance() == NULL ||
          entry->site_instance() == tab_contents_->GetSiteInstance());
   entry->set_site_instance(tab_contents_->GetSiteInstance());
+
+  entry->set_has_post_data(params.is_post);
 
   // The entry we found in the list might be pending if the user hit
   // back/forward/reload. This load should commit it (since it's already in the
@@ -670,7 +773,10 @@ void NavigationController::RendererDidNavigateToExistingPage(
   if (entry == pending_entry_)
     DiscardNonCommittedEntriesInternal();
 
-  last_committed_entry_index_ = entry_index;
+  // If a transient entry was removed, the indices might have changed, so we
+  // have to query the entry index again.
+  last_committed_entry_index_ =
+      GetEntryIndexWithPageID(tab_contents_->GetSiteInstance(), params.page_id);
 }
 
 void NavigationController::RendererDidNavigateToSamePage(
@@ -688,6 +794,8 @@ void NavigationController::RendererDidNavigateToSamePage(
   existing_entry->set_unique_id(pending_entry_->unique_id());
 
   // The URL may have changed due to redirects.
+  if (existing_entry->update_virtual_url_with_url())
+    UpdateVirtualURLToURL(existing_entry, params.url);
   existing_entry->set_url(params.url);
 
   DiscardNonCommittedEntries();
@@ -707,10 +815,13 @@ void NavigationController::RendererDidNavigateInPage(
   // reference fragments, of course).
   NavigationEntry* new_entry = new NavigationEntry(*existing_entry);
   new_entry->set_page_id(params.page_id);
+  if (new_entry->update_virtual_url_with_url())
+    UpdateVirtualURLToURL(new_entry, params.url);
   new_entry->set_url(params.url);
-  *did_replace_entry = IsRedirect(params) &&
-                       IsLikelyAutoNavigation(base::TimeTicks::Now());
-  InsertOrReplaceEntry(new_entry, *did_replace_entry);
+
+  // This replaces the existing entry since the page ID didn't change.
+  *did_replace_entry = true;
+  InsertOrReplaceEntry(new_entry, true);
 }
 
 void NavigationController::RendererDidNavigateNewSubframe(
@@ -830,15 +941,26 @@ void NavigationController::CopyStateFrom(const NavigationController& source) {
 
   needs_reload_ = true;
   for (int i = 0; i < source.entry_count(); i++) {
-    entries_.push_back(linked_ptr<NavigationEntry>(
-        new NavigationEntry(*source.entries_[i])));
+    // When cloning a tab, copy all entries except interstitial pages
+    if (source.entries_[i].get()->page_type() !=
+        NavigationEntry::INTERSTITIAL_PAGE) {
+      entries_.push_back(linked_ptr<NavigationEntry>(
+          new NavigationEntry(*source.entries_[i])));
+    }
   }
 
-  FinishRestore(source.last_committed_entry_index_);
+  session_storage_namespace_id_ =
+      profile_->GetWebKitContext()->dom_storage_context()->CloneSessionStorage(
+          source.session_storage_namespace_id_);
+
+  FinishRestore(source.last_committed_entry_index_, false);
 }
 
 void NavigationController::DiscardNonCommittedEntries() {
   DiscardNonCommittedEntriesInternal();
+
+  // If there was a transient entry, invalidate everything so the new active
+  // entry state is shown.
 }
 
 void NavigationController::InsertOrReplaceEntry(NavigationEntry* entry,
@@ -881,6 +1003,13 @@ void NavigationController::InsertOrReplaceEntry(NavigationEntry* entry,
 
   // This is a new page ID, so we need everybody to know about it.
   tab_contents_->UpdateMaxPageID(entry->page_id());
+
+  // When an entry is inserted, clear the user gesture observed flag.
+  // This is not done when replacing an entry (for example navigating within a
+  // page) because once a user has interacted with a page, we never want to
+  // mistake a subsequent navigation for an auto navigation.
+  if (!replace)
+    user_gesture_observed_ = false;
 }
 
 void NavigationController::SetWindowID(const SessionID& id) {
@@ -890,14 +1019,16 @@ void NavigationController::SetWindowID(const SessionID& id) {
                                          NotificationService::NoDetails());
 }
 
-void NavigationController::NavigateToPendingEntry(bool reload) {
+void NavigationController::NavigateToPendingEntry(ReloadType reload_type) {
+  needs_reload_ = false;
+
   // For session history navigations only the pending_entry_index_ is set.
   if (!pending_entry_) {
     DCHECK(pending_entry_index_ != -1);
     pending_entry_ = entries_[pending_entry_index_].get();
   }
 
-  if (!tab_contents_->NavigateToPendingEntry(reload))
+  if (!tab_contents_->NavigateToPendingEntry(reload_type))
     DiscardNonCommittedEntries();
 }
 
@@ -911,6 +1042,7 @@ void NavigationController::NotifyNavigationEntryCommitted(
   // TODO(pkasting): http://b/1113079 Probably these explicit notification paths
   // should be removed, and interested parties should just listen for the
   // notification below instead.
+
   NotificationService::current()->Notify(
       NotificationType::NAV_ENTRY_COMMITTED,
       Source<NavigationController>(this),
@@ -931,12 +1063,11 @@ void NavigationController::LoadIfNecessary() {
   if (!needs_reload_)
     return;
 
-  needs_reload_ = false;
   // Calling Reload() results in ignoring state, and not loading.
   // Explicitly use NavigateToPendingEntry so that the renderer uses the
   // cached state.
   pending_entry_index_ = last_committed_entry_index_;
-  NavigateToPendingEntry(false);
+  NavigateToPendingEntry(NO_RELOAD);
 }
 
 void NavigationController::NotifyEntryChanged(const NavigationEntry* entry,
@@ -949,9 +1080,10 @@ void NavigationController::NotifyEntryChanged(const NavigationEntry* entry,
                                          Details<EntryChangedDetails>(&det));
 }
 
-void NavigationController::FinishRestore(int selected_index) {
+void NavigationController::FinishRestore(int selected_index,
+                                         bool from_last_session) {
   DCHECK(selected_index >= 0 && selected_index < entry_count());
-  ConfigureEntriesForRestore(&entries_);
+  ConfigureEntriesForRestore(&entries_, from_last_session);
 
   set_max_restored_page_id(entry_count());
 
@@ -971,6 +1103,8 @@ void NavigationController::DiscardTransientEntry() {
   if (transient_entry_index_ == -1)
     return;
   entries_.erase(entries_.begin() + transient_entry_index_);
+  if (last_committed_entry_index_ > transient_entry_index_)
+    last_committed_entry_index_--;
   transient_entry_index_ = -1;
 }
 

@@ -41,6 +41,7 @@
 #include "chrome/browser/renderer_host/render_view_host.h"
 #include "chrome/browser/renderer_host/render_view_host_delegate.h"
 #include "chrome/browser/history/history.h"
+#include "chrome/common/render_messages.h"
 class RenderProcessHost;
 class Profile;
 class SelectFileDialog;
@@ -89,7 +90,7 @@ public:
     void UpdateMaxPageID(int32 page_id);
     int32 GetMaxPageID();
 
-    bool NavigateToPendingEntry(bool reload);
+    bool NavigateToPendingEntry(NavigationController::ReloadType reload);
 
     // Changes the IsLoading state and notifies delegate as needed
     // |details| is used to provide details on the load that just finished
@@ -128,7 +129,7 @@ public:
     bool doNavigateTo(
         const GURL &newURL,
         const GURL &referrerURL,
-        bool reload);
+        NavigationController::ReloadType reload);
 
     void SetContainerBounds(const gfx::Rect &rc);
     void resize(int width, int height);
@@ -157,6 +158,7 @@ protected: /******* RenderViewHostDelegate *******/
     virtual RenderViewHostDelegate::View* GetViewDelegate();
     virtual RenderViewHostDelegate::Resource* GetResourceDelegate();
     virtual RenderViewHostDelegate::BrowserIntegration* GetBrowserIntegrationDelegate();
+    virtual RendererPreferences GetRendererPrefs(Profile*) const;
 
     virtual void RendererUnresponsive(RenderViewHost* render_view_host,
                                       bool is_during_unload);
@@ -231,13 +233,17 @@ protected: /******* RenderViewHostDelegate::Resource *******/
         const GURL& url);
 
     virtual void DidStartReceivingResourceResponse(
-        ResourceRequestDetails* details);
+        const ResourceRequestDetails& details);
 
     virtual void DidRedirectProvisionalLoad(int32 page_id,
                                             const GURL& source_url,
                                             const GURL& target_url);
 
-    virtual void DidRedirectResource(ResourceRequestDetails* details);
+    virtual void DidRedirectResource(const ResourceRedirectDetails& details);
+
+    virtual void OnContentBlocked(ContentSettingsType type);
+
+    virtual void OnGeolocationPermissionSet(const GURL& requesting_frame, bool allowed);
 
     virtual void DidLoadResourceFromMemoryCache(
         const GURL& url,
@@ -256,19 +262,19 @@ protected: /******* RenderViewHostDelegate::Resource *******/
 
 protected: /******* RenderViewHostDelegate::View *******/
     virtual void CreateNewWindow(int route_id,
-                                 base::WaitableEvent* modal_dialog_event);
-    virtual void CreateNewWindow(int route_id);
-    virtual void CreateNewWidget(int route_id, bool activatable);
+                                 WindowContainerType container_type);
+    virtual void CreateNewWidget(int route_id, WebKit::WebPopupType popup_type);
     virtual void ShowCreatedWindow(int route_id,
                                    WindowOpenDisposition disposition,
                                    const gfx::Rect& initial_pos,
-                                   bool user_gesture,
-                                   const GURL& creator_url);
+                                   bool user_gesture);
     virtual void ShowCreatedWidget(int route_id,
                                    const gfx::Rect& initial_pos);
     virtual void ShowContextMenu(const ContextMenuParams& params);
     virtual void StartDragging(const WebDropData& drop_data,
-                               WebKit::WebDragOperationsMask allowed_ops);
+                               WebKit::WebDragOperationsMask allowed_ops,
+                               const SkBitmap& image,
+                               const gfx::Point& image_offset);
     virtual void UpdateDragCursor(WebKit::WebDragOperation operation);
     virtual void GotFocus();
     virtual void TakeFocus(bool reverse);
@@ -277,6 +283,8 @@ protected: /******* RenderViewHostDelegate::View *******/
     virtual void HandleMouseLeave();
     virtual void UpdatePreferredWidth(int pref_width);
     virtual void UpdatePreferredSize(const gfx::Size&);
+    virtual bool PreHandleKeyboardEvent(const NativeWebKeyboardEvent& event,
+                                         bool* is_keyboard_shortcut);
 
 protected: /******* RenderViewHostDelegate::BrowserIntegration *******/
     virtual void OnUserGesture();
@@ -294,6 +302,15 @@ protected: /******* RenderViewHostDelegate::BrowserIntegration *******/
     virtual void OnDidGetApplicationInfo(
         int32 page_id,
         const webkit_glue::WebApplicationInfo& app_info);
+    virtual void OnPageContents(const GURL& url,
+                                int renderer_process_id,
+                                int32 page_id,
+                                const std::wstring& contents,
+                                const std::string& language);
+    virtual void OnPageTranslated(int32 page_id,
+                                  const std::string& original_lang,
+                                  const std::string& translated_lang,
+                                  TranslateErrors::Type error_type);
 
 private:
 

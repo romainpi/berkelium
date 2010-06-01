@@ -67,7 +67,7 @@ IF(CHROMIUM_ISXCODE)
 ELSE()
   PKG_CHECK_MODULES(CHROMIUM_PLAT gtk+-2.0 glib-2.0 gthread-2.0 gio-unix-2.0)  # will set MONO_FOUND
   SET(CHROMIUM_PLAT linux)
-  SET(CHROMIUM_PLAT_LDFLAGS ${CHROMIUM_PLAT_LDFLAGS}  ssl3 nss3 nssutil3 smime3 plds4 plc4 nspr4 pthread gdk-x11-2.0 gdk_pixbuf-2.0 linux_versioninfo pangocairo-1.0 gio-2.0 pango-1.0 cairo gobject-2.0 gmodule-2.0 glib-2.0 fontconfig freetype rt gconf-2 glib-2.0 X11 asound harfbuzz harfbuzz_interface sandbox nonnacl_util_linux)
+  SET(CHROMIUM_PLAT_LDFLAGS ${CHROMIUM_PLAT_LDFLAGS}  ssl3 nss3 nssutil3 smime3 plds4 plc4 nspr4 pthread gdk-x11-2.0 gdk_pixbuf-2.0 pangocairo-1.0 gio-2.0 pango-1.0 cairo gobject-2.0 gmodule-2.0 glib-2.0 fontconfig freetype rt gconf-2 glib-2.0 X11 asound harfbuzz harfbuzz_interface sandbox nonnacl_util_linux)
   SET(CHROMIUM_START_GROUP -Wl,--start-group)
   SET(CHROMIUM_END_GROUP -Wl,--end-group)
   SET(CHROMIUM_DLLEXT so)
@@ -82,10 +82,10 @@ IF(NOT CHROMIUM_ISSCONS)
       SET(CHROMIUM_CHLIBS ${CHROMIUM_DATADIR}/obj.target)
     ENDIF()
 
-   SET(CHROME_LIBRARY_DIRS ${CHROMIUM_CHLIBS} ${CHROMIUM_CHLIBS}/app ${CHROMIUM_CHLIBS}/base ${CHROMIUM_CHLIBS}/ipc ${CHROMIUM_CHLIBS}/chrome ${CHROMIUM_CHLIBS}/net ${CHROMIUM_CHLIBS}/media ${CHROMIUM_CHLIBS}/webkit ${CHROMIUM_CHLIBS}/sandbox ${CHROMIUM_CHLIBS}/skia ${CHROMIUM_CHLIBS}/printing ${CHROMIUM_CHLIBS}/v8/tools/gyp ${CHROMIUM_CHLIBS}/sdch ${CHROMIUM_CHLIBS}/build/temp_gyp ${CHROMIUM_CHLIBS}/native_client/src/trusted/plugin/ ${CHROMIUM_CHLIBS}/native_client/src/shared/srpc ${CHROMIUM_CHLIBS}/native_client/src/shared/imc ${CHROMIUM_CHLIBS}/native_client/src/shared/platform ${CHROMIUM_CHLIBS}/native_client/src/trusted/nonnacl_util ${CHROMIUM_CHLIBS}/native_client/src/trusted/nonnacl_util/linux ${CHROMIUM_CHLIBS}/native_client/src/trusted/service_runtime/ ${CHROMIUM_CHLIBS}/ ${CHROMIUM_CHLIBS}/native_client/src/trusted/desc/ ${CHROMIUM_CHLIBS}/third_party/ffmpeg ${CHROMIUM_CHLIBS}/third_party/harfbuzz ${CHROMIUM_CHLIBS}/third_party/hunspell ${CHROMIUM_CHLIBS}/third_party/icu ${CHROMIUM_CHLIBS}/third_party/libevent ${CHROMIUM_CHLIBS}/third_party/libxml ${CHROMIUM_CHLIBS}/third_party/libxslt ${CHROMIUM_CHLIBS}/third_party/modp_b64 ${CHROMIUM_CHLIBS}/third_party/sqlite ${CHROMIUM_CHLIBS}/third_party/zlib ${CHROMIUM_CHLIBS}/third_party/WebKit/JavaScriptCore/JavaScriptCore.gyp ${CHROMIUM_CHLIBS}/third_party/WebKit/WebCore/WebCore.gyp)
+   SET(CHROME_LIBRARY_DIRS ${CHROMIUM_CHLIBS} ${CHROMIUM_CHLIBS}/app ${CHROMIUM_CHLIBS}/base ${CHROMIUM_CHLIBS}/base/allocator ${CHROMIUM_CHLIBS}/ipc ${CHROMIUM_CHLIBS}/chrome ${CHROMIUM_CHLIBS}/net ${CHROMIUM_CHLIBS}/media ${CHROMIUM_CHLIBS}/webkit ${CHROMIUM_CHLIBS}/webkit/default_plugin ${CHROMIUM_CHLIBS}/sandbox ${CHROMIUM_CHLIBS}/skia ${CHROMIUM_CHLIBS}/printing ${CHROMIUM_CHLIBS}/v8/tools/gyp ${CHROMIUM_CHLIBS}/gpu ${CHROMIUM_CHLIBS}/gfx ${CHROMIUM_CHLIBS}/sdch ${CHROMIUM_CHLIBS}/build/temp_gyp ${CHROMIUM_CHLIBS}/native_client/src/trusted/plugin/ ${CHROMIUM_CHLIBS}/native_client/src/shared/srpc ${CHROMIUM_CHLIBS}/native_client/src/shared/imc ${CHROMIUM_CHLIBS}/native_client/src/shared/platform ${CHROMIUM_CHLIBS}/native_client/src/trusted/nonnacl_util ${CHROMIUM_CHLIBS}/native_client/src/trusted/nonnacl_util/linux ${CHROMIUM_CHLIBS}/sandbox/linux/seccomp ${CHROMIUM_CHLIBS}/native_client/src/trusted/service_runtime ${CHROMIUM_CHLIBS}/native_client/src/trusted/desc/ ${CHROMIUM_CHLIBS}/native_client/src/shared/npruntime ${CHROMIUM_CHLIBS}/native_client/src/shared/gio ${CHROMIUM_CHLIBS}/third_party/ffmpeg ${CHROMIUM_CHLIBS}/third_party/openmax ${CHROMIUM_CHLIBS}/third_party/harfbuzz ${CHROMIUM_CHLIBS}/third_party/libjingle ${CHROMIUM_CHLIBS}/third_party/hunspell ${CHROMIUM_CHLIBS}/third_party/icu ${CHROMIUM_CHLIBS}/third_party/libevent ${CHROMIUM_CHLIBS}/third_party/libxml ${CHROMIUM_CHLIBS}/third_party/libxslt ${CHROMIUM_CHLIBS}/third_party/modp_b64 ${CHROMIUM_CHLIBS}/third_party/protobuf2 ${CHROMIUM_CHLIBS}/third_party/cld ${CHROMIUM_CHLIBS}/third_party/ots ${CHROMIUM_CHLIBS}/third_party/angle/src ${CHROMIUM_CHLIBS}/base/third_party/dynamic_annotations ${CHROMIUM_CHLIBS}/third_party/sqlite ${CHROMIUM_CHLIBS}/third_party/zlib ${CHROMIUM_CHLIBS}/webkit/support ${CHROMIUM_CHLIBS}/third_party/WebKit/WebKit/chromium ${CHROMIUM_CHLIBS}/third_party/WebKit/JavaScriptCore/JavaScriptCore.gyp ${CHROMIUM_CHLIBS}/third_party/WebKit/WebCore/WebCore.gyp)
 
 
-    SET(CHROMIUM_TPLIBS event zlib png xml jpeg xslt bzip2 ${CHROMIUM_CHLIBS}/third_party/sqlite/libsqlite.a google_nacl_imc_c base_i18n)
+    SET(CHROMIUM_TPLIBS event zlib png jpeg xslt bz2 Xss ${CHROMIUM_CHLIBS}/third_party/sqlite/libsqlite3.a ${CHROMIUM_CHLIBS}/net/third_party/nss/libssl.a google_nacl_imc_c base_i18n)
 
     SET(CHROMIUM_GENINCLUDES ${CHROMIUM_CHLIBS}/gen/chrome)
   ELSE(NOT CHROMIUM_ISXCODE)
@@ -98,12 +98,6 @@ IF(NOT CHROMIUM_ISSCONS)
 
     SET(CHROME_LIBRARY_DIRS ${CHROMIUM_CHLIBS})
     SET(CHROMIUM_TPLIBS ${CHROMIUM_CHLIBS}/libevent.a ${CHROMIUM_CHLIBS}/libxslt.a ${CHROMIUM_CHLIBS}/libjpeg.a ${CHROMIUM_CHLIBS}/libpng.a ${CHROMIUM_CHLIBS}/libz.a ${CHROMIUM_CHLIBS}/libxml2.a ${CHROMIUM_CHLIBS}/libbz2.a ${CHROMIUM_CHLIBS}/libsqlite3.a ${CHROMIUM_CHLIBS}/libprofile_import.a ${CHROMIUM_CHLIBS}/libpcre.a libgoogle_nacl_imc_c)
-    IF(CHROME_IS_OVER_VERSION_29000)
-        # Uncomment me for experimental 29000 builds (Crash in WebCore calling CoreGraphics after about 3 renders, in __dyld_misaligned_stack_error)
-        SET(CHROMIUM_TPLIBS ${CHROMIUM_TPLIBS} base_i18n ${CHROMIUM_CHLIBS}/libsync.a ${CHROMIUM_CHLIBS}/libsyncapi.a ${CHROMIUM_CHLIBS}/libprotobuf_lite.a )
-    ELSE()
-        SET(CHROMIUM_TPLIBS ${CHROMIUM_TPLIBS} base_gfx)
-    ENDIF()
     SET(GENINCLUDES ${CHROMIUMDIR}/src/xcodebuild/DerivedSources/${CHROMIUMMODE}/chrome)
 
   ENDIF(NOT CHROMIUM_ISXCODE)
@@ -116,10 +110,10 @@ ELSE(NOT CHROMIUM_ISSCONS)
   SET(GENINCLUDES ${CHROMIUM_DATADIR}) #not sure
 
   SET(CHROME_LIBRARY_DIRS ${CHROMIUMLIBPATH})
-  SET(CHROMIUM_TPLIBS event xslt jpeg png z xml2 bz2 ${CHROMIUMLIBPATH}/libsqlite.a google_nacl_imc_c  base_i18n)
+  SET(CHROMIUM_TPLIBS event xslt jpeg png z bz2 ${CHROMIUMLIBPATH}/libsqlite.a google_nacl_imc_c  base_i18n)
 ENDIF(NOT CHROMIUM_ISSCONS)
 
-SET(CHROMIUMLIBS ${CHROMIUMLDFLAGS} ${CHROMIUM_TPLIBS}  dl m common browser debugger renderer utility printing app_base base icui18n icuuc icudata skia net googleurl sdch modp_b64 v8_snapshot v8_base glue pcre wtf webkit webcore media ffmpeg hunspell plugin  appcache ipc worker database common_constants npGoogleNaClPluginChrome nonnacl_srpc platform sel sel_ldr_launcher nonnacl_util_chrome nrd_xfer gio expiration nacl)
+SET(CHROMIUMLIBS ${CHROMIUMLDFLAGS} ${CHROMIUM_TPLIBS}  dl m common common_net dynamic_annotations browser debugger renderer utility printing app_base appcache base base_i18n allocator protobuf_lite xdg_mime gfx omx_wrapper glue icui18n database syncapi sync icuuc icudata skia skia_opts seccomp_sandbox xml2 net net_base il cld ots gio gio_shm googleurl symbolize chrome_version_info notifier sdch modp_b64 v8_snapshot v8_base pcre wtf webkit webcore webcore_bindings media ffmpeg gpu_plugin gles2_implementation gles2_c_lib command_buffer_client command_buffer_service gl_libs command_buffer_common command_buffer_service_impl gles2_cmd_helper gles2_lib hunspell plugin ipc worker common_constants npGoogleNaClPluginChrome google_nacl_npruntime default_plugin nonnacl_srpc platform sel sel_ldr_launcher nonnacl_util_chrome nrd_xfer expiration nacl jingle installer_util translator_common translator_glsl)
 SET(CHROMIUM_ARCHFLAGS)
 # Flags that affect both compiling and linking
 SET(CHROMIUM_CLIBFLAGS ${CHROMIUM_ARCHFLAGS} -fvisibility=hidden -fvisibility-inlines-hidden -fPIC -pthread -fno-rtti)

@@ -40,7 +40,11 @@ class BrowserRenderProcessHost;
 class ProcessSingleton;
 class ChromeThread;
 class URLRequestContext;
-
+class SystemMonitor;
+class HighResolutionTimerManager;
+namespace chrome_browser_net {
+class DnsGlobalInit;
+}
 namespace Berkelium {
 
 class MemoryRenderViewHostFactory;
@@ -48,6 +52,9 @@ class MemoryRenderViewHostFactory;
 //singleton class that contains chromium singletons. Not visible outside of Berkelium library core
 class Root:public AutoSingleton<Root> {
     Profile*mProf;
+    SystemMonitor*mSysMon;
+    HighResolutionTimerManager*mTimerMgr;
+    chrome_browser_net::DnsGlobalInit*mDNSPrefetch;
     URLRequestContextGetter *mDefaultRequestContext;
     MessageLoop* mMessageLoop;
     NotificationService*mNotificationService;
@@ -68,6 +75,10 @@ public:
     }
     inline Profile* getProfile() {
         return mProf;
+    }
+
+    URLRequestContextGetter *getDefaultRequestContext() {
+        return mDefaultRequestContext;
     }
 };
 

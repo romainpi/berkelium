@@ -128,6 +128,10 @@ void RenderWidget::Blur(){
     mFocused = false;
 }
 
+  // Returns true if the view is showing
+bool RenderWidget::IsShowing(){
+    return true;
+}
   // Returns true if the View currently has the focus.
 bool RenderWidget::HasFocus(){
     return mFocused;
@@ -172,7 +176,7 @@ void RenderWidget::IMEUpdateStatus(int control, const gfx::Rect& caret_rect){
   // (Worse, we might recursively call RenderWidgetHost::GetBackingStore().)
   // Thus implementers should generally paint as much of |rect| as possible
   // synchronously with as little overpainting as possible.
-void RenderWidget::DidPaintRect(const gfx::Rect& rect){
+void RenderWidget::DidPaintBackingStoreRects(const std::vector<gfx::Rect>& rect){
 //    std::cout << "Painted rect "<<rect << std::endl;
 }
 
@@ -180,12 +184,16 @@ void RenderWidget::DidPaintRect(const gfx::Rect& rect){
   // by dx pixels horizontally and dy pixels vertically. The view should copy
   // the exposed pixels from the backing store of the render widget (which has
   // already been scrolled) onto the screen.
-void RenderWidget::DidScrollRect(
+void RenderWidget::DidScrollBackingStoreRect(
       const gfx::Rect& rect, int dx, int dy){
 }
 
   // Notifies the View that the renderer has ceased to exist.
 void RenderWidget::RenderViewGone(){
+}
+
+// Notifies the View that the renderer will be delete soon.
+void RenderWidget::WillDestroyRenderWidget(RenderWidgetHost* rwh) {
 }
 
   // Tells the View to destroy itself.
@@ -216,6 +224,13 @@ BackingStore* RenderWidget::AllocBackingStore(const gfx::Size& size) {
         mBacking = BackingStoreManager::GetBackingStore(mHost, size); // will ignore paints on linux!
     }
     return mBacking;
+}
+
+// Allocate a video layer for this view.
+VideoLayer* RenderWidget::AllocVideoLayer(const gfx::Size& size) {
+    // FIXME: See VideoLayerX, etc. Also need to do something if gpu rendering?
+    NOTIMPLEMENTED();
+    return NULL;
 }
 
 #if defined(OS_MACOSX)
@@ -330,6 +345,14 @@ void RenderWidget::MovePluginWindows(
 #endif
 }
 
+void RenderWidget::SetVisuallyDeemphasized(bool deemphasized) {
+}
+
+// Returns true if the native view, |native_view|, is contained within in the
+// widget associated with this RenderWidgetHostView.
+bool RenderWidget::ContainsNativeView(gfx::NativeView native_view) const {
+    return false;
+}
 
 void RenderWidget::focus() {
     mHost->Focus();

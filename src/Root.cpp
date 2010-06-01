@@ -45,6 +45,8 @@
 #include "base/i18n/icu_util.h"
 #include "net/base/cookie_monster.h"
 #include "chrome/common/chrome_paths.h"
+#include "chrome/common/chrome_switches.h"
+#include "chrome/common/url_constants.h"
 #include "chrome/browser/browser_prefs.h"
 #include "chrome/browser/browser_process_impl.h"
 #include "chrome/browser/process_singleton.h"
@@ -54,8 +56,11 @@
 #include "chrome/browser/renderer_host/browser_render_process_host.h"
 #include "chrome/browser/chrome_thread.h"
 #include "chrome/browser/browser_url_handler.h"
+#include "chrome/browser/net/dns_global.h"
+#include "app/hi_res_timer_manager.h"
 #include "app/resource_bundle.h"
 #include "app/app_paths.h"
+#include "app/system_monitor.h"
 #include "chrome/browser/pref_service.h"
 #include "chrome/common/pref_names.h"
 #include "chrome/common/logging_chrome.h"
@@ -175,6 +180,8 @@ Root::Root (){
         RenderProcessHost::set_run_renderer_in_process(true);
     }
     mMessageLoop = new MessageLoop(MessageLoop::TYPE_UI);
+    mSysMon = new SystemMonitor;
+    mTimerMgr = new HighResolutionTimerManager;
     mUIThread = new ChromeThread(ChromeThread::UI, mMessageLoop);
 
     mProcessSingleton= new ProcessSingleton(homedirpath);
@@ -205,6 +212,8 @@ Root::Root (){
         logging::DELETE_OLD_LOG_FILE);
     //APPEND_TO_OLD_LOG_FILE
 
+  chrome::RegisterChromeSchemes(); // Required for "chrome-extension://" in InitExtensions
+
   SandboxInitWrapper sandbox_wrapper;
 #if defined(OS_WIN)
   // Get the interface pointer to the BrokerServices or TargetServices,
@@ -212,6 +221,15 @@ Root::Root (){
   sandbox::SandboxInterfaceInfo sandbox_info = {0};
   sandbox_info.broker_services = sandbox::BrokerServicesBase::GetInstance();
   g_browser_process->InitBrokerServices(sandbox_info.broker_services);
+  if (!CommandLine::ForCurrentProcess()->HasSwitch(switches::kNoSandbox)) {
+    bool use_winsta = !CommandLine::ForCurrentProcess()->HasSwitch(
+        switches::kDisableAltWinstation);
+    // Precreate the desktop and window station used by the renderers.
+    sandbox::TargetPolicy* policy = broker_services->CreatePolicy();
+    sandbox::ResultCode result = policy->CreateAlternateDesktop(use_winsta);
+    CHECK(sandbox::SBOX_ERROR_FAILED_TO_SWITCH_BACK_WINSTATION != result);
+    policy->Release();
+  }
   sandbox_wrapper.SetServices(&sandbox_info);
 #endif
   sandbox_wrapper.InitializeSandbox(*CommandLine::ForCurrentProcess(), "browser");
@@ -225,12 +243,14 @@ Root::Root (){
     ResourceBundle::InitSharedInstance(L"en-US");// FIXME: lookup locale
     // We only load the theme dll in the browser process.
     net::CookieMonster::EnableFileScheme();
+
     ProfileManager* profile_manager = browser_process->profile_manager();
-    mProf = profile_manager->GetDefaultProfile(homedirpath);
+    mProf = profile_manager->GetProfile(homedirpath, false);
     mProf->GetPrefs()->SetBoolean(prefs::kSafeBrowsingEnabled, false);
     mProf->GetPrefs()->RegisterStringPref(prefs::kSafeBrowsingClientKey, L"");
     mProf->GetPrefs()->RegisterStringPref(prefs::kSafeBrowsingWrappedKey, L"");
     mProf->InitExtensions();
+
     PrefService* user_prefs = mProf->GetPrefs();
     DCHECK(user_prefs);
     
@@ -240,6 +260,11 @@ Root::Root (){
 
 //    browser_process->local_state()->SetString(prefs::kApplicationLocale,std::wstring());
     mProcessSingleton->Create();
+
+    mDNSPrefetch = new chrome_browser_net::DnsGlobalInit(
+      user_prefs,
+      browser_process->local_state(),
+      CommandLine::ForCurrentProcess()->HasSwitch(switches::kEnablePreconnect));
 
     BrowserURLHandler::InitURLHandlers();
 
@@ -298,6 +323,8 @@ Root::~Root(){
     delete mRenderViewHostFactory;
     
     delete mProf;
+    delete mTimerMgr;
+    delete mSysMon;
     delete mUIThread;
 //    delete mNotificationService;
     delete mMessageLoop;

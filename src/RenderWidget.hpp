@@ -93,6 +93,8 @@ public: /******* RenderWidgetHostView *******/
   virtual void Focus();
   virtual void Blur();
 
+  virtual bool IsShowing();
+
   // Returns true if the View currently has the focus.
   virtual bool HasFocus();
 
@@ -127,17 +129,20 @@ public: /******* RenderWidgetHostView *******/
   // (Worse, we might recursively call RenderWidgetHost::GetBackingStore().)
   // Thus implementers should generally paint as much of |rect| as possible
   // synchronously with as little overpainting as possible.
-  virtual void DidPaintRect(const gfx::Rect& rect);
+  virtual void DidPaintBackingStoreRects(const std::vector<gfx::Rect>& rect);
 
   // Informs the view that a portion of the widget's backing store was scrolled
   // by dx pixels horizontally and dy pixels vertically. The view should copy
   // the exposed pixels from the backing store of the render widget (which has
   // already been scrolled) onto the screen.
-  virtual void DidScrollRect(
+  virtual void DidScrollBackingStoreRect(
       const gfx::Rect& rect, int dx, int dy);
 
   // Notifies the View that the renderer has ceased to exist.
   virtual void RenderViewGone();
+
+  // Notifies the View that the renderer will be delete soon.
+  virtual void WillDestroyRenderWidget(RenderWidgetHost* rwh);
 
   // Tells the View to destroy itself.
   virtual void Destroy();
@@ -151,10 +156,13 @@ public: /******* RenderWidgetHostView *******/
 
   // Tells the View whether the context menu is showing. This is used on Linux
   // to suppress updates to webkit focus for the duration of the show.
-    virtual void ShowingContextMenu(bool showing);
+  virtual void ShowingContextMenu(bool showing);
 
   // Allocate a backing store for this view
   virtual BackingStore* AllocBackingStore(const gfx::Size& size);
+
+  // Allocate a video layer for this view.
+  virtual VideoLayer* AllocVideoLayer(const gfx::Size& size);
 
 #if defined(OS_MACOSX)
   // Display a native control popup menu for WebKit.
@@ -177,6 +185,14 @@ public: /******* RenderWidgetHostView *******/
   virtual void CreatePluginContainer(gfx::PluginWindowHandle id);
   virtual void DestroyPluginContainer(gfx::PluginWindowHandle id);
 #endif
+
+  // Toggles visual muting of the render view area. This is on when a
+  // constrained window is showing.
+  virtual void SetVisuallyDeemphasized(bool deemphasized);
+
+  // Returns true if the native view, |native_view|, is contained within in the
+  // widget associated with this RenderWidgetHostView.
+  virtual bool ContainsNativeView(gfx::NativeView native_view) const;
 
 private:
     uint32 mModifiers;

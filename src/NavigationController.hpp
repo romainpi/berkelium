@@ -5,17 +5,20 @@
 #ifndef BERKELIUM_NAVIGATION_CONTROLLER_HPP_
 #define BERKELIUM_NAVIGATION_CONTROLLER_HPP_
 
-#include <vector>
-
 #include "build/build_config.h"
+
+#include <string>
+#include <vector>
 
 #include "base/linked_ptr.h"
 #include "base/string16.h"
 #include "base/time.h"
 #include "googleurl/src/gurl.h"
 #include "chrome/browser/sessions/session_id.h"
+#include "chrome/browser/ssl/ssl_manager.h"
 #include "chrome/common/navigation_types.h"
 #include "chrome/common/page_transition_types.h"
+#include "chrome/common/render_messages.h"
 
 class NavigationEntry;
 class GURL;
@@ -24,6 +27,7 @@ class SiteInstance;
 class SkBitmap;
 class TabNavigation;
 struct ViewHostMsg_FrameNavigate_Params;
+
 
 namespace Berkelium {
 
@@ -55,7 +59,7 @@ class NavigationController {
     // navigation.
     LoadCommittedDetails()
         : entry(NULL),
-          type(),
+          type(NavigationType::UNKNOWN),
           previous_entry_index(-1),
           is_auto(false),
           did_replace_entry(false),
@@ -88,7 +92,7 @@ class NavigationController {
     bool is_auto;
 
     // True if the committed entry has replaced the exisiting one.
-    // A non-user initiated redierct causes such replacement.
+    // A non-user initiated redirect causes such replacement.
     // This is somewhat similiar to is_auto, but not exactly the same.
     bool did_replace_entry;
 
@@ -132,6 +136,12 @@ class NavigationController {
     int count;
   };
 
+  enum ReloadType{
+      RELOAD = ViewMsg_Navigate_Params::RELOAD,
+      RELOAD_IGNORING_CACHE = ViewMsg_Navigate_Params::RELOAD_IGNORING_CACHE,
+      NO_RELOAD = ViewMsg_Navigate_Params::NORMAL
+  };
+
   // ---------------------------------------------------------------------------
 
   NavigationController(WindowImpl* tab_contents, Profile* profile);
@@ -149,11 +159,13 @@ class NavigationController {
 
   // Initializes this NavigationController with the given saved navigations,
   // using selected_navigation as the currently loaded entry. Before this call
-  // the controller should be unused (there should be no current entry). This is
-  // used for session restore.
-
-  /*void RestoreFromState(const std::vector<TabNavigation>& navigations,
-                        int selected_navigation);
+  // the controller should be unused (there should be no current entry). If
+  // from_last_session is true, navigations are from the previous session,
+  // otherwise they are from the current session (undo tab close).
+  // This is used for session restore.
+  /*
+  void RestoreFromState(const std::vector<TabNavigation>& navigations,
+                        int selected_navigation, bool from_last_session);
   */
 
   // Active entry --------------------------------------------------------------
@@ -174,6 +186,9 @@ class NavigationController {
   // Returns the last committed entry, which may be null if there are no
   // committed entries.
   NavigationEntry* GetLastCommittedEntry() const;
+
+  // Returns true if the source for the current entry can be viewed.
+  bool CanViewSource() const;
 
   // Returns the index of the last committed entry.
   int last_committed_entry_index() const {
@@ -282,6 +297,8 @@ class NavigationController {
   // entry has POST data the user is prompted to see if they really want to
   // reload the page. In nearly all cases pass in true.
   void Reload(bool check_for_repost);
+  // Like Reload(), but don't use caches (aka "shift-reload").
+  void ReloadIgnoringCache(bool check_for_repost);
 
   // Removing of entries -------------------------------------------------------
 
@@ -371,15 +388,38 @@ class NavigationController {
   // if it was restored from a previous session.  (-1 otherwise)
   int max_restored_page_id() const { return max_restored_page_id_; }
 
+  // The session storage namespace id that all child render views should use.
+  int64 session_storage_namespace_id() const {
+    return session_storage_namespace_id_;
+  }
+
   // Disables checking for a repost and prompting the user. This is used during
   // testing.
   static void DisablePromptOnRepost();
 
   // Maximum number of entries before we start removing entries from the front.
+#ifdef UNIT_TEST
   static void set_max_entry_count(size_t max_entry_count) {
     max_entry_count_ = max_entry_count;
   }
+#endif
   static size_t max_entry_count() { return max_entry_count_; }
+
+  // Cancels a repost that brought up a warning.
+  void CancelPendingReload();
+  // Continues a repost that brought up a warning.
+  void ContinuePendingReload();
+
+  // Returns true if we are navigating to the URL the tab is opened with.
+  bool IsInitialNavigation();
+
+  // Creates navigation entry and translates the virtual url to a real one.
+  // Used when restoring a tab from a TabNavigation object and when navigating
+  // to a new URL using LoadURL.
+  static NavigationEntry* CreateNavigationEntry(const GURL& url,
+                                                const GURL& referrer,
+                                                PageTransition::Type transition,
+                                                Profile* profile);
 
  private:
   class RestoreHelper;
@@ -420,8 +460,11 @@ class NavigationController {
   bool RendererDidNavigateAutoSubframe(
       const ViewHostMsg_FrameNavigate_Params& params);
 
+  // Helper function for code shared between Reload() and ReloadAll().
+  void ReloadInternal(bool check_for_repost, ReloadType reload_type);
+
   // Actually issues the navigation held in pending_entry.
-  void NavigateToPendingEntry(bool reload);
+  void NavigateToPendingEntry(ReloadType reload_type);
 
   // Allows the derived class to issue notifications that a load has been
   // committed. This will fill in the active entry to the details structure.
@@ -435,13 +478,14 @@ class NavigationController {
   // was restored from a previous session.
   void set_max_restored_page_id(int max_id) { max_restored_page_id_ = max_id; }
 
-  NavigationEntry* CreateNavigationEntry(const GURL& url, const GURL& referrer,
-                                         PageTransition::Type transition);
+  // Updates the virtual URL of an entry to match a new URL, for cases where
+  // the real renderer URL is derived from the virtual URL, like view-source:
+  void UpdateVirtualURLToURL(NavigationEntry* entry, const GURL& new_url);
 
   // Invoked after session/tab restore or cloning a tab. Resets the transition
   // type of the entries, updates the max page id and creates the active
-  // contents.
-  void FinishRestore(int selected_index);
+  // contents. See RestoreFromState for a description of from_last_session.
+  void FinishRestore(int selected_index, bool from_last_session);
 
   // Inserts a new entry or replaces the current entry with a new one, removing
   // all entries after it. The new entry will become the active one.
@@ -518,12 +562,19 @@ class NavigationController {
   // Whether a user gesture has been observed since the last navigation.
   bool user_gesture_observed_;
 
+  // The session storage id that any (indirectly) owned RenderView should use.
+  int64 session_storage_namespace_id_;
+
   // Should Reload check for post data? The default is true, but is set to false
   // when testing.
   static bool check_for_repost_;
 
   // The maximum number of entries that a navigation controller can store.
   static size_t max_entry_count_;
+
+  // If a repost is pending, its type (RELOAD or RELOAD_IGNORING_CACHE),
+  // NO_RELOAD otherwise.
+  ReloadType pending_reload_;
 
   DISALLOW_COPY_AND_ASSIGN(NavigationController);
 };

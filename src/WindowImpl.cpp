@@ -43,9 +43,10 @@
 #include "base/file_version_info.h"
 #include "base/values.h"
 #include "net/base/net_util.h"
+#include "chrome/browser/in_process_webkit/dom_storage_context.h"
+#include "chrome/browser/in_process_webkit/webkit_context.h"
 #include "chrome/browser/renderer_host/render_view_host.h"
 #include "chrome/browser/renderer_host/site_instance.h"
-#include "chrome/common/render_messages.h"
 #include "chrome/browser/tab_contents/tab_contents.h"
 #include "chrome/browser/dom_ui/dom_ui.h"
 #include "chrome/browser/dom_ui/dom_ui_factory.h"
@@ -56,6 +57,10 @@
 #include "chrome/browser/renderer_host/render_process_host.h"
 #include "chrome/common/bindings_policy.h"
 
+#if BERKELIUM_PLATFORM == PLATFORM_LINUX
+#include <gdk/gdkcursor.h>
+#endif
+
 namespace Berkelium {
 //WindowImpl temp;
 void WindowImpl::init(SiteInstance*site, int routing_id) {
@@ -64,7 +69,9 @@ void WindowImpl::init(SiteInstance*site, int routing_id) {
     mRenderViewHost = RenderViewHostFactory::Create(
         site,
         this,
-        routing_id);
+        routing_id,
+        profile()->GetWebKitContext()->
+        dom_storage_context()->AllocateSessionStorageNamespaceId());
     host()->AllowBindings(
         BindingsPolicy::DOM_UI);
 }
@@ -134,14 +141,14 @@ ViewType::Type WindowImpl::GetRenderViewType()const {
     return ViewType::TAB_CONTENTS;
 }
 
-void MakeNavigateParams(const NavigationEntry& entry, bool reload,
+static void MakeNavigateParams(const NavigationEntry& entry, NavigationController::ReloadType reload,
                         ViewMsg_Navigate_Params* params) {
   params->page_id = entry.page_id();
   params->url = entry.url();
   params->referrer = entry.referrer();
   params->transition = entry.transition_type();
   params->state = entry.content_state();
-  params->reload = reload;
+  params->navigation_type = (ViewMsg_Navigate_Params::NavigationType)(int)reload;
   params->request_time = base::Time::Now();
 }
 
@@ -243,7 +250,7 @@ void WindowImpl::selectAll() {
 }
 
 void WindowImpl::refresh() {
-    doNavigateTo(mCurrentURL, GURL(), true);
+    doNavigateTo(mCurrentURL, GURL(), NavigationController::RELOAD);
 }
 
 void WindowImpl::SetContainerBounds (const gfx::Rect &rc) {
@@ -266,12 +273,12 @@ void WindowImpl::executeJavascript(const wchar_t *javascript, size_t javascriptL
 
 bool WindowImpl::navigateTo(const char *url, size_t urlLength) {
     this->mCurrentURL = GURL(std::string(url,urlLength));
-    return doNavigateTo(this->mCurrentURL, GURL(), false);
+    return doNavigateTo(this->mCurrentURL, GURL(), NavigationController::NO_RELOAD);
 }
 bool WindowImpl::doNavigateTo(
         const GURL &newURL,
         const GURL &referrerURL,
-        bool reload)
+        NavigationController::ReloadType reload)
 {
     if (view()) {
         view()->Hide();
@@ -292,7 +299,8 @@ NavigationEntry* WindowImpl::CreateNavigationEntry(
   // will actually be loaded. This real URL won't be shown to the user, just
   // used internally.
   GURL loaded_url(url);
-  BrowserURLHandler::RewriteURLIfNecessary(&loaded_url, profile());
+  bool reverse_on_redirect = false;
+  BrowserURLHandler::RewriteURLIfNecessary(&loaded_url, profile(), &reverse_on_redirect);
 
   NavigationEntry* entry = new NavigationEntry(NULL, -1, loaded_url, referrer,
                                                string16(), transition);
@@ -305,7 +313,7 @@ NavigationEntry* WindowImpl::CreateNavigationEntry(
   return entry;
 }
 
-bool WindowImpl::NavigateToPendingEntry(bool reload) {
+bool WindowImpl::NavigateToPendingEntry(NavigationController::ReloadType reload) {
     const NavigationEntry& entry = *mController->pending_entry();
 
     if (!host()) {
@@ -372,8 +380,6 @@ void WindowImpl::onWidgetDestroyed(Widget *wid) {
     removeWidget(wid);
 }
 
-
-
 /******* RenderViewHostManager::Delegate *******/
 
 bool WindowImpl::CreateRenderViewForRenderManager(
@@ -384,7 +390,7 @@ bool WindowImpl::CreateRenderViewForRenderManager(
       static_cast<RenderWidget*>(this->CreateViewForWidget(render_view_host));
 
   if (!remote_view_exists) {
-    if (!render_view_host->CreateRenderView())
+      if (!render_view_host->CreateRenderView(Root::getSingleton().getDefaultRequestContext()))
       return false;
   }
 
@@ -421,8 +427,7 @@ void WindowImpl::BeforeUnloadFiredFromRenderManager(
 }
 */
 
-void WindowImpl::DidStartLoading(
-    RenderViewHost* render_view_host) {
+void WindowImpl::DidStartLoading() {
 
     SetIsLoading(true);
 
@@ -430,8 +435,7 @@ void WindowImpl::DidStartLoading(
 //        mDelegate->onStartLoading(this);
     }
 }
-void WindowImpl::DidStopLoading(
-    RenderViewHost* render_view_host) {
+void WindowImpl::DidStopLoading() {
 
     SetIsLoading(false);
 
@@ -471,7 +475,8 @@ void WindowImpl::UpdateCursor(const WebCursor& cursor) {
 #if BERKELIUM_PLATFORM == PLATFORM_WINDOWS
     Cursor new_cursor;
 #elif BERKELIUM_PLATFORM == PLATFORM_LINUX
-    GdkCursorType cursorType = cursor.GetCursorType();
+    // Returns an int to avoid including Gdk headers--so we have to cast.
+    GdkCursorType cursorType = (GdkCursorType)cursor.GetCursorType();
     GdkCursor* cursorPtr = cursorType == GDK_CURSOR_IS_PIXMAP ? cursor.GetCustomCursor() : NULL;
     Cursor new_cursor(cursorType, cursorPtr);
 #elif BERKELIUM_PLATFORM == PLATFORM_MAC
@@ -492,6 +497,10 @@ RenderViewHostDelegate::Resource* WindowImpl::GetResourceDelegate() {
 }
 RenderViewHostDelegate::BrowserIntegration* WindowImpl::GetBrowserIntegrationDelegate() {
     return this;
+}
+
+RendererPreferences WindowImpl::GetRendererPrefs(Profile*) const {
+    return RendererPreferences();
 }
 
 void WindowImpl::UpdateHistoryForNavigation(
@@ -666,9 +675,25 @@ void WindowImpl::OnDidGetApplicationInfo(
         const webkit_glue::WebApplicationInfo& app_info){
 }
 
+void WindowImpl::OnPageContents(
+    const GURL& url,
+    int renderer_process_id,
+    int32 page_id,
+    const std::wstring& contents,
+    const std::string& language) {
+}
+
+void WindowImpl::OnPageTranslated(
+    int32 page_id,
+    const std::string& original_lang,
+    const std::string& translated_lang,
+    TranslateErrors::Type error_type) {
+}
+
 
 void WindowImpl::ProcessDOMUIMessage(
-    const std::string& message, const Value* content,
+    const std::string& message, const ListValue* content,
+    const GURL &source_url,
     int request_id, bool has_callback)
 {
     WindowDelegate::Data *argsVector=NULL;
@@ -819,7 +844,7 @@ void WindowImpl::RequestOpenURL(const GURL& url, const GURL& referrer,
     /* if (disposition == NEW_WINDOW) {
      */
 // if (disposition == CURRENT_TAB)
-    doNavigateTo(url, referrer, false);
+    doNavigateTo(url, referrer, NavigationController::NO_RELOAD);
 }
 
 void WindowImpl::DomOperationResponse(const std::string& json_string,
@@ -871,7 +896,7 @@ void WindowImpl::DidStartProvisionalLoadForFrame(
 }
 
 void WindowImpl::DidStartReceivingResourceResponse(
-        ResourceRequestDetails* details) {
+        const ResourceRequestDetails& details) {
     // See "chrome/browser/renderer_host/resource_request_details.h"
     // for list of accessor functions.
 }
@@ -892,13 +917,20 @@ void WindowImpl::DidRedirectProvisionalLoad(
     entry->set_url(target_url);
 }
 
-void WindowImpl::DidRedirectResource(ResourceRequestDetails* details) {
+void WindowImpl::DidRedirectResource(const ResourceRedirectDetails& details) {
     // Only accessor function:
     // details->new_url();
 }
 
 void WindowImpl::Close(RenderViewHost* rvh) {
 }
+
+void WindowImpl::OnContentBlocked(ContentSettingsType type) {
+}
+
+void WindowImpl::OnGeolocationPermissionSet(const GURL& requesting_frame, bool allowed) {
+}
+
 
 void WindowImpl::DidLoadResourceFromMemoryCache(
         const GURL& url,
@@ -924,28 +956,36 @@ void WindowImpl::DocumentLoadedInFrame() {
 
 
 /******* RenderViewHostDelegate::View *******/
-void WindowImpl::CreateNewWindow(int route_id) {
+void WindowImpl::CreateNewWindow(int route_id, WindowContainerType container_type) {
+    // A window shown in popup or tab.
+    //WINDOW_CONTAINER_TYPE_NORMAL = 0,
+    // A window run as a hidden "background" page.
+    //WINDOW_CONTAINER_TYPE_BACKGROUND,
+    // A window run as a hidden "background" page that wishes to be started
+    // upon browser launch and run beyond the lifetime of the pages that
+    // reference it.
+    //WINDOW_CONTAINER_TYPE_PERSISTENT,
+
     std::cout<<"Created window "<<route_id<<std::endl;
     mNewlyCreatedWindows.insert(
         std::pair<int, WindowImpl*>(route_id, new WindowImpl(getContext(), route_id)));
 }
-void WindowImpl::CreateNewWindow(int route_id,
-                                 base::WaitableEvent* modal_dialog_event) {
-    WindowImpl::CreateNewWindow(route_id);
-}
-void WindowImpl::CreateNewWidget(int route_id, bool activatable) {
+void WindowImpl::CreateNewWidget(int route_id, WebKit::WebPopupType popup_type) {
+    //WebPopupTypeNone, // Not a popup.
+    //WebPopupTypeSelect, // A HTML select (combo-box) popup.
+    //WebPopupTypeSuggestion, // An autofill/autocomplete popup.
+
     std::cout<<"Created widget "<<route_id<<std::endl;
     RenderWidget* wid = new RenderWidget(this);
     wid->setHost(new MemoryRenderWidgetHost(this, wid, process(), route_id));
-    wid->set_activatable(activatable);
+    //wid->set_activatable(activatable); // ???????
     mNewlyCreatedWidgets.insert(
         std::pair<int, RenderWidget*>(route_id, wid));
 }
 void WindowImpl::ShowCreatedWindow(int route_id,
                                    WindowOpenDisposition disposition,
                                    const gfx::Rect& initial_pos,
-                                   bool user_gesture,
-                                   const GURL& creator_url) {
+                                   bool user_gesture) {
     std::cout<<"Show Created window "<<route_id<<std::endl;
     std::map<int, WindowImpl*>::iterator iter = mNewlyCreatedWindows.find(route_id);
     assert(iter != mNewlyCreatedWindows.end());
@@ -1002,7 +1042,9 @@ void WindowImpl::ShowContextMenu(const ContextMenuParams& params) {
     // TODO: Add context menu event
 }
 void WindowImpl::StartDragging(const WebDropData& drop_data,
-                               WebKit::WebDragOperationsMask allowed_ops) {
+                               WebKit::WebDragOperationsMask allowed_ops,
+                               const SkBitmap& image,
+                               const gfx::Point& image_offset) {
     // TODO: Add dragging event
 }
 void WindowImpl::UpdateDragCursor(WebKit::WebDragOperation operation) {
@@ -1026,6 +1068,16 @@ void WindowImpl::UpdatePreferredWidth(int pref_width) {
 }
 
 void WindowImpl::UpdatePreferredSize(const gfx::Size&) {
+}
+
+// Callback to give the browser a chance to handle the specified keyboard
+// event before sending it to the renderer.
+// Returns true if the |event| was handled. Otherwise, if the |event| would
+// be handled in HandleKeyboardEvent() method as a normal keyboard shortcut,
+// |*is_keyboard_shortcut| should be set to true.
+bool WindowImpl::PreHandleKeyboardEvent(const NativeWebKeyboardEvent& event, bool* is_keyboard_shortcut) {
+    *is_keyboard_shortcut = false;
+    return false;
 }
 
 }
