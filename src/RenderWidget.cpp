@@ -271,13 +271,6 @@ void RenderWidget::CreatePluginContainer(gfx::PluginWindowHandle id){
     std::cerr<<"CREATED PLUGIN CONTAINER: "<<id<<std::endl;
     assert(activeWidgets.find(id) == activeWidgets.end());
 
-    if (!gdk_display_get_default()) {
-        const char *argv0 = "gtk_program";
-        const char **argv = &argv0;
-        int argc = 1;
-        gtk_init(&argc, const_cast<char***>(&argv));
-    }
-
     GtkWidget *window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     activeWidgets.insert(
         std::pair<gfx::PluginWindowHandle, GtkWidget*>(id, window));

@@ -46,6 +46,7 @@
 #endif
 #include <sstream>
 #include <iostream>
+#include <memory>
 
 using namespace Berkelium;
 
@@ -193,30 +194,38 @@ extern "C" void _chkstk() {}
 int main () {
     printf("RUNNING MAIN!\n");
     Berkelium::init();
-    Window* win=Window::create();
+    std::string url;
+/*
+    std::auto_ptr<Window> win(Window::create());
     win->resize(800,600);
     win->setDelegate(new TestDelegate);
-    std::string url("http://dunnbypaul.net/js_mouse/");
+    url = "http://web.archive.org/web/20080724161936/http://dunnbypaul.net/js_mouse/";
     win->navigateTo(url.data(),url.length());
-    win->setTransparent(false);
+    win->setTransparent(true); //false);
     //win->navigateTo("http://google.com");
-
-/*
-    Window* win2=Window::create();
+    std::auto_ptr<Window> win2(Window::create());
+    url = "http://slashdot.org";
     win2->resize(800,600);
-    win2->navigateTo("http://slashdot.org");
-    Window* win3=Window::create();
+    win2->setDelegate(new TestDelegate);
+    win2->navigateTo(url.data(),url.length());
+    std::auto_ptr<Window> win3(Window::create());
+    url = "http://vegastrike.sourceforge.net";
     win3->resize(800,600);
-    win3->navigateTo("http://vegastrike.sourceforge.net");
+    win3->setDelegate(new TestDelegate);
+    win3->navigateTo(url.data(),url.length());
 
-    Window* win4=Window::create();
+    std::auto_ptr<Window> win4(Window::create());
+    url="http://xkcd.com";
     win4->resize(800,600);
-    win4->navigateTo("http://xkcd.com");
-
-    Window* win5=Window::create();
-    win5->resize(800,600);
-    win5->navigateTo("http://sirikata.com");
+    win4->setDelegate(new TestDelegate);
+    win4->navigateTo(url.data(),url.length());
 */
+    std::auto_ptr<Window> win5(Window::create());
+    url="http://localhost/samples/o3d-webgl-samples/simpleviewer/simpleviewer.html";
+    win5->resize(1024,768);
+    win5->setDelegate(new TestDelegate);
+    win5->navigateTo(url.data(),url.length());
+
     char buffer[WIDTH][HEIGHT][3];
     while(true) {
         Berkelium::update();
@@ -232,10 +241,5 @@ int main () {
         }
     }
     int retval=Berkelium::renderToBuffer(&buffer[0][0][0],WIDTH,HEIGHT);
-    delete win;
-    //delete win2;
-    //delete win3;
-    //delete win4;
-    //delete win5;
     return retval;
 }

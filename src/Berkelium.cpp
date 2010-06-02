@@ -89,6 +89,7 @@
 #endif
 #include "chrome/app/scoped_ole_initializer.h"
 #include "chrome/browser/renderer_host/render_process_host.h"
+#include "chrome/common/url_constants.h"
 #include "chrome/common/chrome_constants.h"
 #include "chrome/common/chrome_counters.h"
 #include "chrome/common/chrome_descriptors.h"
@@ -104,6 +105,15 @@
 #endif
 #if defined(OS_MACOSX)
 #include "third_party/WebKit/WebKit/mac/WebCoreSupport/WebSystemInterface.h"
+#endif
+#if defined(OS_LINUX)
+#include <gdk/gdk.h>
+#include <glib.h>
+#include <gtk/gtk.h>
+#include <stdlib.h>
+#include <string.h>
+#include "chrome/browser/renderer_host/render_sandbox_host_linux.h"
+#include "chrome/browser/zygote_host_linux.h"
 #endif
 //////////////////////
 
@@ -173,11 +183,17 @@ bool HasDeprecatedArguments(const std::wstring& command_line) {
 #endif
 extern int BrowserMain(const MainFunctionParams&);
 extern int RendererMain(const MainFunctionParams&);
+extern int GpuMain(const MainFunctionParams&);
 extern int PluginMain(const MainFunctionParams&);
 extern int WorkerMain(const MainFunctionParams&);
+extern int NaClMain(const MainFunctionParams&);
 extern int UtilityMain(const MainFunctionParams&);
 extern int ProfileImportMain(const MainFunctionParams&);
 extern int ZygoteMain(const MainFunctionParams&);
+#if defined(_WIN64)
+extern int NaClBrokerMain(const MainFunctionParams&);
+#endif
+extern int ServiceProcessMain(const MainFunctionParams&);
 
 bool IsCrashReporterEnabled() {
     return false;
@@ -257,6 +273,42 @@ void SetupCRT(const CommandLine& parsed_command_line) {
 #endif
 }
 }
+
+#if defined(OS_POSIX) && !defined(OS_MACOSX)
+static void AdjustLinuxOOMScore(const std::string& process_type) {
+  const int kMiscScore = 7;
+  const int kPluginScore = 10;
+  int score = -1;
+
+  if (process_type == switches::kPluginProcess) {
+    score = kPluginScore;
+  } else if (process_type == switches::kUtilityProcess ||
+             process_type == switches::kWorkerProcess ||
+             process_type == switches::kGpuProcess ||
+             process_type == switches::kServiceProcess) {
+    score = kMiscScore;
+  } else if (process_type == switches::kProfileImportProcess) {
+    NOTIMPLEMENTED();
+#ifndef DISABLE_NACL
+  } else if (process_type == switches::kNaClLoaderProcess) {
+    score = kPluginScore;
+#endif
+  } else if (process_type == switches::kZygoteProcess ||
+             process_type.empty()) {
+    // Pass - browser / zygote process stays at 0.
+  } else if (process_type == switches::kExtensionProcess ||
+             process_type == switches::kRendererProcess) {
+    LOG(WARNING) << "process type '" << process_type << "' "
+                 << "should go through the zygote.";
+    // When debugging, these process types can end up being run directly.
+    return;
+  } else {
+    NOTREACHED() << "Unknown process type";
+  }
+  if (score > -1)
+    base::AdjustOOMScore(base::GetCurrentProcId(), score);
+}
+#endif  // defined(OS_POSIX) && !defined(OS_MACOSX)
 
 #ifdef _WIN32
 void forkedProcessHook(
@@ -422,22 +474,34 @@ void forkedProcessHook(int argc, char **argv)
   }
 #endif  // NDEBUG
 
+  chrome::RegisterChromeSchemes(); // Required for "chrome-extension://" in InitExtensions
+
   if (!process_type.empty())
     CommonSubprocessInit();
 
   MainFunctionParams main_params(parsed_command_line, sandbox_wrapper,
                                  &autorelease_pool);
 
+#if defined(OS_LINUX)
+  AdjustLinuxOOMScore(process_type);
+#endif
+
   // TODO(port): turn on these main() functions as they've been de-winified.
   int rv = -1;
   if (process_type == switches::kRendererProcess) {
+    rv = RendererMain(main_params);
+  } else if (process_type == switches::kExtensionProcess) {
+    // An extension process is just a renderer process. We use a different
+    // command line argument to differentiate crash reports.
     rv = RendererMain(main_params);
   } else if (process_type == switches::kPluginProcess) {
     rv = PluginMain(main_params);
   } else if (process_type == switches::kUtilityProcess) {
     rv = UtilityMain(main_params);
+  } else if (process_type == switches::kGpuProcess) {
+    rv = GpuMain(main_params);
   } else if (process_type == switches::kProfileImportProcess) {
-#if defined (OS_MACOSX)
+#if defined(OS_MACOSX)
     rv = ProfileImportMain(main_params);
 #else
     // TODO(port): Use OOP profile import - http://crbug.com/22142 .
@@ -446,8 +510,17 @@ void forkedProcessHook(int argc, char **argv)
 #endif
   } else if (process_type == switches::kWorkerProcess) {
     rv = WorkerMain(main_params);
+#ifndef DISABLE_NACL
+  } else if (process_type == switches::kNaClLoaderProcess) {
+    rv = NaClMain(main_params);
+#endif
+#ifdef _WIN64  // The broker process is used only on Win64.
+  } else if (process_type == switches::kNaClBrokerProcess) {
+    rv = NaClBrokerMain(main_params);
+#endif
   } else if (process_type == switches::kZygoteProcess) {
-#if defined(OS_LINUX)
+#if defined(OS_POSIX) && !defined(OS_MACOSX)
+    // This function call can return multiple times, once per fork().
     if (ZygoteMain(main_params)) {
       // Zygote::HandleForkRequest may have reallocated the command
       // line so update it here with the new version.
@@ -455,15 +528,52 @@ void forkedProcessHook(int argc, char **argv)
         *CommandLine::ForCurrentProcess();
       MainFunctionParams main_params(parsed_command_line, sandbox_wrapper,
                                      &autorelease_pool);
-      rv = RendererMain(main_params);
+      std::string process_type =
+        parsed_command_line.GetSwitchValueASCII(switches::kProcessType);
+      if (process_type == switches::kRendererProcess ||
+          process_type == switches::kExtensionProcess) {
+        rv = RendererMain(main_params);
+#ifndef DISABLE_NACL
+      } else if (process_type == switches::kNaClLoaderProcess) {
+        rv = NaClMain(main_params);
+#endif
+      } else {
+        NOTREACHED() << "Unknown process type";
+      }
     } else {
       rv = 0;
     }
 #else
     NOTIMPLEMENTED();
 #endif
+  } else if (process_type == switches::kServiceProcess) {
+    rv = ServiceProcessMain(main_params);
   } else if (process_type.empty()) {
 #if defined(OS_LINUX)
+    const char* sandbox_binary = NULL;
+    struct stat st;
+
+    // In Chromium branded builds, developers can set an environment variable to
+    // use the development sandbox. See
+    // http://code.google.com/p/chromium/wiki/LinuxSUIDSandboxDevelopment
+    if (stat("/proc/self/exe", &st) == 0 && st.st_uid == getuid())
+      sandbox_binary = getenv("CHROME_DEVEL_SANDBOX");
+
+#if defined(LINUX_SANDBOX_PATH)
+    if (!sandbox_binary)
+      sandbox_binary = LINUX_SANDBOX_PATH;
+#endif
+
+    std::string sandbox_cmd;
+    if (sandbox_binary && !parsed_command_line.HasSwitch(switches::kNoSandbox))
+      sandbox_cmd = sandbox_binary;
+
+    // Tickle the sandbox host and zygote host so they fork now.
+    RenderSandboxHostLinux* shost = Singleton<RenderSandboxHostLinux>::get();
+    shost->Init(sandbox_cmd);
+    ZygoteHost* zhost = Singleton<ZygoteHost>::get();
+    zhost->Init(sandbox_cmd);
+
     // We want to be sure to init NSPR on the main thread.
     base::EnsureNSPRInit();
 
@@ -476,16 +586,12 @@ void forkedProcessHook(int argc, char **argv)
     g_type_init();
     // gtk_init() can change |argc| and |argv|.
     gtk_init(&argc, &argv);
-#endif
+    Root::SetUpGLibLogHandler();
+#endif  // defined(OS_LINUX)
 
-    ScopedOleInitializer ole_initializer;
     rv = BrowserMain(main_params);
   } else {
     NOTREACHED() << "Unknown process type";
-  }
-
-  if (!process_type.empty()) {
-    ResourceBundle::CleanupSharedInstance();
   }
 
 #if defined(OS_WIN)

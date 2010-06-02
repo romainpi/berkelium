@@ -43,10 +43,12 @@
 #include "base/command_line.h"
 #include "base/file_util.h"
 #include "base/i18n/icu_util.h"
+#include "base/histogram.h"
 #include "net/base/cookie_monster.h"
 #include "chrome/common/chrome_paths.h"
 #include "chrome/common/chrome_switches.h"
 #include "chrome/common/url_constants.h"
+#include "chrome/browser/metrics/histogram_synchronizer.h"
 #include "chrome/browser/browser_prefs.h"
 #include "chrome/browser/browser_process_impl.h"
 #include "chrome/browser/process_singleton.h"
@@ -73,19 +75,28 @@
 #include "chrome/app/breakpad_mac.h"
 #include "third_party/WebKit/WebKit/mac/WebCoreSupport/WebSystemInterface.h"
 #endif
-#ifdef _WIN32
-#include <direct.h>
-#endif
 #include "chrome/common/sandbox_init_wrapper.h"
 #if defined(OS_WIN)
+#include <direct.h>
 #include "base/win_util.h"
 #include "tools/memory_watcher/memory_watcher.h"
 #include "sandbox/src/broker_services.h"
 #endif
+#if defined(OS_LINUX)
+#include <gdk/gdk.h>
+#include <glib.h>
+#include <gtk/gtk.h>
+#include <stdlib.h>
+#include <string.h>
+#include "chrome/browser/renderer_host/render_sandbox_host_linux.h"
+#include "chrome/browser/zygote_host_linux.h"
+#endif
+#if defined(USE_NSS)
+#include "base/nss_util.h"
+#endif
 
 //icu_util::Initialize()
-
-#ifndef _WIN32
+#if !defined(OS_WIN)
 extern "C"
 void handleINT(int sig) {
     FilePath homedirpath;
@@ -105,11 +116,72 @@ namespace sandbox {
 AUTO_SINGLETON_INSTANCE(Berkelium::Root);
 namespace Berkelium {
 
+#if defined(OS_POSIX) && !defined(OS_MACOSX)
+static void GLibLogHandler(const gchar* log_domain,
+                           GLogLevelFlags log_level,
+                           const gchar* message,
+                           gpointer userdata) {
+  if (!log_domain)
+    log_domain = "<unknown>";
+  if (!message)
+    message = "<no message>";
+
+  if (strstr(message, "Loading IM context type") ||
+      strstr(message, "wrong ELF class: ELFCLASS64")) {
+    // http://crbug.com/9643
+    // Until we have a real 64-bit build or all of these 32-bit package issues
+    // are sorted out, don't fatal on ELF 32/64-bit mismatch warnings and don't
+    // spam the user with more than one of them.
+    static bool alerted = false;
+    if (!alerted) {
+      LOG(ERROR) << "Bug 9643: " << log_domain << ": " << message;
+      alerted = true;
+    }
+  } else if (strstr(message, "gtk_widget_size_allocate(): attempt to "
+                             "allocate widget with width") &&
+             !GTK_CHECK_VERSION(2, 16, 1)) {
+    // This warning only occurs in obsolete versions of GTK and is harmless.
+    // http://crbug.com/11133
+  } else if (strstr(message, "Theme file for default has no") ||
+             strstr(message, "Theme directory") ||
+             strstr(message, "theme pixmap")) {
+    LOG(ERROR) << "GTK theme error: " << message;
+  } else if (strstr(message, "gtk_drag_dest_leave: assertion")) {
+    LOG(ERROR) << "Drag destination deleted: http://crbug.com/18557";
+  } else {
+#ifdef NDEBUG
+    LOG(ERROR) << log_domain << ": " << message;
+#else
+    LOG(FATAL) << log_domain << ": " << message;
+#endif
+  }
+}
+
+void Root::SetUpGLibLogHandler() {
+  // Register GLib-handled assertions to go through our logging system.
+  const char* kLogDomains[] = { NULL, "Gtk", "Gdk", "GLib", "GLib-GObject" };
+  for (size_t i = 0; i < arraysize(kLogDomains); i++) {
+    g_log_set_handler(kLogDomains[i],
+                      static_cast<GLogLevelFlags>(G_LOG_FLAG_RECURSION |
+                                                  G_LOG_FLAG_FATAL |
+                                                  G_LOG_LEVEL_ERROR |
+                                                  G_LOG_LEVEL_CRITICAL |
+                                                  G_LOG_LEVEL_WARNING),
+                      &GLibLogHandler,
+                      NULL);
+  }
+}
+#else  // defined(OS_POSIX) && !defined(OS_MACOSX)
+void Root::SetUpGLibLogHandler() {
+}
+#endif  // defined(OS_POSIX) && !defined(OS_MACOSX)
+
+
 Root::Root (){
 
     new base::AtExitManager();
 
-#ifdef _WIN32
+#if defined(OS_WIN)
     FilePath subprocess;
 #endif
     {
@@ -122,7 +194,7 @@ Root::Root (){
 // like (since this is the only way to create the static CommandLine instance),
 // and then we have manually call ParseFromString.
 // (InitFromArgv does not exist on OS_WIN!)
-#ifdef _WIN32
+#if defined(OS_WIN)
     FilePath module_dir;
 	PathService::Get(base::DIR_MODULE, &module_dir);
     subprocess = module_dir.Append(L"berkelium.exe");
@@ -133,12 +205,12 @@ Root::Root (){
     CommandLine::Init(0, NULL);
     CommandLine::ForCurrentProcess()->ParseFromString(subprocess_str);
 #else
-    const char* argv[] = { "berkelium", "--browser-subprocess-path=./berkelium"};
-    CommandLine::Init(2, argv);
+    const char* argv[] = { "berkelium", "--browser-subprocess-path=./berkelium","--enable-webgl","--in-process-webgl"};
+    CommandLine::Init(sizeof(argv)/sizeof(argv[0]), argv);
 #endif
     }
 
-#ifndef _WIN32
+#if !defined(OS_WIN)
 /// Temporary SingletonLock fix:
 // Do not do this for child processes--they should only be initialized.
 // Children should never delete the lock.
@@ -156,7 +228,7 @@ Root::Root (){
     chrome::RegisterPathProvider();
     app::RegisterPathProvider();
     FilePath homedirpath;
-#if defined(_WIN32)||defined(__APPLE__)
+#if defined(OS_WIN)||defined(OS_MACOSX)
 #else
     {
         char homeDirPath[128];
@@ -168,6 +240,7 @@ Root::Root (){
     }
 #endif
     PathService::Get(chrome::DIR_USER_DATA,&homedirpath);
+    bool NO_SANDBOX=false; // Doesn't work yet.
     bool SINGLE_PROCESS=false;
 #if defined(OS_MACOSX)
     mac_util::SetOverrideAppBundlePath(chrome::GetFrameworkBundlePath());
@@ -185,12 +258,16 @@ Root::Root (){
     mUIThread = new ChromeThread(ChromeThread::UI, mMessageLoop);
 
     mProcessSingleton= new ProcessSingleton(homedirpath);
-    BrowserProcess *browser_process;
+    BrowserProcessImpl *browser_process;
     browser_process=new BrowserProcessImpl(*CommandLine::ForCurrentProcess());
     browser_process->local_state()->RegisterStringPref(prefs::kApplicationLocale, L"");
     browser_process->local_state()->RegisterBooleanPref(prefs::kMetricsReportingEnabled, false);
-
-    assert(g_browser_process);
+/*
+    mProf->GetPrefs()->SetBoolean(prefs::kSafeBrowsingEnabled, false);
+    mProf->GetPrefs()->RegisterStringPref(prefs::kSafeBrowsingClientKey, L"");
+    mProf->GetPrefs()->RegisterStringPref(prefs::kSafeBrowsingWrappedKey, L"");
+*/
+    assert(g_browser_process == browser_process);
 
 #ifdef OS_WIN
     logging::InitLogging(
@@ -212,7 +289,53 @@ Root::Root (){
         logging::DELETE_OLD_LOG_FILE);
     //APPEND_TO_OLD_LOG_FILE
 
+    PathService::Override(base::FILE_EXE, 
+#if defined(OS_WIN)
+        subprocess
+#else
+        FilePath("./berkelium")
+#endif
+        );
+
   chrome::RegisterChromeSchemes(); // Required for "chrome-extension://" in InitExtensions
+#if defined(OS_LINUX)
+    const char* sandbox_binary = NULL;
+    struct stat st;
+
+    // In Chromium branded builds, developers can set an environment variable to
+    // use the development sandbox. See
+    // http://code.google.com/p/chromium/wiki/LinuxSUIDSandboxDevelopment
+    if (stat("/proc/self/exe", &st) == 0 && st.st_uid == getuid())
+      sandbox_binary = getenv("CHROME_DEVEL_SANDBOX");
+
+    std::string sandbox_cmd;
+    if (sandbox_binary && !NO_SANDBOX)
+      sandbox_cmd = sandbox_binary;
+
+    // Tickle the sandbox host and zygote host so they fork now.
+    RenderSandboxHostLinux* shost = Singleton<RenderSandboxHostLinux>::get();
+    shost->Init(sandbox_cmd);
+    ZygoteHost* zhost = Singleton<ZygoteHost>::get();
+    zhost->Init(sandbox_cmd);
+
+    // We want to be sure to init NSPR on the main thread.
+    base::EnsureNSPRInit();
+
+    g_thread_init(NULL);
+    // Glib type system initialization. Needed at least for gconf,
+    // used in net/proxy/proxy_config_service_linux.cc. Most likely
+    // this is superfluous as gtk_init() ought to do this. It's
+    // definitely harmless, so retained as a reminder of this
+    // requirement for gconf.
+    g_type_init();
+    // gtk_init() can change |argc| and |argv|.
+    char argv0data[] = "[Berkelium]";
+    char *argv0 = argv0data;
+    char **argv = &argv0;
+    int argc = 1;
+    gtk_init(&argc, &argv);
+    SetUpGLibLogHandler();
+#endif  // defined(OS_LINUX)
 
   SandboxInitWrapper sandbox_wrapper;
 #if defined(OS_WIN)
@@ -239,11 +362,32 @@ Root::Root (){
 //    mNotificationService=new NotificationService();
 //    ChildProcess* coreProcess=new ChildProcess;
 //    coreProcess->set_main_thread(new ChildThread);
-
+    g_browser_process->SetApplicationLocale("en-US");
     ResourceBundle::InitSharedInstance(L"en-US");// FIXME: lookup locale
     // We only load the theme dll in the browser process.
     net::CookieMonster::EnableFileScheme();
 
+    browser_process->db_thread();
+    browser_process->file_thread();
+    browser_process->process_launcher_thread();
+    browser_process->cache_thread();
+    browser_process->io_thread();
+
+    // Initialize histogram statistics gathering system.
+    mStatistics = new StatisticsRecorder;
+
+    // Initialize histogram synchronizer system. This is a singleton and is used
+    // for posting tasks via NewRunnableMethod. Its deleted when it goes out of
+    // scope. Even though NewRunnableMethod does AddRef and Release, the object
+    // will not be deleted after the Task is executed.
+    mHistogramSynchronizer = new HistogramSynchronizer();
+
+    browser::RegisterLocalState(g_browser_process->local_state());
+    /*
+    browser_process->local_state()->RegisterBooleanPref(prefs::kSafeBrowsingEnabled, false);
+    browser_process->local_state()->RegisterStringPref(prefs::kSafeBrowsingClientKey, L"");
+    browser_process->local_state()->RegisterStringPref(prefs::kSafeBrowsingWrappedKey, L"");
+    */
     ProfileManager* profile_manager = browser_process->profile_manager();
     mProf = profile_manager->GetProfile(homedirpath, false);
     mProf->GetPrefs()->SetBoolean(prefs::kSafeBrowsingEnabled, false);
@@ -253,10 +397,6 @@ Root::Root (){
 
     PrefService* user_prefs = mProf->GetPrefs();
     DCHECK(user_prefs);
-    
-    // Now that local state and user prefs have been loaded, make the two pref
-    // services aware of all our preferences.
-    browser::RegisterAllPrefs(user_prefs, browser_process->local_state());
 
 //    browser_process->local_state()->SetString(prefs::kApplicationLocale,std::wstring());
     mProcessSingleton->Create();
@@ -268,9 +408,6 @@ Root::Root (){
 
     BrowserURLHandler::InitURLHandlers();
 
-    ResourceDispatcherHost *resDispatcher =
-        new ResourceDispatcherHost();
-    resDispatcher->Initialize();
     {
 #ifndef OS_WIN
         char dir[L_tmpnam+1];
@@ -288,15 +425,9 @@ Root::Root (){
         FilePath path(dir);
         PluginService::GetInstance()->SetChromePluginDataDir(path);
     }
-    PluginService::GetInstance()->LoadChromePlugins(resDispatcher);
+    PluginService::GetInstance()->LoadChromePlugins(
+        g_browser_process->resource_dispatcher_host());
 
-    PathService::Override(base::FILE_EXE, 
-#ifdef _WIN32
-        subprocess
-#else
-        FilePath("./berkelium")
-#endif
-        );
     mDefaultRequestContext=mProf->GetRequestContext();
 }
 
@@ -325,6 +456,8 @@ Root::~Root(){
     delete mProf;
     delete mTimerMgr;
     delete mSysMon;
+    delete mHistogramSynchronizer;
+    delete mStatistics;
     delete mUIThread;
 //    delete mNotificationService;
     delete mMessageLoop;

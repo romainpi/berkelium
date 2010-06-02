@@ -42,6 +42,8 @@ class ChromeThread;
 class URLRequestContext;
 class SystemMonitor;
 class HighResolutionTimerManager;
+class HistogramSynchronizer;
+class StatisticsRecorder;
 namespace chrome_browser_net {
 class DnsGlobalInit;
 }
@@ -61,7 +63,9 @@ class Root:public AutoSingleton<Root> {
     ProcessSingleton *mProcessSingleton;
     ChromeThread *mUIThread;
     MemoryRenderViewHostFactory *mRenderViewHostFactory;
-    base::ScopedNSAutoreleasePool autorelease_pool;
+    base::ScopedNSAutoreleasePool mAutoreleasePool;
+    HistogramSynchronizer *mHistogramSynchronizer;
+    StatisticsRecorder *mStatistics;
 public:
     Root();
     ~Root();
@@ -76,6 +80,8 @@ public:
     inline Profile* getProfile() {
         return mProf;
     }
+
+    static void SetUpGLibLogHandler();
 
     URLRequestContextGetter *getDefaultRequestContext() {
         return mDefaultRequestContext;
