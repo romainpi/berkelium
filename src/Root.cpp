@@ -205,7 +205,7 @@ Root::Root (){
     CommandLine::Init(0, NULL);
     CommandLine::ForCurrentProcess()->ParseFromString(subprocess_str);
 #else
-    const char* argv[] = { "berkelium", "--browser-subprocess-path=./berkelium","--enable-webgl","--in-process-webgl"};
+    const char* argv[] = { "berkelium", "--browser-subprocess-path=./berkelium","--enable-webgl","--in-process-webgl" };
     CommandLine::Init(sizeof(argv)/sizeof(argv[0]), argv);
 #endif
     }
@@ -240,7 +240,6 @@ Root::Root (){
     }
 #endif
     PathService::Get(chrome::DIR_USER_DATA,&homedirpath);
-    bool NO_SANDBOX=false; // Doesn't work yet.
     bool SINGLE_PROCESS=false;
 #if defined(OS_MACOSX)
     mac_util::SetOverrideAppBundlePath(chrome::GetFrameworkBundlePath());
@@ -309,7 +308,7 @@ Root::Root (){
       sandbox_binary = getenv("CHROME_DEVEL_SANDBOX");
 
     std::string sandbox_cmd;
-    if (sandbox_binary && !NO_SANDBOX)
+    if (sandbox_binary && !CommandLine::ForCurrentProcess()->HasSwitch(switches::kNoSandbox))
       sandbox_cmd = sandbox_binary;
 
     // Tickle the sandbox host and zygote host so they fork now.

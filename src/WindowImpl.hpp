@@ -159,6 +159,7 @@ protected: /******* RenderViewHostDelegate *******/
     virtual RenderViewHostDelegate::Resource* GetResourceDelegate();
     virtual RenderViewHostDelegate::BrowserIntegration* GetBrowserIntegrationDelegate();
     virtual RendererPreferences GetRendererPrefs(Profile*) const;
+    virtual WebPreferences GetWebkitPrefs();
 
     virtual void RendererUnresponsive(RenderViewHost* render_view_host,
                                       bool is_during_unload);

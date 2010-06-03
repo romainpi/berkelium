@@ -503,6 +503,12 @@ RendererPreferences WindowImpl::GetRendererPrefs(Profile*) const {
     return RendererPreferences();
 }
 
+WebPreferences WindowImpl::GetWebkitPrefs() {
+    WebPreferences web_prefs;
+    web_prefs.experimental_webgl_enabled = true;
+    return web_prefs;
+}
+
 void WindowImpl::UpdateHistoryForNavigation(
     const GURL& virtual_url,
     const NavigationController::LoadCommittedDetails& details,
