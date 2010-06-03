@@ -69,13 +69,12 @@ GLTextureWindow* bk_texture_window = NULL;
 unsigned int win_width = WIDTH;
 unsigned int win_height = HEIGHT;
 
-void loadGoogle() {
+void loadURL(std::string url) {
     if (bk_texture_window == NULL)
         return;
 
     bk_texture_window->clear();
 
-    std::string url("http://www.google.com");
     bk_texture_window->getWindow()->navigateTo(url.data(), url.length());
 
     glutPostRedisplay();
@@ -245,7 +244,11 @@ int main (int argc, char** argv) {
     Berkelium::init();
     bk_texture_window = new GLTextureWindow(WIDTH, HEIGHT);
 
-    loadGoogle();
+    if (argc < 2) {
+        loadURL("http://www.google.com");
+    } else {
+        loadURL(argv[1]);
+    }
 
     // Start the main rendering loop
     glutMainLoop();

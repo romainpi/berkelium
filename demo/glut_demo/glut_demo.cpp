@@ -70,13 +70,17 @@ float angle = 0;
 #define HEIGHT 512
 
 
-void loadRandomPage() {
+void loadURL(std::string url) {
     if (bk_texture_window == NULL)
         return;
 
     bk_texture_window->clear();
 
     // And navigate to a new one
+    bk_texture_window->getWindow()->navigateTo(url.data(), url.length());
+}
+
+void loadRandomPage() {
 #define NUM_SITES 4
     static std::string sites[NUM_SITES] = {
         std::string("http://berkelium.org"),
@@ -86,8 +90,7 @@ void loadRandomPage() {
     };
 
     unsigned int x = rand() % NUM_SITES;
-    std::string url = sites[x];
-    bk_texture_window->getWindow()->navigateTo(url.data(), url.length());
+    loadURL(sites[x]);
 }
 
 void display( void )
@@ -202,7 +205,11 @@ int main (int argc, char** argv) {
     Berkelium::init();
     bk_texture_window = new GLTextureWindow(WIDTH, HEIGHT);
 
-    loadRandomPage();
+    if (argc < 2) {
+        loadRandomPage();
+    } else {
+        loadURL(argv[1]);
+    }
 
     // Start the main rendering loop
     glutMainLoop();

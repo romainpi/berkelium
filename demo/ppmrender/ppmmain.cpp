@@ -191,7 +191,7 @@ public:
 extern "C" void _chkstk() {}
 #define WIDTH 1024
 #define HEIGHT 768
-int main () {
+int main (int argc, char **argv) {
     printf("RUNNING MAIN!\n");
     Berkelium::init();
     std::string url;
@@ -213,18 +213,17 @@ int main () {
     win3->resize(800,600);
     win3->setDelegate(new TestDelegate);
     win3->navigateTo(url.data(),url.length());
+*/
 
     std::auto_ptr<Window> win4(Window::create());
-    url="http://xkcd.com";
     win4->resize(800,600);
     win4->setDelegate(new TestDelegate);
+    if (argc < 2) {
+        url="http://xkcd.com";
+    } else {
+        url=argv[1];
+    }
     win4->navigateTo(url.data(),url.length());
-*/
-    std::auto_ptr<Window> win5(Window::create());
-    url="http://localhost/samples/o3d-webgl-samples/simpleviewer/simpleviewer.html";
-    win5->resize(1024,768);
-    win5->setDelegate(new TestDelegate);
-    win5->navigateTo(url.data(),url.length());
 
     char buffer[WIDTH][HEIGHT][3];
     while(true) {
