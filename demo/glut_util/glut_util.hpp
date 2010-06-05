@@ -45,6 +45,10 @@
 #include <GL/glut.h>
 #endif
 
+#if defined(GL_BGRA_EXT) && !defined(GL_BGRA)
+#define GL_BGRA GL_BGRA_EXT
+#endif
+
 #include "berkelium/Berkelium.hpp"
 #include "berkelium/Window.hpp"
 

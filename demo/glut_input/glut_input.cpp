@@ -30,12 +30,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifdef __APPLE__
-#include <GLUT/glut.h>
-#else
-#include <GL/glut.h>
-#endif
-
 #include "berkelium/Berkelium.hpp"
 #include "berkelium/Window.hpp"
 #include "berkelium/WindowDelegate.hpp"

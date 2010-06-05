@@ -2,11 +2,11 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9.00"
-	Name="ppmrender"
-	ProjectGUID="{96E21329-033B-4CFA-9C49-C280D18E6EFB}"
-	RootNamespace="ppmrender"
+	Name="glut_demo"
+	ProjectGUID="{7602BD3D-79D7-4A43-835C-6289C3C96011}"
+	RootNamespace="glut_demo"
 	Keyword="Win32Proj"
-	TargetFrameworkVersion="131072"
+	TargetFrameworkVersion="196613"
 	>
 	<Platforms>
 		<Platform
@@ -41,13 +41,14 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\include"
+				AdditionalIncludeDirectories="..\..\include;..\..\demo;."
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				MinimalRebuild="true"
+				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
-				DebugInformationFormat="3"
+				DebugInformationFormat="4"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -60,10 +61,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="berkelium_d.lib berkelium_exe_d.lib"
-				OutputFile="..\$(ProjectName)_d.exe"
+				AdditionalDependencies="berkelium_d.lib"
+				OutputFile="..\$(ProjectName).exe"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="..;..\subprocess"
+				AdditionalLibraryDirectories=".."
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				TargetMachine="1"
@@ -117,7 +118,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="..\..\include"
+				AdditionalIncludeDirectories="..\..\include;..\..\demo;."
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
@@ -136,10 +137,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="berkelium.lib berkelium_exe.lib"
+				AdditionalDependencies="berkelium.lib"
 				OutputFile="..\$(ProjectName).exe"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="..;..\subprocess"
+				AdditionalLibraryDirectories=".."
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				OptimizeReferences="2"
@@ -178,7 +179,7 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath="..\..\demo\ppmrender\ppmmain.cpp"
+				RelativePath="..\..\demo\glut_demo\glut_demo.cpp"
 				>
 			</File>
 		</Filter>
@@ -187,6 +188,10 @@
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
+			<File
+				RelativePath="..\..\demo\glut_util\glut_util.hpp"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Resource Files"
