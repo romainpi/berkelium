@@ -36,6 +36,15 @@
 #include <windows.h>
 #include "sandbox/src/sandbox_factory.h"
 #include "sandbox/src/dep.h"
+
+extern "C" void AnnotateCondVarWait(const char *file, int line,
+                         const volatile void *cv,
+                         const volatile void *lock) {
+}
+extern "C" void AnnotateCondVarSignal(const char *file, int line,
+                                      const volatile void *cv) {
+}
+
 int WINAPI WinMain(
     HINSTANCE hInstance,
     HINSTANCE hPrevInstance,

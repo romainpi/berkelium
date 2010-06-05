@@ -81,6 +81,7 @@
 #include "base/win_util.h"
 #include "tools/memory_watcher/memory_watcher.h"
 #include "sandbox/src/broker_services.h"
+#include "chrome/common/sandbox_policy.h"
 #endif
 #if defined(OS_LINUX)
 #include <gdk/gdk.h>
@@ -342,12 +343,12 @@ Root::Root (){
   // depending who we are.
   sandbox::SandboxInterfaceInfo sandbox_info = {0};
   sandbox_info.broker_services = sandbox::BrokerServicesBase::GetInstance();
-  g_browser_process->InitBrokerServices(sandbox_info.broker_services);
+  sandbox::InitBrokerServices(sandbox_info.broker_services);
   if (!CommandLine::ForCurrentProcess()->HasSwitch(switches::kNoSandbox)) {
     bool use_winsta = !CommandLine::ForCurrentProcess()->HasSwitch(
         switches::kDisableAltWinstation);
     // Precreate the desktop and window station used by the renderers.
-    sandbox::TargetPolicy* policy = broker_services->CreatePolicy();
+    sandbox::TargetPolicy* policy = sandbox_info.broker_services->CreatePolicy();
     sandbox::ResultCode result = policy->CreateAlternateDesktop(use_winsta);
     CHECK(sandbox::SBOX_ERROR_FAILED_TO_SWITCH_BACK_WINSTATION != result);
     policy->Release();
@@ -415,7 +416,7 @@ Root::Root (){
               ,0777
             );
 #else
-        std::wstring dir;
+        FilePath dir;
         if (!file_util::CreateNewTempDirectory(std::wstring(L"plugin_"),
                                                &dir)) {
             return;

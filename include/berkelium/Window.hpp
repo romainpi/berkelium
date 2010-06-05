@@ -205,7 +205,7 @@ public:
      *  \param url pointer to an ASCII string containing a URL
      *  \param urlLength the length of the URL string
      */
-    virtual bool navigateTo(const char *url, const size_t urlLength)=0;
+    virtual bool navigateTo(const char *url, size_t urlLength)=0;
 
     /** Request that the page be reloaded. */
     virtual void refresh()=0;
