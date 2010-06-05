@@ -96,7 +96,6 @@
 #include "base/nss_util.h"
 #endif
 
-//icu_util::Initialize()
 #if !defined(OS_WIN)
 extern "C"
 void handleINT(int sig) {
@@ -198,8 +197,12 @@ Root::Root (){
 #if defined(OS_WIN)
     FilePath module_dir;
 	PathService::Get(base::DIR_MODULE, &module_dir);
+#ifdef _DEBUG
+    subprocess = module_dir.Append(L"berkelium_d.exe");
+#else
     subprocess = module_dir.Append(L"berkelium.exe");
-	std::wstring subprocess_str = L"berkelium --browser-subprocess-path=";
+#endif
+	std::wstring subprocess_str = L"berkelium --enable-webgl --in-process-webgl --browser-subprocess-path=";
 	subprocess_str += L"\"";
 	subprocess_str += subprocess.value();
 	subprocess_str += L"\"";
@@ -356,6 +359,9 @@ Root::Root (){
   sandbox_wrapper.SetServices(&sandbox_info);
 #endif
   sandbox_wrapper.InitializeSandbox(*CommandLine::ForCurrentProcess(), "browser");
+
+  bool icu_result = icu_util::Initialize();
+  CHECK(icu_result);
 
     mRenderViewHostFactory = new MemoryRenderViewHostFactory;
     
