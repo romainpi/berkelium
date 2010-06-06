@@ -205,6 +205,10 @@ void ClearCrashKeyValue(NSString*) {
 }
 void SetCrashKeyValue(NSString*, NSString*) {
 }
+void InitCrashReporter() {
+}
+void DestructCrashReporter() {
+}
 namespace browser_sync {
 class TalkMediatorImpl {
 public:

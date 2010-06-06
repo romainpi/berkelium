@@ -358,7 +358,7 @@ Root::Root (){
   }
   sandbox_wrapper.SetServices(&sandbox_info);
 #endif
-  sandbox_wrapper.InitializeSandbox(*CommandLine::ForCurrentProcess(), "browser");
+  sandbox_wrapper.InitializeSandbox(*CommandLine::ForCurrentProcess(), "");
 
   bool icu_result = icu_util::Initialize();
   CHECK(icu_result);

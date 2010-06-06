@@ -36,7 +36,7 @@
 #include "berkelium/Widget.hpp"
 #include "chrome/browser/renderer_host/render_widget_host.h"
 #include "chrome/browser/renderer_host/render_widget_host_view.h"
-
+#include "chrome/browser/renderer_host/accelerated_surface_container_manager_mac.h"
 //see chrome/browser/renderer_host/test/test_render_view_host.h for a stub impl.
 
 namespace Berkelium {
@@ -165,11 +165,14 @@ public: /******* RenderWidgetHostView *******/
   virtual VideoLayer* AllocVideoLayer(const gfx::Size& size);
 
 #if defined(OS_MACOSX)
+
   // Display a native control popup menu for WebKit.
   virtual void ShowPopupWithItems(gfx::Rect bounds,
                                   int item_height,
+                                  double item_font_size,
                                   int selected_item,
-                                  const std::vector<WebMenuItem>& items);
+                                  const std::vector<WebMenuItem>& items,
+                                  bool right_aligned);
 
   // Get the view's position on the screen.
   virtual gfx::Rect GetWindowRect();
@@ -179,7 +182,24 @@ public: /******* RenderWidgetHostView *******/
 
   // Set the view's active state (i.e., tint state of controls).
   virtual void SetActive(bool active);
-#endif
+
+  // App hidden or minimized/unminimized
+  virtual void SetWindowVisibility(bool);
+
+  virtual void WindowFrameChanged();
+
+  // Methods associated with GPU-accelerated plug-in instances.
+  virtual gfx::PluginWindowHandle AllocateFakePluginWindowHandle(bool);
+  virtual void DestroyFakePluginWindowHandle(gfx::PluginWindowHandle window);
+  virtual void AcceleratedSurfaceSetIOSurface(gfx::PluginWindowHandle window,
+                                              int32 width, int32 height, uint64_t io_surface_id);
+  virtual void AcceleratedSurfaceSetTransportDIB(gfx::PluginWindowHandle window,
+                                              int32 width, int32 height, base::SharedMemoryHandle transport_dib);
+  virtual void AcceleratedSurfaceBuffersSwapped(gfx::PluginWindowHandle window);
+  // Draws the current GPU-accelerated plug-in instances into the given context.
+  virtual void DrawAcceleratedSurfaceInstances(CGLContextObj context);
+  virtual void AcceleratedSurfaceContextChanged();
+ #endif
 
 #if defined(OS_LINUX)
   virtual void CreatePluginContainer(gfx::PluginWindowHandle id);
@@ -207,6 +227,10 @@ private:
 
     gfx::Rect mRect;
 
+#if defined(OS_MACOSX)
+  // Helper class for managing instances of accelerated plug-ins.
+  AcceleratedSurfaceContainerManagerMac plugin_container_manager_;
+#endif
 };
 
 }

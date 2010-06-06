@@ -237,8 +237,10 @@ VideoLayer* RenderWidget::AllocVideoLayer(const gfx::Size& size) {
   // Display a native control popup menu for WebKit.
 void RenderWidget::ShowPopupWithItems(gfx::Rect bounds,
                                   int item_height,
+                                  double item_font,
                                   int selected_item,
-                                  const std::vector<WebMenuItem>& items){
+                                  const std::vector<WebMenuItem>& items,
+                                  bool x){
 }
 
   // Get the view's position on the screen.
@@ -253,6 +255,59 @@ gfx::Rect RenderWidget::GetRootWindowRect(){
 
   // Set the view's active state (i.e., tint state of controls).
 void RenderWidget::SetActive(bool active){
+}
+
+void RenderWidget::SetWindowVisibility(bool) {
+}
+
+void RenderWidget::WindowFrameChanged() {
+}
+
+  // Methods associated with GPU-accelerated plug-in instances.
+gfx::PluginWindowHandle RenderWidget::AllocateFakePluginWindowHandle(bool opaque) {
+  return plugin_container_manager_.AllocateFakePluginWindowHandle(opaque);
+}
+void RenderWidget::DestroyFakePluginWindowHandle(gfx::PluginWindowHandle window) {
+  plugin_container_manager_.DestroyFakePluginWindowHandle(window);
+}
+void RenderWidget::AcceleratedSurfaceSetIOSurface(
+    gfx::PluginWindowHandle window,
+    int32 width, int32 height,
+    uint64_t io_surface_id) {
+  plugin_container_manager_.SetSizeAndIOSurface(window,
+                                                width,
+                                                height,
+                                                io_surface_id);
+}
+void RenderWidget::AcceleratedSurfaceSetTransportDIB(
+    gfx::PluginWindowHandle window,
+    int32 width, int32 height, base::SharedMemoryHandle transport_dib) {
+  plugin_container_manager_.SetSizeAndTransportDIB(window,
+                                                   width,
+                                                   height,
+                                                   transport_dib);
+}
+void RenderWidget::AcceleratedSurfaceBuffersSwapped(gfx::PluginWindowHandle window) {
+  // FIXME: What do we do here.
+  //[cocoa_view_ drawAcceleratedPluginLayer];
+}
+  // Draws the current GPU-accelerated plug-in instances into the given context.
+void RenderWidget::DrawAcceleratedSurfaceInstances(CGLContextObj context) {
+  CGLSetCurrentContext(context);
+  gfx::Rect rect = GetWindowRect();
+  glMatrixMode(GL_PROJECTION);
+  glLoadIdentity();
+  // Note that we place the origin at the upper left corner with +y
+  // going down
+  glOrtho(0, rect.width(), rect.height(), 0, -1, 1);
+  glMatrixMode(GL_MODELVIEW);
+  glLoadIdentity();
+
+  plugin_container_manager_.Draw(context);
+}
+
+void RenderWidget::AcceleratedSurfaceContextChanged() {
+  plugin_container_manager_.ForceTextureReload();
 }
 #endif
 
