@@ -260,7 +260,7 @@ Root::Root (){
     mTimerMgr = new HighResolutionTimerManager;
     mUIThread = new ChromeThread(ChromeThread::UI, mMessageLoop);
 
-    mProcessSingleton= new ProcessSingleton(homedirpath);
+    //mProcessSingleton= new ProcessSingleton(homedirpath);
     BrowserProcessImpl *browser_process;
     browser_process=new BrowserProcessImpl(*CommandLine::ForCurrentProcess());
     browser_process->local_state()->RegisterStringPref(prefs::kApplicationLocale, L"");
@@ -405,7 +405,7 @@ Root::Root (){
     DCHECK(user_prefs);
 
 //    browser_process->local_state()->SetString(prefs::kApplicationLocale,std::wstring());
-    mProcessSingleton->Create();
+    //mProcessSingleton->Create();
 
     mDNSPrefetch = new chrome_browser_net::DnsGlobalInit(
       user_prefs,
@@ -456,7 +456,7 @@ Root::~Root(){
     //g_browser_process->profile_manager()->RemoveProfile(mProf);
 
     g_browser_process->EndSession();
-    mProcessSingleton->Cleanup();
+    //mProcessSingleton->Cleanup();
     delete mRenderViewHostFactory;
     
     delete mProf;
@@ -468,7 +468,7 @@ Root::~Root(){
 //    delete mNotificationService;
     delete mMessageLoop;
     delete g_browser_process;
-    delete mProcessSingleton;
+    //delete mProcessSingleton;
 }
 
 

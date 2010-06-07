@@ -225,7 +225,6 @@ int main (int argc, char **argv) {
     }
     win4->navigateTo(url.data(),url.length());
 
-    char buffer[WIDTH][HEIGHT][3];
     while(true) {
         Berkelium::update();
         {
@@ -239,6 +238,8 @@ int main (int argc, char **argv) {
 #endif
         }
     }
-    int retval=Berkelium::renderToBuffer(&buffer[0][0][0],WIDTH,HEIGHT);
+    char *buffer = new char[WIDTH*HEIGHT*3];
+    int retval=Berkelium::renderToBuffer(&buffer[0],WIDTH,HEIGHT);
+    delete []buffer;
     return retval;
 }
