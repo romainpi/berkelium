@@ -36,7 +36,9 @@
 #include "berkelium/Widget.hpp"
 #include "chrome/browser/renderer_host/render_widget_host.h"
 #include "chrome/browser/renderer_host/render_widget_host_view.h"
-#include "chrome/browser/renderer_host/accelerated_surface_container_manager_mac.h"
+#if defined(OS_MACOSX)
+#include "chrome/browser/renderer_host/accelerated_surface_container_manager_mac.h"#
+#endif
 //see chrome/browser/renderer_host/test/test_render_view_host.h for a stub impl.
 
 namespace Berkelium {

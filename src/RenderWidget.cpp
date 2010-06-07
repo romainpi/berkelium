@@ -38,9 +38,9 @@
 #include <gtk/gtkwindow.h>
 #endif
 
-#ifdef _WIN32
+#if defined (OS_WIN)
 #include <windows.h> // for GetTickCount()
-#else
+#elif defined (OS_POSIX)
 #include <sys/time.h>
 #include <time.h>
 #endif
