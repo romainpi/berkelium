@@ -154,8 +154,10 @@ IF(CHROME_FOUND)
       ENDIF()
 
       SET(CHROMIUM_FRAMEWORK Chromium\ Framework.framework)
-      SET(LANG en)
+      SET(CHROME_LANG en)
       SET(CHROMIUM_FRAMEWORK_PATH ${CHROME_ROOT}/src/xcodebuild/${CHROMIUMMODE}/${CHROMIUM_FRAMEWORK})
+      SET(LOCAL_CHROMIUM_FRAMEWORK ${CHROME_APP_NAME}/Contents/Versions/$$VERSION/${CHROMIUM_FRAMEWORK})
+      SET(CHROME_SHELL_SCRIPT ${CHROME_APP_NAME}/Contents/MacOS/${CHROME_APP_APP})
       SET(CHROME_SYMLINKS_COMMAND
         eval `cat /build/chromium/src/chrome/VERSION` &&
         VERSION=$$MAJOR.$$MINOR.$$BUILD.$$PATCH &&
@@ -164,27 +166,36 @@ IF(CHROME_FOUND)
         mkdir -p ${CHROME_APP_NAME}/Contents/Resources &&
         mkdir -p ${CHROME_APP_NAME}/Contents/Frameworks &&
         mkdir -p ${CHROME_APP_NAME}/Contents/MacOS &&
-        mkdir -p ${CHROME_APP_NAME}/Contents/Versions/$$VERSION &&
-        ln -sf .. ${CHROME_APP_NAME}/Contents/Resources/Berkelium\ Helper.app &&
-        ln -sf ../.. ${CHROME_APP_NAME}/Contents/Versions/$$VERSION/${CHROMIUM_FRAMEWORK} &&
-        ln -sf .. ${CHROME_APP_NAME}/Contents/Frameworks/${CHROMIUM_FRAMEWORK} &&
-        ln -sf ${CHROMIUM_FRAMEWORK_PATH}/Resources/chrome.pak ${CHROME_APP_NAME}/Contents/Resources/chrome.pak &&
-        ln -sf ${CHROMIUM_FRAMEWORK_PATH}/Resources/linkCursor.png ${CHROME_APP_NAME}/Contents/Resources/linkCursor.png  &&
-        ln -sf ${CHROMIUM_FRAMEWORK_PATH}/Resources/renderer.sb ${CHROME_APP_NAME}/Contents/Resources/renderer.sb &&
-        ln -sf ${CHROMIUM_FRAMEWORK_PATH}/Resources/${LANG}.lproj ${CHROME_APP_NAME}/Contents/Resources/${LANG}.lproj
+        echo "'#!/bin/sh'" > ${CHROME_SHELL_SCRIPT} &&
+        echo 'cd `dirname $$0`/..' >> ${CHROME_SHELL_SCRIPT} &&
+        echo 'Contents/`basename $$0` $$*' >> ${CHROME_SHELL_SCRIPT} &&
+        chmod a+x ${CHROME_SHELL_SCRIPT} &&
+        mkdir -p ${CHROME_APP_NAME}/Contents/Contents &&
+        mkdir -p ${LOCAL_CHROMIUM_FRAMEWORK} &&
+        mkdir -p ${LOCAL_CHROMIUM_FRAMEWORK}/Libraries &&
+        mkdir -p ${LOCAL_CHROMIUM_FRAMEWORK}/Resources &&
+        ln -sf  ${CHROME_APP_NAME}/Contents/Frameworks/${CHROMIUM_FRAMEWORK} &&
+        ln -sf ${CHROMIUM_FRAMEWORK_PATH}/Libraries/libffmpegsumo.dylib ${LOCAL_CHROMIUM_FRAMEWORK}/Libraries/ &&
+        ln -sf ${CHROMIUM_FRAMEWORK_PATH}/Resources/chrome.pak ${LOCAL_CHROMIUM_FRAMEWORK}/Resources/ &&
+        ln -sf ${CHROMIUM_FRAMEWORK_PATH}/Resources/${CHROME_LANG}.lproj ${LOCAL_CHROMIUM_FRAMEWORK}/Resources/ &&
+        ln -sf ${CHROMIUM_FRAMEWORK_PATH}/Resources/utility.sb ${LOCAL_CHROMIUM_FRAMEWORK}/Resources/ &&
+        ln -sf ${CHROMIUM_FRAMEWORK_PATH}/Resources/nacl_loader.sb ${LOCAL_CHROMIUM_FRAMEWORK}/Resources/ &&
+        ln -sf ${CHROMIUM_FRAMEWORK_PATH}/Resources/worker.sb ${LOCAL_CHROMIUM_FRAMEWORK}/Resources/ &&
+        ln -sf ${CHROMIUM_FRAMEWORK_PATH}/Resources/common.sb ${LOCAL_CHROMIUM_FRAMEWORK}/Resources/ &&
+        ln -sf ${CHROMIUM_FRAMEWORK_PATH}/Resources/renderer.sb ${LOCAL_CHROMIUM_FRAMEWORK}/Resources/
         )
 
       SET(CHROME_SYMLINKS_COMMAND
         ${CHROME_SYMLINKS_COMMAND} &&
-        ln -sf ${CMAKE_CURRENT_BINARY_DIR}/${CHROME_APP_APP} ${CHROME_APP_NAME}/Contents/MacOS/
+        ln -sf ${CMAKE_CURRENT_BINARY_DIR}/${CHROME_APP_APP} ${CHROME_APP_NAME}/Contents/Contents/ &&
+        ln -sf ${CMAKE_CURRENT_BINARY_DIR}/libplugin_carbon_interpose.dylib ${CHROME_APP_NAME}/Contents/Contents/
         )
       FOREACH(CHROME_SYMLINK_BINARY ${CHROME_APP_LINKS})
         SET(CHROME_SYMLINKS_COMMAND
           ${CHROME_SYMLINKS_COMMAND} &&
           # FIXME currently we link these into both MacOS and Resources because dynamic loading of libraries
           # could leave us in either of these directories.  There really must be a better solution than this.
-          ln -sf ${CHROME_SYMLINK_BINARY} ${CHROME_APP_NAME}/Contents/MacOS/ &&
-          ln -sf ${CHROME_SYMLINK_BINARY} ${CHROME_APP_NAME}/Contents/Resources/
+          ln -sf ${CHROME_SYMLINK_BINARY} ${CHROME_APP_NAME}/Contents/
           )
       ENDFOREACH()
 
