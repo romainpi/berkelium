@@ -135,7 +135,7 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				AdditionalIncludeDirectories="&quot;..\..\chromium\chromium\src\chrome\$(ConfigurationName)\obj\global_intermediate\chrome_dll_version&quot;;&quot;..\..\chromium\chromium\src\chrome\$(ConfigurationName)\obj\global_intermediate\installer_util_strings&quot;"
+				AdditionalIncludeDirectories="&quot;..\..\chromium\chromium\src\chrome\$(ConfigurationName)\obj\global_intermediate\chrome_dll_version&quot;;&quot;..\..\chromium\chromium\src\chrome\$(ConfigurationName)\obj\global_intermediate\installer_util_strings&quot;;..\..\chromium\chromium\src"
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"

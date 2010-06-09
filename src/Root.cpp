@@ -202,14 +202,14 @@ Root::Root (){
 #else
     subprocess = module_dir.Append(L"berkelium.exe");
 #endif
-	std::wstring subprocess_str = L"berkelium --enable-webgl --in-process-webgl --browser-subprocess-path=";
+	std::wstring subprocess_str = L"berkelium --enable-webgl --browser-subprocess-path=";
 	subprocess_str += L"\"";
 	subprocess_str += subprocess.value();
 	subprocess_str += L"\"";
     CommandLine::Init(0, NULL);
     CommandLine::ForCurrentProcess()->ParseFromString(subprocess_str);
 #else
-    const char* argv[] = { "berkelium", "--browser-subprocess-path=./berkelium","--enable-webgl","--in-process-webgl" };
+    const char* argv[] = { "berkelium", "--browser-subprocess-path=./berkelium","--enable-webgl" };
     CommandLine::Init(sizeof(argv)/sizeof(argv[0]), argv);
 #endif
     }

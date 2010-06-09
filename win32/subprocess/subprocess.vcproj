@@ -136,7 +136,7 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				AdditionalIncludeDirectories="..\..\chromium\chromium\src\chrome\$(ConfigurationName)\obj\global_intermediate\chrome"
+				AdditionalIncludeDirectories="&quot;..\..\..\chromium\chromium\src\chrome\$(ConfigurationName)\obj\global_intermediate\chrome&quot;"
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
