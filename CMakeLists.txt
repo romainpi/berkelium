@@ -111,7 +111,7 @@ IF(CHROME_FOUND)
   IF(APPLE)
     ADD_CHROME_APP(
       APP ppmrender
-      DEPENDS ppmrender
+      DEPENDS ppmrender plugin_carbon_interpose
       LINKS
       ${CMAKE_CURRENT_BINARY_DIR}/libplugin_carbon_interpose.dylib
       ${CMAKE_CURRENT_BINARY_DIR}/berkelium
@@ -139,7 +139,7 @@ IF(CHROME_FOUND)
     IF(APPLE)
       ADD_CHROME_APP(
         APP glut_demo
-        DEPENDS glut_demo
+        DEPENDS glut_demo plugin_carbon_interpose
         LINKS
         ${CMAKE_CURRENT_BINARY_DIR}/libplugin_carbon_interpose.dylib
         ${CMAKE_CURRENT_BINARY_DIR}/berkelium
@@ -157,6 +157,7 @@ IF(CHROME_FOUND)
     IF(APPLE)
       ADD_CHROME_APP(
         APP glut_input
+        DEPENDS glut_input plugin_carbon_interpose
         LINKS
         ${CMAKE_CURRENT_BINARY_DIR}/libplugin_carbon_interpose.dylib
         ${CMAKE_CURRENT_BINARY_DIR}/berkelium
@@ -171,11 +172,6 @@ IF(CHROME_FOUND)
     TARGET_LINK_LIBRARIES(plugin_carbon_interpose -L. debug liblibberkelium_d.dylib optimized liblibberkelium.dylib )
     ADD_DEPENDENCIES(plugin_carbon_interpose libberkelium)
 
-    ADD_CUSTOM_TARGET(plugin_carbon_interpose.dylib
-                      ALL
-                      DEPENDS plugin_carbon_interpose
-                      COMMAND
-                        ln -sf libplugin_carbon_interpose.dylib plugin_carbon_interpose.dylib)
   ENDIF()
 
   INSTALL(TARGETS
