@@ -181,9 +181,7 @@ Root::Root (){
 
     new base::AtExitManager();
 
-#if defined(OS_WIN)
     FilePath subprocess;
-#endif
     {
 // From <base/command_line.h>:
   // Initialize the current process CommandLine singleton.  On Windows,
@@ -202,17 +200,35 @@ Root::Root (){
 #else
     subprocess = module_dir.Append(L"berkelium.exe");
 #endif
+
 	std::wstring subprocess_str = L"berkelium --enable-webgl --browser-subprocess-path=";
 	subprocess_str += L"\"";
 	subprocess_str += subprocess.value();
 	subprocess_str += L"\"";
     CommandLine::Init(0, NULL);
     CommandLine::ForCurrentProcess()->ParseFromString(subprocess_str);
-#else
-    const char* argv[] = { "berkelium", "--browser-subprocess-path=./berkelium","--enable-webgl" };
-    CommandLine::Init(sizeof(argv)/sizeof(argv[0]), argv);
+#elif defined(OS_MACOSX)
+    FilePath app_contents;
+    PathService::Get(base::DIR_CURRENT, &app_contents);
+    subprocess = app_contents.Append("MacOS").Append("berkelium");
+    std::string subprocess_str = "--browser-subprocess-path=";
+    subprocess_str += subprocess.value();
+    const char* argv[] = { "berkelium", subprocess_str.c_str(),
+        "--enable-webgl","--in-process-webgl" };
+    CommandLine::Init(arraysize(argv), argv);
+#elif defined(OS_POSIX)
+    FilePath module_file;
+    PathService::Get(base::FILE_EXE, &module_file);
+    subprocess = module_file.DirName().Append("berkelium");
+    std::string subprocess_str = "--browser-subprocess-path=";
+    subprocess_str += subprocess.value();
+    const char* argv[] = { "berkelium", subprocess_str.c_str(),
+        "--enable-webgl" };
+    CommandLine::Init(arraysize(argv), argv);
 #endif
     }
+
+    PathService::Override(base::FILE_EXE, subprocess);
 
 #if !defined(OS_WIN)
 /// Temporary SingletonLock fix:
@@ -291,14 +307,6 @@ Root::Root (){
         *CommandLine::ForCurrentProcess(),
         logging::DELETE_OLD_LOG_FILE);
     //APPEND_TO_OLD_LOG_FILE
-
-    PathService::Override(base::FILE_EXE, 
-#if defined(OS_WIN)
-        subprocess
-#else
-        FilePath("./berkelium")
-#endif
-        );
 
   chrome::RegisterChromeSchemes(); // Required for "chrome-extension://" in InitExtensions
 #if defined(OS_LINUX)

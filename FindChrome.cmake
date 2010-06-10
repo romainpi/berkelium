@@ -195,7 +195,7 @@ IF(CHROME_FOUND)
           ${CHROME_SYMLINKS_COMMAND} &&
           # FIXME currently we link these into both MacOS and Resources because dynamic loading of libraries
           # could leave us in either of these directories.  There really must be a better solution than this.
-          ln -sf ${CHROME_SYMLINK_BINARY} ${CHROME_APP_NAME}/Contents/
+          cp -f ${CHROME_SYMLINK_BINARY} ${CHROME_APP_NAME}/Contents/MacOS/
           )
       ENDFOREACH()
 
