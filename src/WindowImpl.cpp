@@ -1070,7 +1070,74 @@ void WindowImpl::ShowCreatedWidget(int route_id,
 
 }
 void WindowImpl::ShowContextMenu(const ContextMenuParams& params) {
-    // TODO: Add context menu event
+    if (!mDelegate)
+      return;
+
+    ContextMenuEventArgs args;
+    memset(&args, 0, sizeof(args));
+
+    std::wstring linkUrl, srcUrl, pageUrl, frameUrl;
+
+    UTF8ToWide(params.link_url.spec().c_str(), params.link_url.spec().length(), &linkUrl);
+    UTF8ToWide(params.src_url.spec().c_str(), params.src_url.spec().length(), &srcUrl);
+    UTF8ToWide(params.page_url.spec().c_str(), params.page_url.spec().length(), &pageUrl);
+    UTF8ToWide(params.frame_url.spec().c_str(), params.frame_url.spec().length(), &frameUrl);
+
+    args.linkUrl = linkUrl.c_str();
+    args.linkUrlLength = linkUrl.length();
+    args.srcUrl = srcUrl.c_str();
+    args.srcUrlLength = srcUrl.length();
+    args.pageUrl = pageUrl.c_str();
+    args.pageUrlLength = pageUrl.length();
+    args.frameUrl = frameUrl.c_str();
+    args.frameUrlLength = frameUrl.length();
+    args.selectedText = params.selection_text.c_str();
+    args.selectedTextLength = params.selection_text.length();
+
+    args.mediaType = ContextMenuEventArgs::MediaTypeNone;
+    switch (params.media_type) {
+    case WebKit::WebContextMenuData::MediaTypeNone:
+        args.mediaType = ContextMenuEventArgs::MediaTypeNone;
+        break;
+    case WebKit::WebContextMenuData::MediaTypeImage:
+        args.mediaType = ContextMenuEventArgs::MediaTypeImage;
+        break;
+    case WebKit::WebContextMenuData::MediaTypeAudio:
+        args.mediaType = ContextMenuEventArgs::MediaTypeAudio;
+        break;
+    case WebKit::WebContextMenuData::MediaTypeVideo:
+        args.mediaType = ContextMenuEventArgs::MediaTypeVideo;
+        break;
+    default:
+        break;
+    }
+    args.mouseX = params.x;
+    args.mouseY = params.y;
+    args.isEditable = params.is_editable;
+    args.editFlags = ContextMenuEventArgs::CanDoNone;
+    if (params.edit_flags & WebKit::WebContextMenuData::CanUndo) {
+        args.editFlags |= ContextMenuEventArgs::CanUndo;
+    }
+    if (params.edit_flags & WebKit::WebContextMenuData::CanRedo) {
+        args.editFlags |= ContextMenuEventArgs::CanRedo;
+    }
+    if (params.edit_flags & WebKit::WebContextMenuData::CanCut) {
+        args.editFlags |= ContextMenuEventArgs::CanCut;
+    }
+    if (params.edit_flags & WebKit::WebContextMenuData::CanCopy) {
+        args.editFlags |= ContextMenuEventArgs::CanCopy;
+    }
+    if (params.edit_flags & WebKit::WebContextMenuData::CanPaste) {
+        args.editFlags |= ContextMenuEventArgs::CanPaste;
+    }
+    if (params.edit_flags & WebKit::WebContextMenuData::CanDelete) {
+        args.editFlags |= ContextMenuEventArgs::CanDelete;
+    }
+    if (params.edit_flags & WebKit::WebContextMenuData::CanSelectAll) {
+        args.editFlags |= ContextMenuEventArgs::CanSelectAll;
+    }
+
+    mDelegate->onShowContextMenu(this, args);
 }
 void WindowImpl::StartDragging(const WebDropData& drop_data,
                                WebKit::WebDragOperationsMask allowed_ops,

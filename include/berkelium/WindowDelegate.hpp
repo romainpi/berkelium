@@ -45,6 +45,36 @@ class RenderWidget; // FIXME: private interface.
 
 class Cursor;
 
+struct ContextMenuEventArgs {
+  enum MediaType {
+      MediaTypeNone,
+      MediaTypeImage,
+      MediaTypeVideo,
+      MediaTypeAudio,
+  };
+  enum EditFlags {
+      CanDoNone = 0x0,
+      CanUndo = 0x1,
+      CanRedo = 0x2,
+      CanCut = 0x4,
+      CanCopy = 0x8,
+      CanPaste = 0x10,
+      CanDelete = 0x20,
+      CanSelectAll = 0x40,
+  };
+
+  MediaType mediaType;
+
+  int mouseX, mouseY;
+
+  const wchar_t * linkUrl, * srcUrl, * pageUrl, * frameUrl, * selectedText;
+  size_t linkUrlLength, srcUrlLength, pageUrlLength, frameUrlLength, selectedTextLength;
+
+  bool isEditable;
+
+  int editFlags;
+};
+
 class BERKELIUM_EXPORT WindowDelegate {
 public:
     virtual ~WindowDelegate() {}
@@ -124,6 +154,8 @@ public:
 
     /** Invoked when the Window requests that the mouse cursor be updated. */
     virtual void onCursorUpdated(const Cursor& newCursor) {}
+
+    virtual void onShowContextMenu(Window *win, const ContextMenuEventArgs& args) {}
 
 /**************************
    Might want messages for:
