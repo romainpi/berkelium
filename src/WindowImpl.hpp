@@ -169,7 +169,9 @@ protected: /******* RenderViewHostDelegate *******/
     // "un-crashed"
     virtual void RenderViewReady(RenderViewHost* render_view_host);
 
-
+    void ProcessExternalHostMessage(const std::string& message,
+                                    const std::string& origin,
+                                    const std::string& target);
     void ProcessDOMUIMessage(const std::string& message,
                              const ListValue* content,
                              const GURL& source_url,

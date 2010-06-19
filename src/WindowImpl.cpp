@@ -73,7 +73,7 @@ void WindowImpl::init(SiteInstance*site, int routing_id) {
         profile()->GetWebKitContext()->
         dom_storage_context()->AllocateSessionStorageNamespaceId());
     host()->AllowBindings(
-        BindingsPolicy::DOM_UI);
+        BindingsPolicy::EXTERNAL_HOST);
 }
 
 WindowImpl::WindowImpl(const Context*otherContext):
@@ -696,6 +696,31 @@ void WindowImpl::OnPageTranslated(
     TranslateErrors::Type error_type) {
 }
 
+void WindowImpl::ProcessExternalHostMessage(const std::string& message,
+                                            const std::string& origin,
+                                            const std::string& target)
+{
+    const char kMessageName[] = "externalHost";
+    const size_t kArgsVectorSize = 3;
+    WindowDelegate::Data *argsVector=NULL;
+    argsVector = new WindowDelegate::Data[kArgsVectorSize];
+    argsVector[0].message=message.data();
+    argsVector[0].length=message.length();
+    argsVector[1].message=origin.data();
+    argsVector[1].length=origin.length();
+    argsVector[2].message=target.data();
+    argsVector[2].length=target.length();
+
+    if (mDelegate) {
+        WindowDelegate::Data temp_message;
+        temp_message.message=kMessageName;
+        temp_message.length=strlen(kMessageName);
+        mDelegate->onChromeSend(this, temp_message, argsVector, kArgsVectorSize);
+    }
+    if (argsVector!=NULL) {
+        delete[] argsVector;
+    }
+}
 
 void WindowImpl::ProcessDOMUIMessage(
     const std::string& message, const ListValue* content,
