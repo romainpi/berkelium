@@ -62,7 +62,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="berkelium_d.lib"
-				OutputFile="..\$(ProjectName).exe"
+				OutputFile="..\$(ProjectName)_d.exe"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories=".."
 				GenerateDebugInformation="true"
