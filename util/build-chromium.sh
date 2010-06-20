@@ -141,11 +141,12 @@ CHROMIUM_CHECKOUT_DIR="${CHROMIUM_BUILD_DIR}/chromium"
 
 # Chromium revision to build. Ideally we could keep these synced across all platforms.
 if [ x"${CHROMIUM_REV}" = x ]; then
-    if [ x"${platform}" = x"Darwin" ]; then
-        CHROMIUM_REV=28789
-    elif [ x"${platform}" = x"Linux" ]; then
-        CHROMIUM_REV=29571
-    fi
+    CHROMIUM_REV=49006
+    #if [ x"${platform}" = x"Darwin" ]; then
+    #    CHROMIUM_REV=49006
+    #elif [ x"${platform}" = x"Linux" ]; then
+    #    CHROMIUM_REV=50500
+    #fi
 fi
 
 if [ x"${platform}" = x"Darwin" ]; then
@@ -319,8 +320,7 @@ elif [ x"${platform}" = x"Linux" ]; then
                  export PATH=\"${CHROMIUM_DEPOTTOOLS_DIR}:${PATH}\" &&
                  export GYP_GENERATORS=make &&
                  gclient sync --force --revision src@${CHROMIUM_REV}" &&
-        careful_patch "${CHROMIUM_CHECKOUT_DIR}" "${CHROMIUM_PATCHES_DIR}/chromium_mainthread.patch" &&
-        careful_patch "${CHROMIUM_CHECKOUT_DIR}/src" "${CHROMIUM_PATCHES_DIR}/chromium_sandbox_pic.patch" &&
+        careful_patch "${CHROMIUM_CHECKOUT_DIR}/src" "${CHROMIUM_PATCHES_DIR}/chromium_nacl_64_pic.patch" &&
         careful_patch "${CHROMIUM_CHECKOUT_DIR}/src" "${CHROMIUM_PATCHES_DIR}/chromium_nacl_inline_pic.patch" &&
         careful_patch "${CHROMIUM_CHECKOUT_DIR}/src" "${CHROMIUM_PATCHES_DIR}/chromium_transparency_26900.patch" &&
         careful_patch "${CHROMIUM_CHECKOUT_DIR}/src" "${CHROMIUM_PATCHES_DIR}/chromium_win32_sandbox_exports.patch" &&
@@ -332,10 +332,10 @@ elif [ x"${platform}" = x"Linux" ]; then
                  export CHROMIUM_ROOT="'"$PWD"'" &&
                  export CXX='g++ -fPIC' &&
                  export CC='gcc -fPIC' &&
-                 export GYP_DEFINES="'"$GYP_DEFINES "target_arch='"$CHROME_PLATFORM &&
+                 export GYP_DEFINES="'"$GYP_DEFINES linux_fpic=1 disable_nacl=1 "target_arch='"$CHROME_PLATFORM &&
                  gclient runhooks --force &&
                  cd src &&
-                 CXX='g++ -fPIC' CC='gcc -fPIC' make VERBOSE=1 -r $NUM_PROCS $MAKEFLAGS chrome" && \
+                 make VERBOSE=1 -r $NUM_PROCS $MAKEFLAGS chrome" && \
                      make_symlink ${CHROMIUM_CHECKOUT_DIR}/src/out/$OUTDIR ${CHROMIUM_INSTALL_DIR} && \
                      echo ${OUTDIR} > ${CHROMIUM_BUILD_DIR}/compilemode.txt || \
                      export FAILED="$FAILED chromium"
@@ -350,12 +350,9 @@ elif [ x"${platform}" = x"Linux" ]; then
             fi
 
             user_eval "ln -sf ${CHROMIUM_DATADIR}/chrome.pak ${CHROMIUM_APP_DIR}/chrome.pak
-                       ln -sf ${CHROMIUM_DATADIR}/libavcodec.so.52 ${CHROMIUM_APP_DIR}/libavcodec.so.52
-                       ln -sf ${CHROMIUM_DATADIR}/libavformat.so.52 ${CHROMIUM_APP_DIR}/libavformat.so.52
-                       ln -sf ${CHROMIUM_DATADIR}/libavutil.so.52 ${CHROMIUM_APP_DIR}/libavutil.so.52
+                       ln -sf ${CHROMIUM_DATADIR}/libffmpegsumo.so ${CHROMIUM_APP_DIR}/libffmpegsumo.so
                        ln -sf ${CHROMIUM_DATADIR}/locales ${CHROMIUM_APP_DIR}/locales
-                       ln -sf ${CHROMIUM_DATADIR}/resources ${CHROMIUM_APP_DIR}/resources
-                       ln -sf ${CHROMIUM_DATADIR}/themes ${CHROMIUM_APP_DIR}/themes" || \
+                       ln -sf ${CHROMIUM_DATADIR}/resources ${CHROMIUM_APP_DIR}/resources" || \
                            export FAILED="$FAILED chromium"
 
         fi
