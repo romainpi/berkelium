@@ -1,8 +1,22 @@
-/chromium
-/berkelium
+# Executables
+/chromium*
+/berkelium*
+/glut_demo*
+/glut_input*
+/liblibberkelium*.so*
+/ppmrender
+
+# CMake files
+CMakeCache.txt
+CMakeFiles
+Makefile
+cmake_install.cmake
+
+# Chrome-related files
+locales
+resources
 Debug
 Release
-/ppmrender
 *.pak
 *.dSYM
 chrome_debug.log
