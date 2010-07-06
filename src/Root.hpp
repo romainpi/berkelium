@@ -46,7 +46,7 @@ class HighResolutionTimerManager;
 class HistogramSynchronizer;
 class StatisticsRecorder;
 namespace chrome_browser_net {
-class DnsGlobalInit;
+class PredictorInit;
 }
 namespace Berkelium {
 
@@ -58,7 +58,7 @@ class Root : public AutoSingleton<Root> {
     Profile* mProf;
     scoped_ptr<SystemMonitor> mSysMon;
     scoped_ptr<HighResolutionTimerManager> mTimerMgr;
-    scoped_ptr<chrome_browser_net::DnsGlobalInit> mDNSPrefetch;
+    scoped_ptr<chrome_browser_net::PredictorInit> mDNSPrefetch;
     URLRequestContextGetter* mDefaultRequestContext;
     scoped_ptr<MessageLoop> mMessageLoop;
     scoped_ptr<NotificationService> mNotificationService;

@@ -273,7 +273,9 @@ protected: /******* RenderViewHostDelegate::Resource *******/
 
 protected: /******* RenderViewHostDelegate::View *******/
     virtual void CreateNewWindow(int route_id,
-                                 WindowContainerType container_type);
+                                 WindowContainerType container_type,
+                                 const string16&frame_name);
+
     virtual void CreateNewWidget(int route_id, WebKit::WebPopupType popup_type);
     virtual void ShowCreatedWindow(int route_id,
                                    WindowOpenDisposition disposition,
@@ -316,7 +318,7 @@ protected: /******* RenderViewHostDelegate::BrowserIntegration *******/
     virtual void OnPageContents(const GURL& url,
                                 int renderer_process_id,
                                 int32 page_id,
-                                const std::wstring& contents,
+                                const string16& contents,
                                 const std::string& language);
     virtual void OnPageTranslated(int32 page_id,
                                   const std::string& original_lang,

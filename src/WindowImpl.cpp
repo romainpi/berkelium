@@ -334,34 +334,14 @@ bool WindowImpl::doNavigateTo(
     if (view()) {
         view()->Hide();
     }
-    mController->LoadEntry(CreateNavigationEntry(
+    mController->LoadEntry(mController->CreateNavigationEntry(
         newURL,
         referrerURL,
-        PageTransition::TYPED));
+        PageTransition::TYPED,
+        profile()));
     NavigateToPendingEntry(reload);
 
     return true;
-}
-
-NavigationEntry* WindowImpl::CreateNavigationEntry(
-    const GURL& url, const GURL& referrer, PageTransition::Type transition) {
-  // Allow the browser URL handler to rewrite the URL. This will, for example,
-  // remove "view-source:" from the beginning of the URL to get the URL that
-  // will actually be loaded. This real URL won't be shown to the user, just
-  // used internally.
-  GURL loaded_url(url);
-  bool reverse_on_redirect = false;
-  BrowserURLHandler::RewriteURLIfNecessary(&loaded_url, profile(), &reverse_on_redirect);
-
-  NavigationEntry* entry = new NavigationEntry(NULL, -1, loaded_url, referrer,
-                                               string16(), transition);
-  entry->set_virtual_url(url);
-  entry->set_user_typed_url(url);
-  if (url.SchemeIsFile()) {
-    entry->set_title(WideToUTF16Hack(
-        file_util::GetFilenameFromPath(net::FormatUrl(url, L"en_US"))));
-  }
-  return entry;
 }
 
 bool WindowImpl::NavigateToPendingEntry(NavigationController::ReloadType reload) {
@@ -453,7 +433,7 @@ bool WindowImpl::CreateRenderViewForRenderManager(
   //  renderer process remotely, calling CreateRenderView will crash the
   //  renderer by attempting to create a second copy of the window
   if (!remote_view_exists) {
-      if (!render_view_host->CreateRenderView(Root::getSingleton().getDefaultRequestContext()))
+      if (!render_view_host->CreateRenderView(Root::getSingleton().getDefaultRequestContext(), string16()))
       return false;
   }
 
@@ -571,29 +551,30 @@ void WindowImpl::UpdateHistoryForNavigation(
 }
 
 bool WindowImpl::UpdateTitleForEntry(NavigationEntry* entry,
-                                      const std::wstring& title) {
+                                     const std::wstring& title) {
   // For file URLs without a title, use the pathname instead. In the case of a
   // synthesized title, we don't want the update to count toward the "one set
   // per page of the title to history."
-  std::wstring final_title;
+  string16 final_title;
   bool explicit_set;
   if (entry->url().SchemeIsFile() && title.empty()) {
-    final_title = UTF8ToWide(entry->url().ExtractFileName());
+    final_title = UTF8ToUTF16(entry->url().ExtractFileName());
     explicit_set = false;  // Don't count synthetic titles toward the set limit.
   } else {
-    TrimWhitespace(title, TRIM_ALL, &final_title);
+    TrimWhitespace(WideToUTF16Hack(title), TRIM_ALL, &final_title);
     explicit_set = true;
   }
 
-  if (final_title == UTF16ToWideHack(entry->title())) {
+  if (final_title == entry->title()) {
     if (mDelegate) {
-      mDelegate->onTitleChanged(this, WideString::point_to(final_title));
+      std::wstring wtitle(UTF16ToWideHack(final_title));
+      mDelegate->onTitleChanged(this, WideString::point_to(wtitle));
     }
 
     return false;  // Nothing changed, don't bother.
   }
 
-  entry->set_title(WideToUTF16Hack(final_title));
+  entry->set_title(final_title);
 
   // Update the history system for this page.
   if (!profile()->IsOffTheRecord() && !received_page_title_) {
@@ -607,7 +588,8 @@ bool WindowImpl::UpdateTitleForEntry(NavigationEntry* entry,
   }
 
   if (mDelegate) {
-    mDelegate->onTitleChanged(this, WideString::point_to(final_title));
+    std::wstring wtitle(UTF16ToWideHack(final_title));
+    mDelegate->onTitleChanged(this, WideString::point_to(wtitle));
   }
 
   // Lastly, set the title for the view.
@@ -722,7 +704,7 @@ void WindowImpl::OnPageContents(
     const GURL& url,
     int renderer_process_id,
     int32 page_id,
-    const std::wstring& contents,
+    const string16& contents,
     const std::string& language) {
 }
 
@@ -1010,7 +992,7 @@ void WindowImpl::DocumentLoadedInFrame() {
 
 
 /******* RenderViewHostDelegate::View *******/
-void WindowImpl::CreateNewWindow(int route_id, WindowContainerType container_type) {
+void WindowImpl::CreateNewWindow(int route_id, WindowContainerType container_type, const string16&frame_name) {
     // A window shown in popup or tab.
     //WINDOW_CONTAINER_TYPE_NORMAL = 0,
     // A window run as a hidden "background" page.
@@ -1027,6 +1009,7 @@ void WindowImpl::CreateNewWindow(int route_id, WindowContainerType container_typ
     mNewlyCreatedWindows.insert(
         std::pair<int, WindowImpl*>(route_id, newWindow));
 }
+
 void WindowImpl::CreateNewWidget(int route_id, WebKit::WebPopupType popup_type) {
     //WebPopupTypeNone, // Not a popup.
     //WebPopupTypeSelect, // A HTML select (combo-box) popup.

@@ -164,33 +164,15 @@ void RenderWidget::SetIsLoading(bool is_loading){
 }
 
   // Enable or disable IME for the view.
-void RenderWidget::IMEUpdateStatus(int control, const gfx::Rect& caret_rect){
+void RenderWidget::ImeUpdateTextInputState(WebKit::WebTextInputType type, const gfx::Rect& caret_rect){
 }
 
-  // Informs the view that a portion of the widget's backing store was painted.
-  // The view should ensure this gets copied to the screen.
-  //
-  // There are subtle performance implications here.  The RenderWidget gets sent
-  // a paint ack after this returns, so if the view only ever invalidates in
-  // response to this, then on Windows, where WM_PAINT has lower priority than
-  // events which can cause renderer resizes/paint rect updates, e.g.
-  // drag-resizing can starve painting; this function thus provides the view its
-  // main chance to ensure it stays painted and not just invalidated.  On the
-  // other hand, if this always blindly paints, then if we're already in the
-  // midst of a paint on the callstack, we can double-paint unnecessarily.
-  // (Worse, we might recursively call RenderWidgetHost::GetBackingStore().)
-  // Thus implementers should generally paint as much of |rect| as possible
-  // synchronously with as little overpainting as possible.
-void RenderWidget::DidPaintBackingStoreRects(const std::vector<gfx::Rect>& rect){
-//    std::cout << "Painted rect "<<rect << std::endl;
+void RenderWidget::ImeCancelComposition() {
 }
 
-  // Informs the view that a portion of the widget's backing store was scrolled
-  // by dx pixels horizontally and dy pixels vertically. The view should copy
-  // the exposed pixels from the backing store of the render widget (which has
-  // already been scrolled) onto the screen.
-void RenderWidget::DidScrollBackingStoreRect(
-      const gfx::Rect& rect, int dx, int dy){
+void RenderWidget::DidUpdateBackingStore(
+    const gfx::Rect& scroll_rect, int scroll_dx, int scroll_dy,
+    const std::vector<gfx::Rect>& copy_rects) {
 }
 
   // Notifies the View that the renderer has ceased to exist.

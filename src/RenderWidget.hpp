@@ -117,12 +117,19 @@ public: /******* RenderWidgetHostView *******/
 
   // Indicates whether the page has finished loading.
   virtual void SetIsLoading(bool is_loading);
+  // Updates the state of the input method attached to the view.
+  virtual void ImeUpdateTextInputState(WebKit::WebTextInputType type,
+                                       const gfx::Rect& caret_rect);
 
-  // Enable or disable IME for the view.
-  virtual void IMEUpdateStatus(int control, const gfx::Rect& caret_rect);
+  // Cancel the ongoing composition of the input method attached to the view.
+  virtual void ImeCancelComposition();
 
   // Informs the view that a portion of the widget's backing store was painted.
   // The view should ensure this gets copied to the screen.
+  //
+  // If the scroll_rect is non-empty, then a portion of the widget's backing
+  // store was scrolled by dx pixels horizontally and dy pixels vertically.
+  // The exposed rect from the scroll operation is included in copy_rects.
   //
   // There are subtle performance implications here.  The RenderWidget gets sent
   // a paint ack after this returns, so if the view only ever invalidates in
@@ -135,14 +142,9 @@ public: /******* RenderWidgetHostView *******/
   // (Worse, we might recursively call RenderWidgetHost::GetBackingStore().)
   // Thus implementers should generally paint as much of |rect| as possible
   // synchronously with as little overpainting as possible.
-  virtual void DidPaintBackingStoreRects(const std::vector<gfx::Rect>& rect);
-
-  // Informs the view that a portion of the widget's backing store was scrolled
-  // by dx pixels horizontally and dy pixels vertically. The view should copy
-  // the exposed pixels from the backing store of the render widget (which has
-  // already been scrolled) onto the screen.
-  virtual void DidScrollBackingStoreRect(
-      const gfx::Rect& rect, int dx, int dy);
+  virtual void DidUpdateBackingStore(
+      const gfx::Rect& scroll_rect, int scroll_dx, int scroll_dy,
+      const std::vector<gfx::Rect>& copy_rects);
 
   // Notifies the View that the renderer has ceased to exist.
   virtual void RenderViewGone();

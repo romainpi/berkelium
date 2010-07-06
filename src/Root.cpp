@@ -58,7 +58,7 @@
 #include "chrome/browser/renderer_host/browser_render_process_host.h"
 #include "chrome/browser/chrome_thread.h"
 #include "chrome/browser/browser_url_handler.h"
-#include "chrome/browser/net/dns_global.h"
+#include "chrome/browser/net/predictor_api.h"
 #include "app/hi_res_timer_manager.h"
 #include "app/resource_bundle.h"
 #include "app/app_paths.h"
@@ -287,13 +287,8 @@ Root::Root (FileString homeDirectory) {
     mProcessSingleton.reset(new ProcessSingleton(homedirpath));
     BrowserProcessImpl *browser_process;
     browser_process=new BrowserProcessImpl(*CommandLine::ForCurrentProcess());
-    browser_process->local_state()->RegisterStringPref(prefs::kApplicationLocale, L"");
+    browser_process->local_state()->RegisterStringPref(prefs::kApplicationLocale, "");
     browser_process->local_state()->RegisterBooleanPref(prefs::kMetricsReportingEnabled, false);
-/*
-    mProf->GetPrefs()->SetBoolean(prefs::kSafeBrowsingEnabled, false);
-    mProf->GetPrefs()->RegisterStringPref(prefs::kSafeBrowsingClientKey, L"");
-    mProf->GetPrefs()->RegisterStringPref(prefs::kSafeBrowsingWrappedKey, L"");
-*/
     assert(g_browser_process == browser_process);
 
 #ifdef OS_WIN
@@ -406,16 +401,11 @@ Root::Root (FileString homeDirectory) {
     mHistogramSynchronizer= (new HistogramSynchronizer());
 
     browser::RegisterLocalState(g_browser_process->local_state());
-    /*
-    browser_process->local_state()->RegisterBooleanPref(prefs::kSafeBrowsingEnabled, false);
-    browser_process->local_state()->RegisterStringPref(prefs::kSafeBrowsingClientKey, L"");
-    browser_process->local_state()->RegisterStringPref(prefs::kSafeBrowsingWrappedKey, L"");
-    */
     ProfileManager* profile_manager = browser_process->profile_manager();
     mProf = profile_manager->GetProfile(homedirpath, false);
     mProf->GetPrefs()->SetBoolean(prefs::kSafeBrowsingEnabled, false);
-    mProf->GetPrefs()->RegisterStringPref(prefs::kSafeBrowsingClientKey, L"");
-    mProf->GetPrefs()->RegisterStringPref(prefs::kSafeBrowsingWrappedKey, L"");
+    mProf->GetPrefs()->RegisterStringPref(prefs::kSafeBrowsingClientKey, "");
+    mProf->GetPrefs()->RegisterStringPref(prefs::kSafeBrowsingWrappedKey, "");
     mProf->InitExtensions();
 
     PrefService* user_prefs = mProf->GetPrefs();
@@ -424,7 +414,7 @@ Root::Root (FileString homeDirectory) {
 //    browser_process->local_state()->SetString(prefs::kApplicationLocale,std::wstring());
     mProcessSingleton->Create();
 
-    mDNSPrefetch.reset(new chrome_browser_net::DnsGlobalInit(
+    mDNSPrefetch.reset(new chrome_browser_net::PredictorInit(
       user_prefs,
       browser_process->local_state(),
       CommandLine::ForCurrentProcess()->HasSwitch(switches::kEnablePreconnect)));

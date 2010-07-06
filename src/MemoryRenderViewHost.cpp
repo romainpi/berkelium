@@ -210,12 +210,9 @@ template <class T> void MemoryRenderHostImpl<T>::Memory_OnMsgUpdateRect(
   if (this->view()) {
     this->view()->MovePluginWindows(params.plugin_window_moves);
     //PRIV//view_being_painted_ = true;
-    if (!params.scroll_rect.IsEmpty()) {
-      this->view()->DidScrollBackingStoreRect(params.scroll_rect,
-                                       params.dx,
-                                       params.dy);
-    }
-    this->view()->DidPaintBackingStoreRects(params.copy_rects);
+    this->view()->DidUpdateBackingStore(params.scroll_rect,
+                                        params.dx, params.dy,
+                                        params.copy_rects);
     //PRIV//view_being_painted_ = false;
   }
 
