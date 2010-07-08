@@ -621,10 +621,8 @@ void forkedProcessHook(int argc, char **argv)
   logging::CleanupChromeLogging();
 }
 
-void init (const wchar_t * homeDirectory, size_t homeDirectoryLength) {
-    new Root(
-      homeDirectory, homeDirectoryLength
-    );
+void init (FileString homeDirectory) {
+    new Root(homeDirectory);
 }
 void destroy () {
     Root::destroy();

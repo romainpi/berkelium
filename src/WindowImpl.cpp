@@ -301,29 +301,29 @@ void WindowImpl::SetContainerBounds (const gfx::Rect &rc) {
     }
 }
 
-void WindowImpl::executeJavascript(const wchar_t *javascript, size_t javascriptLength) {
+void WindowImpl::executeJavascript(WideString javascript) {
     if (host()) {
-        host()->ExecuteJavascriptInWebFrame(std::wstring(), std::wstring(javascript, javascriptLength));
+        host()->ExecuteJavascriptInWebFrame(std::wstring(), javascript.get<std::wstring>());
     }
 }
 
-void WindowImpl::insertCSS(const wchar_t *css, size_t cssLength, const wchar_t *id, size_t idLength) {
+void WindowImpl::insertCSS(WideString css, WideString id) {
     if (host()) {
         std::string cssUtf8, idUtf8;
-        WideToUTF8(css, cssLength, &cssUtf8);
-        WideToUTF8(id, idLength, &idUtf8);
+        WideToUTF8(css.data(), css.length(), &cssUtf8);
+        WideToUTF8(id.data(), id.length(), &idUtf8);
         host()->InsertCSSInWebFrame(std::wstring(), cssUtf8, idUtf8);
     }
 }
 
-bool WindowImpl::navigateTo(const char *url, size_t urlLength) {
-    this->mCurrentURL = GURL(std::string(url,urlLength));
+bool WindowImpl::navigateTo(URLString url) {
+    this->mCurrentURL = GURL(url.get<std::string>());
     return doNavigateTo(this->mCurrentURL, GURL(), NavigationController::NO_RELOAD);
 }
 
 void WindowImpl::TooltipChanged(const std::wstring& tooltipText) {
    if (mDelegate)
-       mDelegate->onTooltipChanged(this, tooltipText.c_str(), tooltipText.length());
+       mDelegate->onTooltipChanged(this, WideString::point_to(tooltipText));
 }
 
 bool WindowImpl::doNavigateTo(
@@ -484,9 +484,9 @@ void WindowImpl::OnAddMessageToConsole(
     std::wstring msg = StringPrintf(L"\"%ls,\" source: %ls (%d)", message.c_str(),
                                     source_id.c_str(), line_no);
     if (mDelegate) {
-        std::string error("Javascript console message from ");
-        error += mCurrentURL.GetOrigin().spec()+": "+WideToUTF8(msg);
-        mDelegate->onLoadError(this, error.data(), error.length());
+        std::wstring error(L"Javascript console message from ");
+        error += UTF8ToWide(mCurrentURL.GetOrigin().spec())+L": "+msg;
+        mDelegate->onLoadError(this, WideString::point_to(error));
     }
 }
 
@@ -581,7 +581,7 @@ bool WindowImpl::UpdateTitleForEntry(NavigationEntry* entry,
 
   if (final_title == UTF16ToWideHack(entry->title())) {
     if (mDelegate) {
-      mDelegate->onTitleChanged(this, final_title.c_str(), final_title.length());
+      mDelegate->onTitleChanged(this, WideString::point_to(final_title));
     }
 
     return false;  // Nothing changed, don't bother.
@@ -601,7 +601,7 @@ bool WindowImpl::UpdateTitleForEntry(NavigationEntry* entry,
   }
 
   if (mDelegate) {
-    mDelegate->onTitleChanged(this, final_title.c_str(), final_title.length());
+    mDelegate->onTitleChanged(this, WideString::point_to(final_title));
   }
 
   // Lastly, set the title for the view.
@@ -699,14 +699,15 @@ void WindowImpl::OnCrashedPlugin(const FilePath& plugin_path) {
     }
 #endif
     if (mDelegate) {
-        std::string msg("Plugin Crashed: "+WideToUTF8(plugin_name));
-        mDelegate->onLoadError(this, msg.data(), msg.length());
+        std::wstring msg(L"Plugin Crashed: ");
+        msg += plugin_name;
+        mDelegate->onLoadError(this, WideString::point_to(msg));
     }
 }
 void WindowImpl::OnCrashedWorker(){
     if (mDelegate) {
-        std::string msg = "Crashed Worker!";
-        mDelegate->onLoadError(this, msg.data(), msg.length());
+        std::wstring msg(L"Crashed Worker!");
+        mDelegate->onLoadError(this, WideString::point_to(msg));
     }
 }
 void WindowImpl::OnDidGetApplicationInfo(
@@ -733,63 +734,12 @@ void WindowImpl::ProcessExternalHostMessage(const std::string& message,
                                             const std::string& origin,
                                             const std::string& target)
 {
-    const char kMessageName[] = "externalHost";
-    const size_t kArgsVectorSize = 3;
-    WindowDelegate::Data *argsVector=NULL;
-    argsVector = new WindowDelegate::Data[kArgsVectorSize];
-    argsVector[0].message=message.data();
-    argsVector[0].length=message.length();
-    argsVector[1].message=origin.data();
-    argsVector[1].length=origin.length();
-    argsVector[2].message=target.data();
-    argsVector[2].length=target.length();
-
     if (mDelegate) {
-        WindowDelegate::Data temp_message;
-        temp_message.message=kMessageName;
-        temp_message.length=strlen(kMessageName);
-        mDelegate->onChromeSend(this, temp_message, argsVector, kArgsVectorSize);
-    }
-    if (argsVector!=NULL) {
-        delete[] argsVector;
-    }
-}
-
-void WindowImpl::ProcessDOMUIMessage(
-    const std::string& message, const ListValue* content,
-    const GURL &source_url,
-    int request_id, bool has_callback)
-{
-    WindowDelegate::Data *argsVector=NULL;
-    size_t argsVectorSize=0;
-    std::vector<std::string> storage;
-    /* Callbacks don't work for DOMUI, so we just process message and content.
-       (request_id and has_callback are hardcoded to false.)
-       In addition, content is currently hardcoded as an array of strings.
-    */
-    if (content->GetType() == Value::TYPE_LIST) {
-        const ListValue* argsListValue = static_cast<const ListValue*>(content);
-        argsVectorSize=argsListValue->GetSize();
-        storage.resize(argsVectorSize);
-        argsVector = new WindowDelegate::Data[argsVectorSize];
-        for (size_t i = 0; i < argsVectorSize; ++i) {
-            if (argsListValue->GetString(i, &storage[i])) {
-                argsVector[i].message=storage[i].data();
-                argsVector[i].length=storage[i].length();
-            }else {
-                argsVector[i].length=0;
-            }
-        }
-    }
-
-    if (mDelegate) {
-        WindowDelegate::Data temp_message;
-        temp_message.message=message.data();
-        temp_message.length=message.length();
-        mDelegate->onChromeSend(this, temp_message, argsVector, argsVectorSize);
-    }
-    if (storage.size()&&argsVector!=NULL) {
-        delete[] argsVector;
+        std::wstring wide_message(UTF8ToWide(message));
+        mDelegate->onExternalHost(this,
+                                  WideString::point_to(wide_message),
+                                  URLString::point_to(origin),
+                                  URLString::point_to(target));
     }
 }
 
@@ -920,14 +870,13 @@ void WindowImpl::RequestOpenURL(const GURL& url, const GURL& referrer,
   }
 
   if (mDelegate) {
-    std::wstring urlString, referrerString;
-    UTF8ToWide(url.spec().c_str(), url.spec().length(), &urlString);
-    UTF8ToWide(referrer.spec().c_str(), referrer.spec().length(), &referrerString);
+    std::string urlstring (url.spec());
+    std::string referrerstring (referrer.spec());
 
     mDelegate->onNavigationRequested(
       this,
-      urlString.c_str(), urlString.length(),
-      referrerString.c_str(), referrerString.length(),
+      URLString::point_to(urlstring),
+      URLString::point_to(referrerstring),
       isNewWindow, cancelDefault
     );
   }
@@ -950,9 +899,9 @@ void WindowImpl::RunJavaScriptMessage(
     bool* did_suppress_message)
 {
     if (mDelegate) {
-        std::string msg ("Javascript alert from ");
-        msg += mCurrentURL.GetOrigin().spec()+": "+WideToUTF8(message);
-        mDelegate->onLoadError(this, msg.data(), msg.length());
+        std::wstring msg (L"Javascript alert from ");
+        msg += UTF8ToWide(mCurrentURL.GetOrigin().spec())+L": "+message;
+        mDelegate->onLoadError(this, WideString::point_to(msg));
     }
     host()->JavaScriptMessageBoxClosed(reply_msg, false, std::wstring());
 }
@@ -979,8 +928,8 @@ void WindowImpl::DidStartProvisionalLoadForFrame(
     if (mDelegate) {
         this->mCurrentURL = url;
         const std::string&spec=url.spec();
-        mDelegate->onStartLoading(this, spec.data(), spec.length());
-        mDelegate->onAddressBarChanged(this, spec.data(), spec.length());
+        mDelegate->onStartLoading(this, URLString::point_to(spec));
+        mDelegate->onAddressBarChanged(this, URLString::point_to(spec));
     }
 }
 
@@ -1035,7 +984,9 @@ void WindowImpl::DidFailProvisionalLoadWithError(
         const GURL& url,
         bool showing_repost_interstitial) {
     if (mDelegate) {
-      mDelegate->onProvisionalLoadError(this, url.spec().c_str(), url.spec().length(), error_code, is_main_frame);
+      std::string urlstring (url.spec());
+      mDelegate->onProvisionalLoadError(this, URLString::point_to(urlstring),
+                                        error_code, is_main_frame);
     }
 }
 
@@ -1145,23 +1096,16 @@ void WindowImpl::ShowContextMenu(const ContextMenuParams& params) {
     ContextMenuEventArgs args;
     memset(&args, 0, sizeof(args));
 
-    std::wstring linkUrl, srcUrl, pageUrl, frameUrl;
+    std::string linkUrl (params.link_url.spec());
+    std::string srcUrl (params.src_url.spec());
+    std::string pageUrl (params.page_url.spec());
+    std::string frameUrl (params.frame_url.spec());
 
-    UTF8ToWide(params.link_url.spec().c_str(), params.link_url.spec().length(), &linkUrl);
-    UTF8ToWide(params.src_url.spec().c_str(), params.src_url.spec().length(), &srcUrl);
-    UTF8ToWide(params.page_url.spec().c_str(), params.page_url.spec().length(), &pageUrl);
-    UTF8ToWide(params.frame_url.spec().c_str(), params.frame_url.spec().length(), &frameUrl);
-
-    args.linkUrl = linkUrl.c_str();
-    args.linkUrlLength = linkUrl.length();
-    args.srcUrl = srcUrl.c_str();
-    args.srcUrlLength = srcUrl.length();
-    args.pageUrl = pageUrl.c_str();
-    args.pageUrlLength = pageUrl.length();
-    args.frameUrl = frameUrl.c_str();
-    args.frameUrlLength = frameUrl.length();
-    args.selectedText = params.selection_text.c_str();
-    args.selectedTextLength = params.selection_text.length();
+    args.linkUrl = URLString::point_to(linkUrl);
+    args.srcUrl = URLString::point_to(srcUrl);
+    args.pageUrl = URLString::point_to(pageUrl);
+    args.frameUrl = URLString::point_to(frameUrl);
+    args.selectedText = WideString::point_to(params.selection_text);
 
     args.mediaType = ContextMenuEventArgs::MediaTypeNone;
     switch (params.media_type) {

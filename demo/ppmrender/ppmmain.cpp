@@ -54,13 +54,18 @@ class TestDelegate : public WindowDelegate {
     std::string mURL;
 public:
 
-    virtual void onAddressBarChanged(Window *win, const char*newURL,size_t newURLLength) {
-        mURL = std::string(newURL,newURLLength);
-        std::cout << "*** onAddressChanged to "<<mURL<<std::endl;
+    virtual void onAddressBarChanged(Window *win, URLString newURL) {
+        std::string x = "hi";
+        x+= newURL;
+        mURL = newURL.get<std::string>();
+        std::cout << "*** onAddressChanged to "<<newURL<<std::endl;
     }
 
-    virtual void onStartLoading(Window *win, const char* newURL, size_t newURLLength) {
-        std::cout << "*** Start loading "<<std::string(newURL,newURLLength)<<" from "<<mURL<<std::endl;
+    virtual void onStartLoading(Window *win, URLString newURL) {
+        std::cout << "*** Start loading "<<newURL<<" from "<<mURL<<std::endl;
+    }
+    void onLoadingStateChanged(Window *win, bool isLoading) {
+        std::cout << "*** Loading state changed "<<mURL<<" to "<<(isLoading?"loading":"stopped")<<std::endl;
     }
     virtual void onLoad(Window *win) {
         sleep(1);
@@ -83,8 +88,9 @@ public:
         }
 */
     }
-    virtual void onLoadError(Window *win, const char* error, size_t errorLength) {
-        std::cout << "*** onLoadError "<<mURL<<": "<<std::string(error,errorLength)<<std::endl;
+    virtual void onLoadError(Window *win, WideString error) {
+        std::cout << L"*** onLoadError "<<mURL<<": ";
+        std::wcout << error<<std::endl;
     }
 
     virtual void onResponsive(Window *win) {
@@ -127,13 +133,6 @@ public:
         fclose(outfile);
     }
 
-    virtual void onBeforeUnload(Window *win, bool *proceed) {
-        std::cout << "*** onBeforeUnload "<<mURL<<std::endl;
-        *proceed = true;
-    }
-    virtual void onCancelUnload(Window *win) {
-        std::cout << "*** onCancelUnload "<<mURL<<std::endl;
-    }
     virtual void onCrashed(Window *win) {
         std::cout << "*** onCrashed "<<mURL<<std::endl;
     }
@@ -143,17 +142,14 @@ public:
         newWindow->setDelegate(new TestDelegate);
     }
 
-    virtual void onChromeSend(
+    virtual void onExternalHost(
         Window *win,
-        WindowDelegate::Data message,
-        const WindowDelegate::Data *contents,
-        size_t numContents)
+        WideString message,
+        URLString origin,
+        URLString target)
     {
-        std::cout << "*** onChromeSend ("<<std::string(message.message,message.length)<<"):"<<std::endl;
-        for (size_t iter=0;iter<numContents;++iter) {
-            std::cout << "\t\'"<<std::string(contents[iter].message,
-                                             contents[iter].length)<<"\'" <<std::endl;
-        }
+        std::cout << "*** onChromeSend at URL "<<mURL<<" from "<<origin<<" to "<<target<<":"<<std::endl;
+        std::wcout << message<<std::endl;
     }
 
     virtual void onPaintPluginTexture(
@@ -191,7 +187,7 @@ public:
 
 int main (int argc, char **argv) {
     printf("RUNNING MAIN!\n");
-    Berkelium::init(NULL, 0);
+    Berkelium::init(FileString::empty());
     std::string url;
 /*
     std::auto_ptr<Window> win(Window::create());
@@ -223,7 +219,7 @@ int main (int argc, char **argv) {
     } else {
         url=argv[1];
     }
-    win4->navigateTo(url.data(),url.length());
+    win4->navigateTo(URLString::point_to(url));
 
     while(true) {
         Berkelium::update();

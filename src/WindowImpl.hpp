@@ -98,9 +98,9 @@ public:
     void SetIsLoading(bool is_loading);
     void TooltipChanged(const std::wstring& tooltipText);
 
-    void executeJavascript(const wchar_t *javascript, size_t javascriptLength);
-    void insertCSS (const wchar_t *css, size_t cssLength, const wchar_t *id, size_t idLength);
-    bool navigateTo(const char* url, size_t urlLength);
+    void executeJavascript(WideString javascript);
+    void insertCSS (WideString css, WideString id);
+    bool navigateTo(URLString url);
 
     Profile *profile() const;
     RenderProcessHost *process() const;
@@ -185,11 +185,6 @@ protected: /******* RenderViewHostDelegate *******/
     void ProcessExternalHostMessage(const std::string& message,
                                     const std::string& origin,
                                     const std::string& target);
-    void ProcessDOMUIMessage(const std::string& message,
-                             const ListValue* content,
-                             const GURL& source_url,
-                             int request_id,
-                             bool has_callback);
     virtual bool IsReservedAccelerator(const NativeWebKeyboardEvent&) {return false;}
     virtual void DidDisplayInsecureContent(){}
     virtual void DidRunInsecureContent(const std::string&){}

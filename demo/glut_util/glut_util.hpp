@@ -300,19 +300,18 @@ public:
         }
     }
 
-    virtual void onLoadError(Berkelium::Window *win, const char* error, size_t errorLength) {
-        std::cout << "Error! " << std::string(error, errorLength) << std::endl;
+    virtual void onLoadError(Berkelium::Window *win, Berkelium::WideString error) {
+        std::wcout << L"Error! " << error << std::endl;
     }
 
-    virtual void onChromeSend(
+    virtual void onExternalHost(
         Berkelium::Window *win,
-        Data message,
-        const Data* content,
-        size_t numContents) {
-            std::cout << "Got message " << std::string(message.message, message.length) << ":" << std::endl;
-            for (size_t i = 0; i < numContents; i++) {
-                std::cout << "    " << std::string(content[i].message, content[i].length) << std::endl;
-            }
+        Berkelium::WideString message,
+        Berkelium::URLString origin,
+        Berkelium::URLString target)
+    {
+        std::cout << "*** onExternalHost at URL from "<<origin<<" to "<<target<<":"<<std::endl;
+        std::wcout << message<<std::endl;
     }
 private:
     // The Berkelium window, i.e. our web page

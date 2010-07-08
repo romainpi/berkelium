@@ -33,7 +33,7 @@
 #ifndef _BERKELIUM_WINDOW_DELEGATE_HPP_
 #define _BERKELIUM_WINDOW_DELEGATE_HPP_
 
-#include <vector>
+#include "berkelium/WeakString.hpp"
 
 namespace Berkelium {
 
@@ -67,8 +67,8 @@ struct ContextMenuEventArgs {
 
   int mouseX, mouseY;
 
-  const wchar_t * linkUrl, * srcUrl, * pageUrl, * frameUrl, * selectedText;
-  size_t linkUrlLength, srcUrlLength, pageUrlLength, frameUrlLength, selectedTextLength;
+  URLString linkUrl, srcUrl, pageUrl, frameUrl;
+  WideString selectedText;
 
   bool isEditable;
 
@@ -79,28 +79,25 @@ class BERKELIUM_EXPORT WindowDelegate {
 public:
     virtual ~WindowDelegate() {}
 
-    virtual void onAddressBarChanged(Window *win, const char* newURL, size_t newURLSize) {}
-    virtual void onStartLoading(Window *win, const char *newURL, size_t newURLSize) {}
+    virtual void onAddressBarChanged(Window *win, URLString newURL) {}
+    virtual void onStartLoading(Window *win, URLString newURL) {}
     virtual void onLoad(Window *win) {}
-    virtual void onLoadError(Window *win, const char* error, size_t errorLength) {}
-    virtual void onProvisionalLoadError(Window *win, const char * url, size_t urlLength, int errorCode, bool isMainFrame) {}
-    virtual void onNavigationRequested(Window *win, const wchar_t *newUrl, size_t newUrlLength, const wchar_t *referrer, size_t referrerLength, bool isNewWindow, bool &cancelDefaultAction) {}
+    virtual void onLoadError(Window *win, WideString error) {}
+    virtual void onProvisionalLoadError(Window *win, URLString url, int errorCode, bool isMainFrame) {}
+    virtual void onNavigationRequested(Window *win, URLString newUrl, URLString referrer, bool isNewWindow, bool &cancelDefaultAction) {}
     virtual void onLoadingStateChanged(Window *win, bool isLoading) {}
-    virtual void onTitleChanged(Window *win, const wchar_t *title, size_t titleLength) {}
-    virtual void onTooltipChanged(Window *win, const wchar_t *text, size_t textLength) {}
+    virtual void onTitleChanged(Window *win, WideString title) {}
+    virtual void onTooltipChanged(Window *win, WideString text) {}
 
     virtual void onCrashed(Window *win) {}
     virtual void onUnresponsive(Window *win) {}
     virtual void onResponsive(Window *win) {}
-    struct Data {
-        const char *message;
-        size_t length;
-    };
-    virtual void onChromeSend(
+
+    virtual void onExternalHost(
         Window *win,
-        Data message,
-        const Data* content,
-        size_t numContents) {}
+        WideString message,
+        URLString origin,
+        URLString target) {}
 
     virtual void onCreatedWindow(Window *win, Window *newWindow, const Rect &initialRect) {}
 

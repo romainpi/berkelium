@@ -31,7 +31,7 @@
  */
 
 // Berkelium headers
-#include "berkelium/Platform.hpp"
+#include "berkelium/Berkelium.hpp"
 #include "Root.hpp"
 #include "MemoryRenderViewHost.hpp"
 
@@ -177,7 +177,7 @@ void Root::SetUpGLibLogHandler() {
 #endif  // defined(OS_POSIX) && !defined(OS_MACOSX)
 
 
-Root::Root (const wchar_t * homeDirectory, size_t homeDirectoryLength) {
+Root::Root (FileString homeDirectory) {
 
     new base::AtExitManager();
 
@@ -249,9 +249,8 @@ Root::Root (const wchar_t * homeDirectory, size_t homeDirectoryLength) {
     app::RegisterPathProvider();
     FilePath homedirpath;
 
-    if (homeDirectory && homeDirectoryLength) {
-        std::wstring homeDirectoryStr((homeDirectory), homeDirectoryLength);
-        FilePath homeDirectoryPath = FilePath::FromWStringHack(homeDirectoryStr);
+    if (homeDirectory.data() && homeDirectory.length()) {
+        FilePath homeDirectoryPath(homeDirectory.get<FilePath::StringType>());
         PathService::Override(chrome::DIR_USER_DATA, homeDirectoryPath);
         PathService::Override(chrome::DIR_LOGS, homeDirectoryPath);
 #if defined(OS_POSIX)

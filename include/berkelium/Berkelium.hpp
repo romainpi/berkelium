@@ -33,6 +33,7 @@
 #ifndef _BERKELIUM_HPP_
 #define _BERKELIUM_HPP_
 #include "berkelium/Platform.hpp"
+#include "berkelium/WeakString.hpp"
 namespace sandbox {
 class BrokerServices;
 class TargetServices;
@@ -41,6 +42,7 @@ enum DepEnforcement;
 #endif
 }
 namespace Berkelium {
+
 
 class BERKELIUM_EXPORT ErrorDelegate {
 public:
@@ -68,7 +70,7 @@ void BERKELIUM_EXPORT forkedProcessHook(
 void BERKELIUM_EXPORT forkedProcessHook(int argc, char **argv);
 #endif
 
-void BERKELIUM_EXPORT init(const wchar_t * homeDirectory, size_t homeDirectoryLength);
+void BERKELIUM_EXPORT init(FileString homeDirectory);
 void BERKELIUM_EXPORT destroy();
 
 void BERKELIUM_EXPORT setErrorHandler(ErrorDelegate * errorHandler);

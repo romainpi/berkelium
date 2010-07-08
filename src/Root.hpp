@@ -31,6 +31,7 @@
  */
 
 #include "berkelium/Platform.hpp"
+#include "berkelium/Berkelium.hpp"
 #include "berkelium/Singleton.hpp"
 #include "chrome/browser/profile.h"
 #include "chrome/common/notification_service.h"
@@ -70,7 +71,7 @@ class Root : public AutoSingleton<Root> {
 
     ErrorDelegate *mErrorHandler;
 public:
-    Root(const wchar_t * homeDirectory, size_t homeDirectoryLength);
+    Root(FileString homeDirectory);
     ~Root();
 
 //    void runUntilStopped();

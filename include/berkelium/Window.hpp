@@ -35,6 +35,7 @@
 
 #include <vector>
 
+#include "berkelium/WeakString.hpp"
 #include "berkelium/Context.hpp"
 #include "berkelium/Rect.hpp"
 
@@ -199,16 +200,22 @@ public:
      *  \param javascript pointer to a string containing Javascript code
      *  \param javascriptLength length of the Javascript string
      */
-    virtual void executeJavascript (const wchar_t* javascript, size_t javascriptLength) = 0;
+    virtual void executeJavascript (WideString javascript) = 0;
 
-    virtual void insertCSS (const wchar_t *css, size_t cssLength, const wchar_t *id, size_t idLength) = 0;
+    virtual void insertCSS (WideString css, WideString id) = 0;
 
+    /** Request navigation to a URL.
+     *  \param url  URLString pointer to an ASCII URL.
+     */
+    virtual bool navigateTo(URLString url)=0;
     /** Request navigation to a URL.  The URL string is copied so the caller
      *  retains ownership of the string.
      *  \param url pointer to an ASCII string containing a URL
      *  \param urlLength the length of the URL string
      */
-    virtual bool navigateTo(const char *url, size_t urlLength)=0;
+    inline bool navigateTo(const char *url, size_t url_length) {
+        return navigateTo(URLString::point_to(url,url_length));
+    }
 
     /** Request that the page be reloaded. */
     virtual void refresh() = 0;
