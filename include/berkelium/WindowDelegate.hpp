@@ -110,7 +110,9 @@ public:
     virtual void onPaint(
         Window *win,
         const unsigned char *sourceBuffer,
-        const Rect &rect,
+        const Rect &sourceBufferRect,
+        size_t numCopyRects,
+        const Rect *copyRects,
         int dx, int dy,
         const Rect &scrollRect) {}
 
@@ -148,7 +150,9 @@ public:
         Window *win,
         Widget *wid,
         const unsigned char *sourceBuffer,
-        const Rect &rect,
+        const Rect &sourceBufferRect,
+        size_t numCopyRects,
+        const Rect *copyRects,
         int dx, int dy,
         const Rect &scrollRect) {}
 

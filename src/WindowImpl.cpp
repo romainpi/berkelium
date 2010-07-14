@@ -358,15 +358,24 @@ ContextImpl *WindowImpl::getContextImpl() const {
 }
 
 void WindowImpl::onPaint(Widget *wid,
-                         const unsigned char *sourceBuffer, const Rect &rect,
+                         const unsigned char *sourceBuffer,
+                         const Rect &sourceBufferRect,
+                         size_t numCopyRects,
+                         const Rect *copyRects,
                          int dx, int dy, const Rect &scrollRect) {
     if (mDelegate) {
         if (wid) {
             mDelegate->onWidgetPaint(
-                this, wid, sourceBuffer, rect, dx, dy, scrollRect);
+                this, wid,
+                sourceBuffer, sourceBufferRect,
+                numCopyRects, copyRects,
+                dx, dy, scrollRect);
         } else {
             mDelegate->onPaint(
-                this, sourceBuffer, rect, dx, dy, scrollRect);
+                this,
+                sourceBuffer, sourceBufferRect,
+                numCopyRects, copyRects,
+                dx, dy, scrollRect);
         }
     }
 }
@@ -851,9 +860,7 @@ void WindowImpl::UpdateTitle(RenderViewHost* rvh,
 void WindowImpl::ShowRepostFormWarningDialog() {
 }
 
-void WindowImpl::RunFileChooser(bool multiple_files,
-                                 const string16& title,
-                                 const FilePath& default_file) {
+void WindowImpl::RunFileChooser(const ViewHostMsg_RunFileChooser_Params&params) {
 /* Don't have access to a top level window, since this could be run in a
    windowless environment. Perhaps we need a function to return a native
    window handle or NULL if it does not want to allow file choosers.

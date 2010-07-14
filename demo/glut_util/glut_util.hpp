@@ -56,6 +56,8 @@
 #include <string>
 #include <iostream>
 
+#define DEBUG_PAINT false
+
 /** Handles an onPaint call by mapping the results into an OpenGL texture. The
  *  first parameters are the same as Berkelium::WindowDelegate::onPaint.  The
  *  additional parameters and return value are:
@@ -73,6 +75,7 @@
 bool mapOnPaintToTexture(
     Berkelium::Window *wini,
     const unsigned char* bitmap_in, const Berkelium::Rect& bitmap_rect,
+    size_t num_copy_rects, const Berkelium::Rect *copy_rects,
     int dx, int dy,
     const Berkelium::Rect& scroll_rect,
     unsigned int dest_texture,
@@ -82,6 +85,8 @@ bool mapOnPaintToTexture(
     char* scroll_buffer) {
 
     glBindTexture(GL_TEXTURE_2D, dest_texture);
+
+    const int kBytesPerPixel = 4;
 
     // If we've reloaded the page and need a full update, ignore updates
     // until a full one comes in.  This handles out of date updates due to
@@ -94,7 +99,7 @@ bool mapOnPaintToTexture(
             return false;
         }
 
-        glTexImage2D(GL_TEXTURE_2D, 0, 3, dest_texture_width, dest_texture_height, 0,
+        glTexImage2D(GL_TEXTURE_2D, 0, kBytesPerPixel, dest_texture_width, dest_texture_height, 0,
             GL_BGRA, GL_UNSIGNED_BYTE, bitmap_in);
         ignore_partial = false;
         return true;
@@ -116,23 +121,49 @@ bool mapOnPaintToTexture(
             // And the scroll is performed by moving shared_rect by (dx,dy)
             Berkelium::Rect shared_rect = scrolled_shared_rect.translate(dx, dy);
 
+            int wid = scrolled_shared_rect.width();
+            int hig = scrolled_shared_rect.height();
+            if (DEBUG_PAINT) {
+              std::cout << "Scroll rect: w="<< wid<<", h="<<hig<<", ("<<
+                  scrolled_shared_rect.left()<<","<<scrolled_shared_rect.top()<<
+                  ") by ("<<dx<<","<<dy<<")"<<std::endl;
+            }
+            int inc = 1;
+            char *outputBuffer = scroll_buffer;
+            // source data is offset by 1 line to prevent memcpy aliasing
+            // In this case, it can happen if dy==0 and dx!=0.
+            char *inputBuffer = scroll_buffer+(dest_texture_width*1*kBytesPerPixel);
+            int jj = 0;
+            if (dy > 0) {
+                // Here, we need to shift the buffer around so that we start in the
+                // extra row at the end, and then copy in reverse so that we
+                // don't clobber source data before copying it.
+                outputBuffer = scroll_buffer+(
+                    (scrolled_shared_rect.top()+hig+1)*dest_texture_width
+                    - hig*wid)*kBytesPerPixel;
+                inputBuffer = scroll_buffer;
+                inc = -1;
+                jj = hig-1;
+            }
+
             // Copy the data out of the texture
             glGetTexImage(
                 GL_TEXTURE_2D, 0,
                 GL_BGRA, GL_UNSIGNED_BYTE,
-                scroll_buffer
+                inputBuffer
             );
 
             // Annoyingly, OpenGL doesn't provide convenient primitives, so
             // we manually copy out the region to the beginning of the
             // buffer
-            int wid = scrolled_shared_rect.width();
-            int hig = scrolled_shared_rect.height();
-            for(int jj = 0; jj < hig; jj++) {
+            for(; jj < hig && jj >= 0; jj+=inc) {
                 memcpy(
-                    scroll_buffer + (jj*wid * 4),
-                    scroll_buffer + ((scrolled_shared_rect.top()+jj)*dest_texture_width + scrolled_shared_rect.left()) * 4,
-                    wid*4
+                    outputBuffer + (jj*wid) * kBytesPerPixel,
+//scroll_buffer + (jj*wid * kBytesPerPixel),
+                    inputBuffer + (
+                        (scrolled_shared_rect.top()+jj)*dest_texture_width
+                        + scrolled_shared_rect.left()) * kBytesPerPixel,
+                    wid*kBytesPerPixel
                 );
             }
 
@@ -141,18 +172,34 @@ bool mapOnPaintToTexture(
             glTexSubImage2D(GL_TEXTURE_2D, 0,
                 shared_rect.left(), shared_rect.top(),
                 shared_rect.width(), shared_rect.height(),
-                GL_BGRA, GL_UNSIGNED_BYTE, scroll_buffer
+                GL_BGRA, GL_UNSIGNED_BYTE, outputBuffer
             );
         }
     }
 
-    // Finally, we perform the main update, just copying the rect that is
-    // marked as dirty but not from scrolled data.
-    glTexSubImage2D(GL_TEXTURE_2D, 0,
-        bitmap_rect.left(), bitmap_rect.top(),
-        bitmap_rect.width(), bitmap_rect.height(),
-        GL_BGRA, GL_UNSIGNED_BYTE, bitmap_in
-    );
+    std::cout << "Bitmap rect: w="<< bitmap_rect.width()<<", h="<<bitmap_rect.height()<<", ("<<bitmap_rect.top()<<","<<bitmap_rect.left()<<") tex size "<<dest_texture_width<<"x"<<dest_texture_height<<std::endl;
+    for (size_t i = 0; i < num_copy_rects; i++) {
+        int wid = copy_rects[i].width();
+        int hig = copy_rects[i].height();
+        int top = copy_rects[i].top() - bitmap_rect.top();
+        int left = copy_rects[i].left() - bitmap_rect.left();
+        std::cout << "Copy rect: w="<< wid<<", h="<<hig<<", ("<<top<<","<<left<<")"<<std::endl;
+        for(int jj = 0; jj < hig; jj++) {
+            memcpy(
+                scroll_buffer + jj*wid*kBytesPerPixel,
+                bitmap_in + (left + (jj+top)*bitmap_rect.width())*kBytesPerPixel,
+                wid*kBytesPerPixel
+                );
+        }
+
+        // Finally, we perform the main update, just copying the rect that is
+        // marked as dirty but not from scrolled data.
+        glTexSubImage2D(GL_TEXTURE_2D, 0,
+                        copy_rects[i].left(), copy_rects[i].top(),
+                        wid, hig,
+                        GL_BGRA, GL_UNSIGNED_BYTE, scroll_buffer
+            );
+    }
 
     glBindTexture(GL_TEXTURE_2D, 0);
 
@@ -250,7 +297,7 @@ public:
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
-        scroll_buffer = new char[width*height*4];
+        scroll_buffer = new char[width*(height+1)*4];
 
         bk_window = Berkelium::Window::create();
         bk_window->setDelegate(this);
@@ -286,10 +333,12 @@ public:
 
     virtual void onPaint(Berkelium::Window *wini,
         const unsigned char *bitmap_in, const Berkelium::Rect &bitmap_rect,
+        size_t num_copy_rects, const Berkelium::Rect *copy_rects,
         int dx, int dy, const Berkelium::Rect &scroll_rect) {
 
         bool updated = mapOnPaintToTexture(
-            wini, bitmap_in, bitmap_rect, dx, dy, scroll_rect,
+            wini, bitmap_in, bitmap_rect, num_copy_rects, copy_rects,
+            dx, dy, scroll_rect,
             web_texture, width, height, needs_full_refresh, scroll_buffer
         );
         if (updated) {

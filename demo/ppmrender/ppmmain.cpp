@@ -96,6 +96,7 @@ public:
     }
 
     virtual void onPaint(Window *wini, const unsigned char *bitmap_in, const Rect &bitmap_rect,
+                         size_t num_copy_rects, const Rect *copy_rects,
                          int dx, int dy, const Rect &scroll_rect) {
         std::cout << "*** onPaint "<<mURL<<std::endl;
         static int call_count = 0;
@@ -185,6 +186,7 @@ public:
         Widget *wid,
         const unsigned char *sourceBuffer,
         const Rect &rect,
+        size_t num_copy_rects, const Rect *copy_rects,
         int dx, int dy,
         const Rect &scrollRect) {}
 };
