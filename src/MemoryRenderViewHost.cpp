@@ -239,21 +239,24 @@ template <class T> void MemoryRenderHostImpl<T>::Memory_PaintBackingStoreRect(
     const gfx::Rect& clip_rect)
 {
     Rect updateRect;
-    updateRect.mTop = bitmap_rect.y();
-    updateRect.mLeft = bitmap_rect.x();
-    updateRect.mWidth = bitmap_rect.width();
-    updateRect.mHeight = bitmap_rect.height();
+    updateRect.setFromRect(bitmap_rect);
 
     Rect clipRect;
-    clipRect.mTop = clip_rect.y();
-    clipRect.mLeft = clip_rect.x();
-    clipRect.mWidth = clip_rect.width();
-    clipRect.mHeight = clip_rect.height();
+    clipRect.setFromRect(clip_rect);
+
+    size_t numCopyRects = copy_rects.size();
+    Rect * copyRects = new Rect [numCopyRects];
+
+    for (size_t i = 0; i < numCopyRects; ++i) {
+        copyRects[i].setFromRect(copy_rects[i]);
+    }
 
     mWindow->onPaint(
         mWidget,
         static_cast<const unsigned char *>(bitmap->memory()),
         updateRect,
+        numCopyRects,
+        copyRects,
         dx,
         dy,
         clipRect);

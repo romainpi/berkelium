@@ -148,7 +148,9 @@ public:
     void resize(int width, int height);
 
     void onPaint(Widget *wid,
-                 const unsigned char *sourceBuffer, const Rect &rect,
+                 const unsigned char *sourceBuffer,
+                 const Rect &sourceBufferRect,
+                 size_t numCopyRects, const Rect *copyRects,
                  int dx, int dy, const Rect &scrollRect);
     void onWidgetDestroyed(Widget *wid);
 
@@ -211,9 +213,7 @@ protected: /******* RenderViewHostDelegate *******/
                                     const int flags,
                                     IPC::Message* reply_msg,
                                     bool* did_suppress_message);
-  virtual void RunFileChooser(bool multiple_files,
-                              const string16& title,
-                              const FilePath& default_file);
+  virtual void RunFileChooser(const ViewHostMsg_RunFileChooser_Params&params);
 
 
 
