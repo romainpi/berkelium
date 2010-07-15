@@ -514,7 +514,7 @@ void WindowImpl::UpdateCursor(const WebCursor& cursor) {
 #else
     Cursor new_cursor;
 #endif
-    if (mDelegate) mDelegate->onCursorUpdated(new_cursor);
+    if (mDelegate) mDelegate->onCursorUpdated(this, new_cursor);
 }
 
 /******* RenderViewHostDelegate *******/
