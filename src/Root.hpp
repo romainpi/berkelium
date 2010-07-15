@@ -55,21 +55,21 @@ class ErrorDelegate;
 
 //singleton class that contains chromium singletons. Not visible outside of Berkelium library core
 class Root : public AutoSingleton<Root> {
-    Profile*mProf;
-    SystemMonitor*mSysMon;
-    HighResolutionTimerManager*mTimerMgr;
-    chrome_browser_net::DnsGlobalInit*mDNSPrefetch;
-    URLRequestContextGetter *mDefaultRequestContext;
-    MessageLoop* mMessageLoop;
-    NotificationService*mNotificationService;
-    ProcessSingleton *mProcessSingleton;
-    ChromeThread *mUIThread;
-    MemoryRenderViewHostFactory *mRenderViewHostFactory;
+    Profile* mProf;
+    scoped_ptr<SystemMonitor> mSysMon;
+    scoped_ptr<HighResolutionTimerManager> mTimerMgr;
+    scoped_ptr<chrome_browser_net::DnsGlobalInit> mDNSPrefetch;
+    URLRequestContextGetter* mDefaultRequestContext;
+    scoped_ptr<MessageLoop> mMessageLoop;
+    scoped_ptr<NotificationService> mNotificationService;
+    scoped_ptr<ProcessSingleton> mProcessSingleton;
+    scoped_ptr<ChromeThread> mUIThread;
+    scoped_ptr<MemoryRenderViewHostFactory> mRenderViewHostFactory;
     base::ScopedNSAutoreleasePool mAutoreleasePool;
-    HistogramSynchronizer *mHistogramSynchronizer;
-    StatisticsRecorder *mStatistics;
+    scoped_refptr<HistogramSynchronizer> mHistogramSynchronizer;
+    scoped_ptr<StatisticsRecorder> mStatistics;
 
-    ErrorDelegate *mErrorHandler;
+    ErrorDelegate* mErrorHandler;
 public:
     Root(FileString homeDirectory);
     ~Root();
@@ -87,7 +87,7 @@ public:
     }
 
     ProcessSingleton *getProcessSingleton(){
-        return mProcessSingleton;
+        return mProcessSingleton.get();
     }
     inline Profile* getProfile() {
         return mProf;

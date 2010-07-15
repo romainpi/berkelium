@@ -278,13 +278,13 @@ Root::Root (FileString homeDirectory) {
     if (SINGLE_PROCESS) {
         RenderProcessHost::set_run_renderer_in_process(true);
     }
-    mMessageLoop = new MessageLoop(MessageLoop::TYPE_UI);
-    mSysMon = new SystemMonitor;
-    mTimerMgr = new HighResolutionTimerManager;
-    mUIThread = new ChromeThread(ChromeThread::UI, mMessageLoop);
+    mMessageLoop.reset(new MessageLoop(MessageLoop::TYPE_UI));
+    mSysMon.reset(new SystemMonitor);
+    mTimerMgr.reset(new HighResolutionTimerManager);
+    mUIThread.reset(new ChromeThread(ChromeThread::UI, mMessageLoop.get()));
     mErrorHandler = 0;
 
-    //mProcessSingleton= new ProcessSingleton(homedirpath);
+    mProcessSingleton.reset(new ProcessSingleton(homedirpath));
     BrowserProcessImpl *browser_process;
     browser_process=new BrowserProcessImpl(*CommandLine::ForCurrentProcess());
     browser_process->local_state()->RegisterStringPref(prefs::kApplicationLocale, L"");
@@ -379,7 +379,7 @@ Root::Root (FileString homeDirectory) {
   bool icu_result = icu_util::Initialize();
   CHECK(icu_result);
 
-    mRenderViewHostFactory = new MemoryRenderViewHostFactory;
+    mRenderViewHostFactory.reset(new MemoryRenderViewHostFactory);
     
 //    mNotificationService=new NotificationService();
 //    ChildProcess* coreProcess=new ChildProcess;
@@ -389,6 +389,7 @@ Root::Root (FileString homeDirectory) {
     // We only load the theme dll in the browser process.
     net::CookieMonster::EnableFileScheme();
 
+    browser_process->profile_manager();
     browser_process->db_thread();
     browser_process->file_thread();
     browser_process->process_launcher_thread();
@@ -396,13 +397,13 @@ Root::Root (FileString homeDirectory) {
     browser_process->io_thread();
 
     // Initialize histogram statistics gathering system.
-    mStatistics = new StatisticsRecorder;
+    mStatistics.reset(new StatisticsRecorder);
 
     // Initialize histogram synchronizer system. This is a singleton and is used
     // for posting tasks via NewRunnableMethod. Its deleted when it goes out of
     // scope. Even though NewRunnableMethod does AddRef and Release, the object
     // will not be deleted after the Task is executed.
-    mHistogramSynchronizer = new HistogramSynchronizer();
+    mHistogramSynchronizer= (new HistogramSynchronizer());
 
     browser::RegisterLocalState(g_browser_process->local_state());
     /*
@@ -421,12 +422,12 @@ Root::Root (FileString homeDirectory) {
     DCHECK(user_prefs);
 
 //    browser_process->local_state()->SetString(prefs::kApplicationLocale,std::wstring());
-    //mProcessSingleton->Create();
+    mProcessSingleton->Create();
 
-    mDNSPrefetch = new chrome_browser_net::DnsGlobalInit(
+    mDNSPrefetch.reset(new chrome_browser_net::DnsGlobalInit(
       user_prefs,
       browser_process->local_state(),
-      CommandLine::ForCurrentProcess()->HasSwitch(switches::kEnablePreconnect));
+      CommandLine::ForCurrentProcess()->HasSwitch(switches::kEnablePreconnect)));
 
     BrowserURLHandler::InitURLHandlers();
 
@@ -472,19 +473,18 @@ Root::~Root(){
     //g_browser_process->profile_manager()->RemoveProfile(mProf);
 
     g_browser_process->EndSession();
-    //mProcessSingleton->Cleanup();
-    delete mRenderViewHostFactory;
-    
-    delete mProf;
-    delete mTimerMgr;
-    delete mSysMon;
-    delete mHistogramSynchronizer;
-    delete mStatistics;
-    delete mUIThread;
-//    delete mNotificationService;
-    delete mMessageLoop;
+    mRenderViewHostFactory.reset();
+    mTimerMgr.reset();
+    mSysMon.reset();
+    mHistogramSynchronizer = NULL;
+    mStatistics.reset();
+    mDNSPrefetch.reset();
+    mNotificationService.reset();
     delete g_browser_process;
-    //delete mProcessSingleton;
+    mUIThread.reset();
+    mMessageLoop.reset();
+
+    mProcessSingleton->Cleanup();
 }
 
 
