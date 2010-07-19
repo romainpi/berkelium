@@ -319,7 +319,8 @@ protected: /******* RenderViewHostDelegate::BrowserIntegration *******/
                                 int renderer_process_id,
                                 int32 page_id,
                                 const string16& contents,
-                                const std::string& language);
+                                const std::string& language,
+                                bool page_translatable);
     virtual void OnPageTranslated(int32 page_id,
                                   const std::string& original_lang,
                                   const std::string& translated_lang,

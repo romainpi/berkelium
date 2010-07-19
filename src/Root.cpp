@@ -417,7 +417,8 @@ Root::Root (FileString homeDirectory) {
     mDNSPrefetch.reset(new chrome_browser_net::PredictorInit(
       user_prefs,
       browser_process->local_state(),
-      CommandLine::ForCurrentProcess()->HasSwitch(switches::kEnablePreconnect)));
+      CommandLine::ForCurrentProcess()->HasSwitch(switches::kEnablePreconnect),
+      false));
 
     BrowserURLHandler::InitURLHandlers();
 

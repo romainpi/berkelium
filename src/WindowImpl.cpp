@@ -705,7 +705,8 @@ void WindowImpl::OnPageContents(
     int renderer_process_id,
     int32 page_id,
     const string16& contents,
-    const std::string& language) {
+    const std::string& language,
+    bool page_translatable) {
 }
 
 void WindowImpl::OnPageTranslated(
