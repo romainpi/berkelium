@@ -90,7 +90,7 @@ IF(NOT CHROMIUM_ISSCONS)
    SET(CHROME_LIBRARY_DIRS ${CHROMIUM_CHLIBS} ${CHROMIUM_CHLIBS}/app ${CHROMIUM_CHLIBS}/base ${CHROMIUM_CHLIBS}/base/allocator ${CHROMIUM_CHLIBS}/ipc ${CHROMIUM_CHLIBS}/jingle ${CHROMIUM_CHLIBS}/chrome ${CHROMIUM_CHLIBS}/net ${CHROMIUM_CHLIBS}/media ${CHROMIUM_CHLIBS}/webkit ${CHROMIUM_CHLIBS}/webkit/default_plugin ${CHROMIUM_CHLIBS}/sandbox ${CHROMIUM_CHLIBS}/skia ${CHROMIUM_CHLIBS}/remoting ${CHROMIUM_CHLIBS}/remoting/base/protocol ${CHROMIUM_CHLIBS}/printing ${CHROMIUM_CHLIBS}/v8/tools/gyp ${CHROMIUM_CHLIBS}/gpu ${CHROMIUM_CHLIBS}/gfx ${CHROMIUM_CHLIBS}/sdch ${CHROMIUM_CHLIBS}/build/temp_gyp ${CHROMIUM_CHLIBS}/sandbox/linux/seccomp ${CHROMIUM_CHLIBS}/third_party/ppapi ${CHROMIUM_CHLIBS}/third_party/ffmpeg ${CHROMIUM_CHLIBS}/third_party/openmax ${CHROMIUM_CHLIBS}/third_party/harfbuzz ${CHROMIUM_CHLIBS}/third_party/libjingle ${CHROMIUM_CHLIBS}/third_party/hunspell ${CHROMIUM_CHLIBS}/third_party/icu ${CHROMIUM_CHLIBS}/third_party/libevent ${CHROMIUM_CHLIBS}/third_party/libxml ${CHROMIUM_CHLIBS}/third_party/libxslt ${CHROMIUM_CHLIBS}/third_party/modp_b64 ${CHROMIUM_CHLIBS}/third_party/protobuf2 ${CHROMIUM_CHLIBS}/third_party/cld ${CHROMIUM_CHLIBS}/third_party/ots ${CHROMIUM_CHLIBS}/third_party/angle/src ${CHROMIUM_CHLIBS}/base/third_party/dynamic_annotations ${CHROMIUM_CHLIBS}/third_party/sqlite ${CHROMIUM_CHLIBS}/third_party/zlib ${CHROMIUM_CHLIBS}/third_party/cacheinvalidation ${CHROMIUM_CHLIBS}/webkit/support ${CHROMIUM_CHLIBS}/third_party/WebKit/WebKit/chromium ${CHROMIUM_CHLIBS}/third_party/WebKit/JavaScriptCore/JavaScriptCore.gyp ${CHROMIUM_CHLIBS}/third_party/WebKit/WebCore/WebCore.gyp)
 
 
-    SET(CHROMIUM_TPLIBS event zlib png jpeg xslt bz2 Xss ${CHROMIUM_CHLIBS}/third_party/sqlite/libsqlite3.a ${CHROMIUM_CHLIBS}/net/third_party/nss/libssl.a allocator base_i18n xdg_mime seccomp_sandbox symbolize installer_util)
+    SET(CHROMIUM_TPLIBS event zlib png jpeg xslt bz2 Xss ${CHROMIUM_CHLIBS}/third_party/sqlite/libsqlite3.a ${CHROMIUM_CHLIBS}/net/third_party/nss/libssl.a allocator base_i18n xdg_mime seccomp_sandbox symbolize)
 
     SET(CHROMIUM_GENINCLUDES ${CHROMIUM_CHLIBS}/gen/chrome)
   ELSE(NOT CHROMIUM_ISXCODE)
@@ -118,7 +118,7 @@ ELSE(NOT CHROMIUM_ISSCONS)
   SET(CHROMIUM_TPLIBS event xslt jpeg png z bz2 ${CHROMIUMLIBPATH}/libsqlite.a google_nacl_imc_c  base_i18n)
 ENDIF(NOT CHROMIUM_ISSCONS)
 
-SET(CHROMIUMLIBS ${CHROMIUMLDFLAGS} ${CHROMIUM_TPLIBS}  dl m common common_net dynamic_annotations browser debugger renderer utility printing app_base appcache base base_i18n protobuf_lite gfx omx_wrapper glue icui18n database syncapi sync icuuc icudata skia skia_opts xml2 net net_base il cld ots googleurl chrome_version_info sdch modp_b64 v8_snapshot v8_base pcre wtf webkit webcore webcore_bindings media ffmpeg http_listen_socket cacheinvalidation chromoting_host chromoting_client chromotocol_proto_lib chromoting_base chromoting_jingle_glue jingle_p2p chromoting_plugin notifier protobuf ppapi_cpp_objects sync_notifier gpu_plugin gles2_implementation gles2_c_lib command_buffer_client command_buffer_service command_buffer_common gles2_cmd_helper gles2_lib chrome_gpu hunspell plugin ipc worker common_constants default_plugin jingle translator_common translator_glsl profile_import service)
+SET(CHROMIUMLIBS ${CHROMIUMLDFLAGS} ${CHROMIUM_TPLIBS}  dl m common common_net dynamic_annotations browser debugger renderer utility printing app_base appcache base base_i18n protobuf_lite gfx glue icui18n installer_util database syncapi sync icuuc icudata skia skia_opts xml2 net net_base cld ots googleurl chrome_version_info sdch modp_b64 v8_snapshot v8_base pcre wtf webkit webcore webcore_bindings media ffmpeg http_listen_socket cacheinvalidation chromoting_host chromoting_client chromotocol_proto_lib chromoting_base chromoting_jingle_glue jingle_p2p chromoting_plugin notifier protobuf ppapi_cpp_objects sync_notifier gpu_plugin gles2_implementation gles2_c_lib command_buffer_client command_buffer_service command_buffer_common gles2_cmd_helper gles2_lib chrome_gpu hunspell plugin ipc worker common_constants default_plugin jingle translator_common translator_glsl profile_import service)
 IF (APPLE OR LINUX_ENABLE_NACL)
   SET(CHROMIUMLIBS ${CHROMIUMLIBS} nacl google_nacl_npruntime nonnacl_srpc sel sel_ldr_launcher nonnacl_util_chrome gio gio_shm platform nrd_xfer expiration)
 ENDIF()
@@ -196,16 +196,15 @@ IF(CHROME_FOUND)
       SET(CHROME_SYMLINKS_COMMAND
         ${CHROME_SYMLINKS_COMMAND} &&
         ln -sf ${CMAKE_CURRENT_BINARY_DIR}/${CHROME_APP_APP} ${CHROME_APP_NAME}/Contents/Contents/ &&
-        ln -sf ${CMAKE_CURRENT_BINARY_DIR}/libplugin_carbon_interpose.dylib ${CHROME_APP_NAME}/Contents/Contents/
+        ln -sf ${CMAKE_CURRENT_BINARY_DIR}/libplugin_carbon_interpose.dylib ${CHROME_APP_NAME}/Contents/MacOS/
         )
       FOREACH(CHROME_SYMLINK_BINARY ${CHROME_APP_LINKS})
         SET(CHROME_SYMLINKS_COMMAND
           ${CHROME_SYMLINKS_COMMAND} &&
-          # FIXME currently we link these into both MacOS and Resources because dynamic loading of libraries
-          # could leave us in either of these directories.  There really must be a better solution than this.
           cp -f ${CHROME_SYMLINK_BINARY} ${CHROME_APP_NAME}/Contents/MacOS/
           )
       ENDFOREACH()
+
 
       SET(DEPENDS_ARGS)
       IF(CHROME_APP_DEPENDS)

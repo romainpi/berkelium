@@ -114,7 +114,6 @@ IF(CHROME_FOUND)
       APP ppmrender
       DEPENDS ppmrender plugin_carbon_interpose
       LINKS
-      ${CMAKE_CURRENT_BINARY_DIR}/libplugin_carbon_interpose.dylib
       ${CMAKE_CURRENT_BINARY_DIR}/berkelium
       )
   ENDIF()
@@ -142,7 +141,6 @@ IF(CHROME_FOUND)
         APP glut_demo
         DEPENDS glut_demo plugin_carbon_interpose
         LINKS
-        ${CMAKE_CURRENT_BINARY_DIR}/libplugin_carbon_interpose.dylib
         ${CMAKE_CURRENT_BINARY_DIR}/berkelium
         )
     ENDIF()
@@ -160,7 +158,6 @@ IF(CHROME_FOUND)
         APP glut_input
         DEPENDS glut_input plugin_carbon_interpose
         LINKS
-        ${CMAKE_CURRENT_BINARY_DIR}/libplugin_carbon_interpose.dylib
         ${CMAKE_CURRENT_BINARY_DIR}/berkelium
         )
     ENDIF()

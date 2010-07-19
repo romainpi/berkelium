@@ -117,6 +117,15 @@
 #endif
 //////////////////////
 
+#if !defined(OS_WIN)
+extern "C" int NaClOsIs64BitWindows() {
+  return 0;
+}
+extern "C" int NaClOsIsSupported() {
+  return 1;
+}
+#endif
+
 #if defined(OS_WIN)
 EXTERN_C IMAGE_DOS_HEADER __ImageBase;
 #define HINST_THISCOMPONENT ((HINSTANCE)&__ImageBase)
