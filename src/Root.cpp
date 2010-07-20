@@ -258,7 +258,12 @@ Root::Root (FileString homeDirectory) {
 #endif
     } else {
         FilePath tmpPath;
-        if (file_util::CreateNewTempDirectory("berkeliumyyyy", &tmpPath)) {
+#if defined(OS_WIN)
+        FilePath::StringType dirName(L"berkeliumyyyy");
+#else
+        FilePath::StringType dirName("berkeliumyyyy");
+#endif
+        if (file_util::CreateNewTempDirectory(dirName, &tmpPath)) {
             PathService::Override(chrome::DIR_USER_DATA, tmpPath);
             PathService::Override(chrome::DIR_LOGS, tmpPath);
 #if defined(OS_POSIX)
