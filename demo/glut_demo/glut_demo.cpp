@@ -62,7 +62,7 @@ float angle = 0;
 // And some global constants
 #define WIDTH 512
 #define HEIGHT 512
-
+#define USE_TRANSPARENCY true
 
 void loadURL(std::string url) {
     if (bk_texture_window == NULL)
@@ -197,7 +197,7 @@ int main (int argc, char** argv) {
 
     // Initialize Berkelium and create a window
     Berkelium::init(FileString::empty());
-    bk_texture_window = new GLTextureWindow(WIDTH, HEIGHT);
+    bk_texture_window = new GLTextureWindow(WIDTH, HEIGHT, USE_TRANSPARENCY);
 
     if (argc < 2) {
         loadRandomPage();
