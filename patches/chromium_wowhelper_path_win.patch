@@ -22,3 +22,4 @@ Index: sandbox/src/Wow64.cc
    std::wstring path(prog_name);
    size_t name_pos = path.find_last_of(L"\\");
    if (std::wstring::npos == name_pos)
+

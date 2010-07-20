@@ -295,7 +295,7 @@ unsigned int mapGLUTKeyToBerkeliumKey(int glut_key) {
  */
 class GLTextureWindow : public Berkelium::WindowDelegate {
 public:
-    GLTextureWindow(unsigned int _w, unsigned int _h)
+    GLTextureWindow(unsigned int _w, unsigned int _h, bool _usetrans)
      : width(_w),
        height(_h),
        needs_full_refresh(true)
@@ -313,6 +313,7 @@ public:
         delete context;
         bk_window->setDelegate(this);
         bk_window->resize(width, height);
+        bk_window->setTransparent(_usetrans);
     }
 
     ~GLTextureWindow() {
@@ -335,6 +336,8 @@ public:
     }
 
     void bind() {
+        glEnable (GL_BLEND);
+        glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glBindTexture(GL_TEXTURE_2D, web_texture);
     }
 

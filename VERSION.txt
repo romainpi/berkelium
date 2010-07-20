@@ -1,0 +1,4 @@
+tested = win mac linux
+win = 49006
+mac = 49006
+linux = 49006

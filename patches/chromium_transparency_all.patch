@@ -2,7 +2,7 @@ Index: chrome/renderer/render_widget.cc
 ===================================================================
 --- chrome/renderer/render_widget.cc	(revision 26900)
 +++ chrome/renderer/render_widget.cc	(working copy)
-@@ -424,6 +424,11 @@
+@@ -482,6 +482,11 @@
      NOTREACHED();
      return;
    }
@@ -13,16 +13,4 @@ Index: chrome/renderer/render_widget.cc
 +  }
  
    // We may get back a smaller canvas than we asked for.
-   damaged_rect.set_width(canvas->getDevice()->width());
-@@ -506,6 +511,11 @@
-     NOTREACHED();
-     return;
-   }
-+  if (!background_.empty() && !background_.isOpaque()) {
-+    // If the background contains any transparency, we must clear the output
-+    // buffer, or we will end up with garbage from the last render.
-+    canvas->drawARGB(0,0,0,0,SkXfermode::kClear_Mode);
-+  }
- 
-   // We may get back a smaller canvas than we asked for.
-   damaged_rect.set_width(canvas->getDevice()->width());
+   // TODO(darin): This seems like it could cause painting problems!

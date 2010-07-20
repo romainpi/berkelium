@@ -1,8 +1,8 @@
 Index: third_party/WebKit/WebCore/platform/graphics/chromium/FontChromiumWin.cpp
 ===================================================================
---- third_party/WebKit/WebCore/platform/graphics/chromium/FontChromiumWin.cpp (revision 49872)
+--- third_party/WebKit/WebCore/platform/graphics/chromium/FontChromiumWin.cpp (revision 60728)
 +++ third_party/WebKit/WebCore/platform/graphics/chromium/FontChromiumWin.cpp (working copy)
-@@ -47,6 +47,146 @@
+@@ -47,6 +47,167 @@
  
  #include <windows.h>
  
@@ -170,7 +170,7 @@ Index: third_party/WebKit/WebCore/platform/graphics/chromium/FontChromiumWin.cpp
  namespace WebCore {
  
  namespace {
-@@ -69,7 +209,7 @@
+@@ -69,7 +230,7 @@
      // construction (it calls virtual functions).
      void init();
  
@@ -179,7 +179,7 @@ Index: third_party/WebKit/WebCore/platform/graphics/chromium/FontChromiumWin.cpp
  
      // Use the context from the transparency helper when drawing with GDI. It
      // may point to a temporary one.
-@@ -187,7 +327,7 @@
+@@ -198,7 +359,7 @@
      bool drawGlyphs(int numGlyphs, const WORD* glyphs, const int* advances, int startAdvance) const;
  
   private:
@@ -188,7 +188,7 @@ Index: third_party/WebKit/WebCore/platform/graphics/chromium/FontChromiumWin.cpp
  
      const SimpleFontData* m_font;
      const GlyphBuffer& m_glyphBuffer;
-@@ -228,7 +368,7 @@
+@@ -239,7 +400,7 @@
  // Estimates the bounding box of the given text. This is copied from
  // FontCGWin.cpp, it is possible, but a lot more work, to get the precide
  // bounds.
@@ -197,7 +197,7 @@ Index: third_party/WebKit/WebCore/platform/graphics/chromium/FontChromiumWin.cpp
  {
      int totalWidth = 0;
      for (int i = 0; i < m_numGlyphs; i++)
-@@ -260,25 +400,33 @@
+@@ -271,25 +432,33 @@
      int x = lroundf(m_point.x() + startAdvance);
      int y = lroundf(m_point.y() - m_font->ascent());
  
@@ -234,7 +234,7 @@ Index: third_party/WebKit/WebCore/platform/graphics/chromium/FontChromiumWin.cpp
  }
  
  class TransparencyAwareUniscribePainter : public TransparencyAwareFontPainter {
-@@ -294,7 +442,7 @@
+@@ -305,7 +474,7 @@
      HDC hdc() const { return m_hdc; }
  
   private:
@@ -243,7 +243,7 @@ Index: third_party/WebKit/WebCore/platform/graphics/chromium/FontChromiumWin.cpp
  
      const Font* m_font;
      const TextRun& m_run;
-@@ -321,7 +469,7 @@
+@@ -332,7 +501,7 @@
  {
  }
  
@@ -252,3 +252,4 @@ Index: third_party/WebKit/WebCore/platform/graphics/chromium/FontChromiumWin.cpp
  {
      // This case really really sucks. There is no convenient way to estimate
      // the bounding box. So we run Uniscribe twice. If we find this happens a
+

@@ -59,6 +59,7 @@ GLTextureWindow* bk_texture_window = NULL;
 // And some global constants
 #define WIDTH 512
 #define HEIGHT 512
+#define USE_TRANSPARENCY false
 
 unsigned int win_width = WIDTH;
 unsigned int win_height = HEIGHT;
@@ -236,7 +237,7 @@ int main (int argc, char** argv) {
 
     // Initialize Berkelium and create a window
     Berkelium::init(Berkelium::FileString::empty());
-    bk_texture_window = new GLTextureWindow(WIDTH, HEIGHT);
+    bk_texture_window = new GLTextureWindow(WIDTH, HEIGHT, USE_TRANSPARENCY);
 
     if (argc < 2) {
         loadURL("http://www.google.com");
