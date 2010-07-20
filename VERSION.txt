@@ -1,4 +1,4 @@
-tested = win mac linux
+tested = mac linux
 win = 49006
-mac = 49006
-linux = 49006
+mac = 52866
+linux = 52882
