@@ -43,16 +43,11 @@ enum DepEnforcement;
 }
 namespace Berkelium {
 
-
+/** May be implemented to handle global errors gracefully.
+ */
 class BERKELIUM_EXPORT ErrorDelegate {
 public:
     virtual ~ErrorDelegate() {}
-
-    virtual void onPureCall() {}
-    virtual void onInvalidParameter(const wchar_t *expression, const wchar_t *function, const wchar_t *file, unsigned int line) {}
-    virtual void onOutOfMemory() {}
-    virtual void onAssertion(const char *assertMessage) {}
-
 };
 
 /* TODO: Allow forkedProcessHook to be called without requiring the

@@ -147,16 +147,10 @@ CAppModule _Module;
 void InvalidParameter(const wchar_t* expression, const wchar_t* function,
                       const wchar_t* file, unsigned int line,
                       uintptr_t reserved) {
-  if (Berkelium::Root::getSingleton().getErrorHandler())
-    Berkelium::Root::getSingleton().getErrorHandler()->onInvalidParameter(expression, function, file, line);
-
   __debugbreak();
 }
 
 void PureCall() {
-  if (Berkelium::Root::getSingleton().getErrorHandler())
-    Berkelium::Root::getSingleton().getErrorHandler()->onPureCall();
-
   __debugbreak();
 }
 
@@ -165,9 +159,6 @@ void OnNoMemory() {
   // NULL-check many memory allocations. If a malloc fails, returns NULL, and
   // the buffer is then used, it provides a handy mapping of memory starting at
   // address 0 for an attacker to utilize.
-  if (Berkelium::Root::getSingleton().getErrorHandler())
-    Berkelium::Root::getSingleton().getErrorHandler()->onOutOfMemory();
-
   __debugbreak();
 }
 
@@ -175,9 +166,6 @@ void OnNoMemory() {
 // chrome.
 void ChromeAssert(const std::string& str) {
   // Get the breakpad pointer from chrome.exe
-  if (Berkelium::Root::getSingleton().getErrorHandler())
-    Berkelium::Root::getSingleton().getErrorHandler()->onAssertion(str.c_str());
-
   typedef void (__cdecl *DumpProcessFunction)();
   DumpProcessFunction DumpProcess = reinterpret_cast<DumpProcessFunction>(
       ::GetProcAddress(::GetModuleHandle(chrome::kBrowserProcessExecutableName),
@@ -334,6 +322,10 @@ static void AdjustLinuxOOMScore(const std::string& process_type) {
     base::AdjustOOMScore(base::GetCurrentProcId(), score);
 }
 #endif  // defined(OS_POSIX) && !defined(OS_MACOSX)
+
+
+// NOTE: forkedProcessHook runs in a different process and should not access
+// any non-static Berkelium data, such as Root's singleton.
 
 #ifdef _WIN32
 void forkedProcessHook(
