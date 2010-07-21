@@ -92,7 +92,7 @@ public:
      * changes.
      *
      * \param win  Window instance that fired this event.
-     * \praam newURL  URL to display or store.
+     * \param newURL  URL to display or store.
      */
     virtual void onAddressBarChanged(Window *win, URLString newURL) {}
     /**
@@ -100,7 +100,7 @@ public:
      * \note See onLoadingStateChanged for deciding to show a loading message.
      *
      * \param win  Window instance that fired this event.
-     * \praam newURL  URL of the currently-loading page for the main frame.
+     * \param newURL  URL of the currently-loading page for the main frame.
      */
     virtual void onStartLoading(Window *win, URLString newURL) {}
     /**
@@ -120,6 +120,7 @@ public:
      * restart it, aside from maybe reloading the page that uses it.
      *
      * \param win  Window instance that fired this event.
+     * \param pluginName  Name reported by the plugin..
      */
     virtual void onCrashedPlugin(Window *win, WideString pluginName) {}
     /**
@@ -151,7 +152,7 @@ public:
      * \param message  Alert message
      * \param defaultValue  What to display in a text field if this is prompt.
      * \param url  Originator (script? or page?) of the alert box.
-     * \param flage  enum? What type of alert/confirm/prompt.
+     * \param flags  enum? What type of alert/confirm/prompt.
      * \param success  True if the OK button, false if CANCEL.
      * \param value  Allocated (strdup is easiest) return, default empty/null.
      */
@@ -194,7 +195,7 @@ public:
      */
     virtual void onLoadingStateChanged(Window *win, bool isLoading) {}
     /**
-     * Window's title has changed. This is usually the contents of <title>,
+     * Window's title has changed. This is usually the contents of title,
      * however some pages may dynamically change document.title.
      * Additionally, may be a default title (e.g. a URL) if the page has none.
      *
@@ -296,19 +297,18 @@ public:
      * menu or a dropdown.
      *
      * \param win  Window which is gaining a new widget object
-     * \param wid  Widget object to optionally hold onto.
+     * \param newWidget  Widget object to optionally hold onto.
      * \param zIndex  Sorting value to compare to other Widget's.
      */
     virtual void onWidgetCreated(Window *win, Widget *newWidget, int zIndex) {}
     /**
-     * A widget has passed away. Synchronously perform a burial and return.
-     * FIXME: Does it make sense to delete the widget here?
-     * Does not get called if you perform Window::removeWidget yourself.
+     * Called by Widget::destroy(), in its destructor. This widget will be
+     * removed from the Window's list of widgets when this function returns.
      *
      * \param win  Window which is losing this widget object.
      * \param wid  Widget this event is for.
      */
-    virtual void onWidgetDestroyed(Window *win, Widget *newWidget) {}
+    virtual void onWidgetDestroyed(Window *win, Widget *wid) {}
 
     /**
      * Widget has changed size, Usually only happens once after creating.
@@ -331,8 +331,8 @@ public:
      *
      * \param win  Window which is losing this widget object.
      * \param wid  Widget this event is for.
-     * \param newWidth  Left coordinate relative to Window.
-     * \param newHeight  Top coordinate relative to Window.
+     * \param newX  Left coordinate relative to Window.
+     * \param newY  Top coordinate relative to Window.
      */
     virtual void onWidgetMove(
         Window *win,
@@ -340,8 +340,19 @@ public:
         int newX,
         int newY) {}
 
-    /** \see onPaint
+    /**
+     * A widget overlay has been painted.
+     *
+     * \see onPaint
+     * \param win  Window instance that fired this event.
      * \param wid Widget this event is for
+     * \param sourceBuffer  raw buffer.
+     * \param sourceBufferRect  Rect containing the buffer.
+     * \param numCopyRects  Length of copyRects.
+     * \param copyRects  Array of valid+changed rectangles of sourceBuffer.
+     * \param dx  delta-x scroll
+     * \param dy  delta-y scroll
+     * \param scrollRect  Area of the page to scroll. Only valid if dx&&dy.
      */
     virtual void onWidgetPaint(
         Window *win,

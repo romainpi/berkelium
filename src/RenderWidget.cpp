@@ -55,6 +55,10 @@
 
 namespace Berkelium {
 
+void Widget::destroy(){
+    delete this;
+}
+
 RenderWidget::RenderWidget(WindowImpl *winImpl, int id) {
     mFocused = true;
     mBacking = NULL;
@@ -185,7 +189,6 @@ void RenderWidget::WillDestroyRenderWidget(RenderWidgetHost* rwh) {
 
   // Tells the View to destroy itself.
 void RenderWidget::Destroy(){
-    // FIXME: Unimplemented.
     delete this;
 }
 

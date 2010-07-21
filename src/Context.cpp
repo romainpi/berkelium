@@ -46,4 +46,8 @@ Context * Context::create () {
   return result;
 }
 
+void Context::destroy () {
+  delete this;
+}
+
 }

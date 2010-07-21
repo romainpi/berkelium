@@ -70,5 +70,9 @@ Window::~Window() {
     delete mContext;
 }
 
+void Window::destroy() {
+    delete this;
+}
+
 }
 

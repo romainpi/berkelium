@@ -56,6 +56,9 @@ public:
    then uses dlopen or GetProcAddress.
 */
 
+/** Called by child processes.
+ * Should only ever be called from subprocess.cpp (berkelium.exe).
+ */
 #ifdef _WIN32
 void BERKELIUM_EXPORT forkedProcessHook(
     sandbox::BrokerServices* (*ptrGetBrokerServices)(),
@@ -65,11 +68,28 @@ void BERKELIUM_EXPORT forkedProcessHook(
 void BERKELIUM_EXPORT forkedProcessHook(int argc, char **argv);
 #endif
 
+/** Iniitialize berkelium's global object.
+ *  \param homeDirectory  Just like Chrome's --user-data-dir command line flag.
+ *    If homeDirectory is null or empty, creates a temporary data directory.
+ */
 void BERKELIUM_EXPORT init(FileString homeDirectory);
+
+/** Destroys Berkelium and attempts to free as much memory as possible.
+ *  Note: You must destroy all Window and Context objects before calling
+ *  Berkelium::destroy()!
+ */
 void BERKELIUM_EXPORT destroy();
 
 void BERKELIUM_EXPORT setErrorHandler(ErrorDelegate * errorHandler);
 
+/** Runs the message loop until all pending messages are processed.
+ *  Must be called from the same thread as all other Berkelium functions,
+ *  usually your program's main (UI) thread.
+ *  For now, you have to poll to receive updates without blocking indefinitely.
+ *
+ *  Your WindowDelegate's should only receive callbacks synchronously with
+ *  this call to update.
+ */
 void BERKELIUM_EXPORT update();
 
 }
