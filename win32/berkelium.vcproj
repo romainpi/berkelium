@@ -203,6 +203,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\ForkedProcessHook.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\src\MemoryRenderViewHost.cpp"
 				>
 			</File>
