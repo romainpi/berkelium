@@ -18,6 +18,7 @@
  * http://berkelium.org . The source code can be found on GitHub at
  * http://github.com/sirikata/berkelium .
  *
+ * Download binary releases at http://github.com/sirikata/berkelium/downloads .
  * <h3> Manual </h3>
  *  - About Berkelium
  *   - \ref faq answers some very common
@@ -30,4 +31,8 @@
  *  - The \ref api "API Reference" gives an overview of the public classes used
  *    to embed Berkelium into an application, with links to documentation
  *    generated automatically from the code.
+ *
+ * <h3> Older Versions </h3>
+ *  - See the <a href="/archive">archive directory</a> for older versions of this
+ *    documentation.
  */

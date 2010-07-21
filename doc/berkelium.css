@@ -496,6 +496,7 @@ proper pixel height of your image.
 
 address {
 	font-style: normal;
+        font-size: small;
 	color: #333;
 }
 
