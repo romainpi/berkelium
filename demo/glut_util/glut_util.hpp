@@ -374,6 +374,11 @@ public:
         std::cout << "*** onExternalHost at URL from "<<origin<<" to "<<target<<":"<<std::endl;
         std::wcout << message<<std::endl;
     }
+
+    Berkelium::Window* window() const {
+        return bk_window;
+    }
+
 private:
     // The Berkelium window, i.e. our web page
     Berkelium::Window* bk_window;

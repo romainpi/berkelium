@@ -238,6 +238,7 @@ int main (int argc, char** argv) {
     // Initialize Berkelium and create a window
     Berkelium::init(Berkelium::FileString::empty());
     bk_texture_window = new GLTextureWindow(WIDTH, HEIGHT, USE_TRANSPARENCY);
+    bk_texture_window->window()->focus();
 
     if (argc < 2) {
         loadURL("http://www.google.com");
