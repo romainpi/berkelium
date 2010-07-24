@@ -14,8 +14,11 @@
 
 platform="`uname -s`"
 proctype="`uname -m`"
+if [ "`linux64 uname -m`" = "x86-64" -a \! "$proctype" = "x86-64" ]; then
+    install_lib32=true
+fi
 
-USE_ROOT=false
+USE_ROOT=true
 USER=`whoami`
 USER_SHELL="/bin/bash"
 SAME_USER=true
@@ -26,6 +29,10 @@ elif [ x"${platform}" = x"Linux" ]; then
     NUM_PROCS=-j`cat /proc/cpuinfo|grep processor|wc -l`
 fi
 
+SCRIPTDIR="`dirname $0`"
+if [ \! x"$SCRIPTDIR" = x"" ]; then
+    cd "$SCRIPTDIR/.."
+fi
 PWD=`pwd`
 
 WITH_DEPS=false
@@ -43,6 +50,7 @@ CHROMIUM_INSTALL_DIR="${PWD}/installed-chromium"
 CHROMIUM_APP_DIR=""
 
 FORCE_32BIT=false
+VERBOSE_FLAGS=""
 
 ################################################################################################################################
 # Define a function to execute a command as a different user if necessary
@@ -83,6 +91,9 @@ function clean_dir {
 function careful_patch {
     user_eval "cd $1 && (patch --batch -R -p0 -N --dry-run < $2 || patch --batch -p0 -N < $2)"
     RET=$?
+    if [[ $RET -ne 0 ]]; then
+        echo "FAILED TO APPLY $2 -- Important if this patch is needed on this platform."
+    fi
     return $RET
 }
 
@@ -93,9 +104,6 @@ function careful_patch {
 until [ -z "$1" ] # until all parameters used up
 do
     case "$1" in
-        --use-root )
-            USE_ROOT=true
-            ;;
         --deps )
             WITH_DEPS=true
             ;;
@@ -119,10 +127,33 @@ do
             shift
             CHROMIUM_PATCHES_DIR="$1"
             ;;
+        --verbose )
+            VERBOSE_FLAGS="V=1"
+            ;;
+        --force )
+            GCLIENT_FORCE="--force"
+            ;;
+        * )
+            echo "Usage: [linux32] $0 [--deps] [-j123] [--verbose] [--force]" >&2
+            echo "       [--build-dir foo] [--install-dir foo] [--app-dir foo] [--patch-dir foo]" >&2
+            echo >&2
+            echo "If run with linux32, does a 32-bit build on a 64-bit system." >&2
+            echo "-jFOO runs parallel build with FOO processors (default autodetected)'" >&2
+            echo "--force forces rerunning svn in case you encountered svn errors." >&2
+            echo "--verbose shows verbose bash lines and runs gcc commands with make V=1" >&2
+            echo "--build-dir, --app-dir, --install-dir : read this script to understand." >&2
+            echo "--patch-dir Lets you specify other patches *instead* of default 'patches' dir" >&2
+            echo "--deps attempts installing fedora/debian/ubuntu packages as root." >&2
+            echo >&2
+            echo "Curt help provided courtesy of 'git checkout .' which is pure evil (rm -rf in disguise)." >&2
+            exit 1
     esac
     shift
 done
 
+if [ \! x"$VERBOSE_FLAGS" = x ]; then
+    set -x
+fi
 
 # Make sure we have absolute paths
 if [ -z `echo ${CHROMIUM_BUILD_DIR} | grep ^/` ]; then
@@ -141,12 +172,13 @@ CHROMIUM_CHECKOUT_DIR="${CHROMIUM_BUILD_DIR}/chromium"
 
 # Chromium revision to build. Ideally we could keep these synced across all platforms.
 if [ x"${CHROMIUM_REV}" = x ]; then
-    CHROMIUM_REV=49006
-    #if [ x"${platform}" = x"Darwin" ]; then
-    #    CHROMIUM_REV=49006
-    #elif [ x"${platform}" = x"Linux" ]; then
-    #    CHROMIUM_REV=50500
-    #fi
+    if [ x"${platform}" = x"Darwin" ]; then
+        CHROMIUM_REV=`grep 'mac *=' VERSION.txt | cut -d= -f2`
+    elif [ x"${platform}" = x"Linux" ]; then
+        CHROMIUM_REV=`grep 'linux *=' VERSION.txt | cut -d= -f2`
+    fi
+    # Cleans up all spaces.
+    CHROMIUM_REV=${CHROMIUM_REV// }
 fi
 
 if [ x"${platform}" = x"Darwin" ]; then
@@ -163,7 +195,7 @@ if [ x"${platform}" = x"Darwin" ]; then
     cd ${CHROMIUM_CHECKOUT_DIR}
     gclient config http://src.chromium.org/svn/trunk/src
     python -c 'execfile(".gclient");solutions[0]["custom_deps"]={"src/third_party/WebKit/LayoutTests":None,"src/webkit/data/layout_tests":None,};open(".gclient","w").write("solutions="+repr(solutions));';
-    gclient sync --force --revision src@${CHROMIUM_REV}
+    gclient sync $GCLIENT_FORCE --revision src@${CHROMIUM_REV}
     cd src/chrome
     xcodebuild -project chrome.xcodeproj -configuration Release -target chrome
 
@@ -219,7 +251,7 @@ elif [ x"${platform}" = x"Linux" ]; then
             esac
 
 
-            if $FORCE_32BIT; then
+            if [ x"$install_lib32" = x"true" ] ; then
                 # make sure /usr/local/lib32 exists
                 if ! [ -e /usr/local/lib32 ]; then
                     sudo mkdir /usr/local/lib32
@@ -285,7 +317,7 @@ elif [ x"${platform}" = x"Linux" ]; then
 
     # And now for the real chromium
     echo "Installing Chromium... DUN dunn dunnnnn"
-    echo "As of October 2008, it takes about three gigabytes of disk space to install and build the source tree."
+    echo "Without debug, it takes about 3.5 gigabytes of disk space to install and build the source tree."
     echo "Hit Ctrl-C if you are going to run out of space, so you don't end up with truncated objects."
     clean_dir ${CHROMIUM_INSTALL_DIR}
     if [ \! -e ${CHROMIUM_CHECKOUT_DIR} ]; then
@@ -306,36 +338,29 @@ elif [ x"${platform}" = x"Linux" ]; then
     fi
     if [ x"$proctype" = x"x86_64" ]; then
         CHROME_PLATFORM=x64
+        GYP_DEFINES="${GYP_DEFINES} linux_fpic=1"
     else
         CHROME_PLATFORM=ia32
     fi
-    if $FORCE_32BIT; then
-        CHROME_PLATFORM=ia32
-    fi
     if [ -e ${CHROMIUM_CHECKOUT_DIR} ]; then
-#sed -e "s/\"src\/native_client/#\".\/src\/native_client/" .gclient > .gclient-bak && mv .gclient-bak .gclient &&'"
-        user_eval "gcc --version | grep -q '4\.4' && export GCC_VERSION=44 && export GYP_DEFINES='gcc_version=44 no_strict_aliasing=1';
+        user_eval "
                  cd ${CHROMIUM_CHECKOUT_DIR} &&
                  python -c '"'execfile(".gclient");solutions[0]["custom_deps"]={"src/third_party/WebKit/LayoutTests":None,"src/webkit/data/layout_tests":None,};open(".gclient","w").write("solutions="+repr(solutions));'"' &&
                  export PATH=\"${CHROMIUM_DEPOTTOOLS_DIR}:${PATH}\" &&
                  export GYP_GENERATORS=make &&
-                 gclient sync --force --revision src@${CHROMIUM_REV}" &&
-        careful_patch "${CHROMIUM_CHECKOUT_DIR}/src" "${CHROMIUM_PATCHES_DIR}/chromium_nacl_64_pic.patch" &&
-        careful_patch "${CHROMIUM_CHECKOUT_DIR}/src" "${CHROMIUM_PATCHES_DIR}/chromium_nacl_inline_pic.patch" &&
-        careful_patch "${CHROMIUM_CHECKOUT_DIR}/src" "${CHROMIUM_PATCHES_DIR}/chromium_transparency_26900.patch" &&
-        careful_patch "${CHROMIUM_CHECKOUT_DIR}/src" "${CHROMIUM_PATCHES_DIR}/chromium_win32_sandbox_exports.patch" &&
-        careful_patch "${CHROMIUM_CHECKOUT_DIR}/src" "${CHROMIUM_PATCHES_DIR}/chromium_wmode_opaque.patch" &&
-        user_eval "gcc --version | grep -q '4\.4' && export GCC_VERSION=44 && export GYP_DEFINES='gcc_version=44 no_strict_aliasing=1';
+                 gclient sync $GCLIENT_FORCE --revision src@${CHROMIUM_REV}" &&
+        for patch in "${CHROMIUM_PATCHES_DIR}"/*.patch; do
+            careful_patch "${CHROMIUM_CHECKOUT_DIR}/src" "${patch}"
+        done &&
+        user_eval "
                  cd ${CHROMIUM_CHECKOUT_DIR} &&
                  export PATH=\"${CHROMIUM_DEPOTTOOLS_DIR}:${PATH}\" &&
                  export GYP_GENERATORS=make &&
                  export CHROMIUM_ROOT="'"$PWD"'" &&
-                 export CXX='g++ -fPIC' &&
-                 export CC='gcc -fPIC' &&
-                 export GYP_DEFINES="'"$GYP_DEFINES linux_fpic=1 disable_nacl=1 "target_arch='"$CHROME_PLATFORM &&
+                 export GYP_DEFINES='${GYP_DEFINES} disable_nacl=1 target_arch=${CHROME_PLATFORM}' &&
                  gclient runhooks --force &&
                  cd src &&
-                 make VERBOSE=1 -r $NUM_PROCS $MAKEFLAGS chrome" && \
+                 make $VERBOSE_FLAGS -r $NUM_PROCS $MAKEFLAGS chrome" && \
                      make_symlink ${CHROMIUM_CHECKOUT_DIR}/src/out/$OUTDIR ${CHROMIUM_INSTALL_DIR} && \
                      echo ${OUTDIR} > ${CHROMIUM_BUILD_DIR}/compilemode.txt || \
                      export FAILED="$FAILED chromium"
@@ -362,7 +387,7 @@ elif [ x"${platform}" = x"Linux" ]; then
 fi
 
 if [ x"${FAILED}" != x ]; then
-    echo ${FAILED}
+    echo "Failed to install:" ${FAILED}
     exit 1
 fi
 
