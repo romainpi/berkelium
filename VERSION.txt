@@ -1,4 +1,5 @@
-tested = mac linux
-win = 49006
+tested = win
+chromium = http://src.chromium.org/svn/branches/472/src
+win = 53032
 mac = 52866
 linux = 52882
