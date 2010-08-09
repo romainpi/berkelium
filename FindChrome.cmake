@@ -167,7 +167,7 @@ IF(CHROME_FOUND)
       SET(LOCAL_CHROMIUM_FRAMEWORK ${CHROME_APP_NAME}/Contents/Versions/$$VERSION/${CHROMIUM_FRAMEWORK})
       SET(CHROME_SHELL_SCRIPT ${CHROME_APP_NAME}/Contents/MacOS/${CHROME_APP_APP})
       SET(CHROME_SYMLINKS_COMMAND
-        eval `cat /build/chromium/src/chrome/VERSION` &&
+        eval `cat ${CHROME_ROOT}/src/chrome/VERSION` &&
         VERSION=$$MAJOR.$$MINOR.$$BUILD.$$PATCH &&
         mkdir -p ${CHROME_APP_NAME} &&
         mkdir -p ${CHROME_APP_NAME}/Contents &&

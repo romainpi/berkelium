@@ -25,8 +25,10 @@ SAME_USER=true
 
 if [ x"${platform}" = x"Darwin" ]; then
     NUM_PROCS=-j2
+    echo "Building for Mac OS X"
 elif [ x"${platform}" = x"Linux" ]; then
     NUM_PROCS=-j`cat /proc/cpuinfo|grep processor|wc -l`
+    echo "Building for Linux `uname -m`"
 fi
 
 SCRIPTDIR="`dirname $0`"
@@ -89,7 +91,7 @@ function clean_dir {
 
 # Usage: careful_patch directory patchfile
 function careful_patch {
-    user_eval "cd $1 && (patch --batch -R -p0 -N --dry-run < $2 || patch --batch -p0 -N < $2)"
+    user_eval "cd $1 && (patch --batch -R -p0 -N --dry-run < $2 2>/dev/null || patch --batch -p0 -N < $2)"
     RET=$?
     if [[ $RET -ne 0 ]]; then
         echo "FAILED TO APPLY $2 -- Important if this patch is needed on this platform."
@@ -196,20 +198,23 @@ fi
 
 if [ x"${platform}" = x"Darwin" ]; then
 
-    mkdir -p ${CHROMIUM_BUILD_DIR}
-    cd ${CHROMIUM_BUILD_DIR}
+    mkdir -p "${CHROMIUM_BUILD_DIR}"
+    cd "${CHROMIUM_BUILD_DIR}"
     if [ \! -e depot_tools ]; then
         curl -o depot_tools.tar.gz http://src.chromium.org/svn/trunk/tools/depot_tools.tar.gz
         tar -zxf depot_tools.tar.gz
     fi
-    PATH=${CHROMIUM_DEPOTTOOLS_DIR}:$PATH
+    PATH="${CHROMIUM_DEPOTTOOLS_DIR}:$PATH"
     echo "${CHROMIUM_CHECKOUT_DIR}"
-    mkdir -p ${CHROMIUM_CHECKOUT_DIR}
-    cd ${CHROMIUM_CHECKOUT_DIR}
+    mkdir -p "${CHROMIUM_CHECKOUT_DIR}"
+    cd "${CHROMIUM_CHECKOUT_DIR}"
     rm -f .gclient
     gclient config ${CHROMIUM_REPO}
     python -c 'execfile(".gclient");solutions[0]["custom_deps"]={"src/third_party/WebKit/LayoutTests":None,"src/webkit/data/layout_tests":None,};open(".gclient","w").write("solutions="+repr(solutions));';
     gclient sync $GCLIENT_FORCE ${CHROMIUM_REV}
+    for patch in "${CHROMIUM_PATCHES_DIR}"/*.patch; do
+        careful_patch "${CHROMIUM_CHECKOUT_DIR}/src" "${patch}"
+    done
     cd src/chrome
     xcodebuild -project chrome.xcodeproj -configuration Release -target chrome
 
@@ -217,13 +222,13 @@ if [ x"${platform}" = x"Darwin" ]; then
     # "Install" process, symlinking libraries and data to the appropriate locations
     if [ x"${CHROMIUM_APP_DIR}" != x ]; then
         # Make sure the top level build dir is there
-        if [ \! -e ${CHROMIUM_APP_DIR} ]; then
-            user_eval "mkdir -p ${CHROMIUM_APP_DIR}" || true
+        if [ \! -e "${CHROMIUM_APP_DIR}" ]; then
+            user_eval "mkdir -p '${CHROMIUM_APP_DIR}'" || true
         fi
 
-        ln -sf ${CHROMIUM_DATADIR}/chrome.pak ${CHROMIUM_APP_DIR}/chrome.pak
-        ln -sf ${CHROME_ROOT}/src/xcodebuild/Release/${CHROMIUM_FRAMEWORK}/Resources/chrome.pak ${CHROMIUM_APP_DIR}/chrome.pak
-        ln -sf ${CHROME_ROOT}/src/xcodebuild/Release/${CHROMIUM_FRAMEWORK}/Versions ${CHROMIUM_APP_DIR}/Versions
+        ln -sf "${CHROMIUM_DATADIR}/chrome.pak" "${CHROMIUM_APP_DIR}/chrome.pak"
+        ln -sf "${CHROME_ROOT}/src/xcodebuild/Release/${CHROMIUM_FRAMEWORK}/Resources/chrome.pak" "${CHROMIUM_APP_DIR}/chrome.pak"
+        ln -sf "${CHROME_ROOT}/src/xcodebuild/Release/${CHROMIUM_FRAMEWORK}/Versions" "${CHROMIUM_APP_DIR}/Versions"
     fi
 elif [ x"${platform}" = x"Linux" ]; then
 
