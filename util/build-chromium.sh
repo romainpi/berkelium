@@ -127,6 +127,11 @@ do
             shift
             CHROMIUM_PATCHES_DIR="$1"
             ;;
+        --chromium-version )
+            shift
+            CHROMIUM_VERSION="$1"
+            SET_CHROMIUM_VERSION=true
+            ;;
         --verbose )
             VERBOSE_FLAGS="V=1"
             ;;
@@ -136,6 +141,7 @@ do
         * )
             echo "Usage: [linux32] $0 [--deps] [-j123] [--verbose] [--force]" >&2
             echo "       [--build-dir foo] [--install-dir foo] [--app-dir foo] [--patch-dir foo]" >&2
+            echo "       [--chromium-version 6.0.472.27] [--chromium-version 54321]" >&2
             echo >&2
             echo "If run with linux32, does a 32-bit build on a 64-bit system." >&2
             echo "-jFOO runs parallel build with FOO processors (default autodetected)'" >&2
@@ -144,8 +150,8 @@ do
             echo "--build-dir, --app-dir, --install-dir : read this script to understand." >&2
             echo "--patch-dir Lets you specify other patches *instead* of default 'patches' dir" >&2
             echo "--deps attempts installing fedora/debian/ubuntu packages as root." >&2
+            echo "--chromium-version sets a release version or SVN revision to download." >&2
             echo >&2
-            echo "Curt help provided courtesy of 'git checkout .' which is pure evil (rm -rf in disguise)." >&2
             exit 1
     esac
     shift
@@ -171,14 +177,21 @@ CHROMIUM_DEPOTTOOLS_DIR="${CHROMIUM_BUILD_DIR}/depot_tools"
 CHROMIUM_CHECKOUT_DIR="${CHROMIUM_BUILD_DIR}/chromium"
 
 # Chromium revision to build. Ideally we could keep these synced across all platforms.
-if [ x"${CHROMIUM_REV}" = x ]; then
+if [ x"${SET_CHROMIUM_VERSION}" = x ]; then
     if [ x"${platform}" = x"Darwin" ]; then
-        CHROMIUM_REV=`grep 'mac *=' VERSION.txt | cut -d= -f2`
+        CHROMIUM_VERSION=`grep 'mac *=' VERSION.txt | cut -d= -f2`
     elif [ x"${platform}" = x"Linux" ]; then
-        CHROMIUM_REV=`grep 'linux *=' VERSION.txt | cut -d= -f2`
+        CHROMIUM_VERSION=`grep 'linux *=' VERSION.txt | cut -d= -f2`
     fi
     # Cleans up all spaces.
-    CHROMIUM_REV=${CHROMIUM_REV// }
+fi
+CHROMIUM_VERSION=${CHROMIUM_VERSION// }
+if echo ${CHROMIUM_VERSION} | grep -q '[0-9]*\.[0-9]*\.[0-9]*\.[0-9]*'; then
+    CHROMIUM_REPO=http://src.chromium.org/svn/releases/${CHROMIUM_VERSION}
+    CHROMIUM_REV=""
+else
+    CHROMIUM_REPO=http://src.chromium.org/svn/trunk/src
+    CHROMIUM_REV="--revision src@${CHROMIUM_VERSION}"
 fi
 
 if [ x"${platform}" = x"Darwin" ]; then
@@ -193,9 +206,10 @@ if [ x"${platform}" = x"Darwin" ]; then
     echo "${CHROMIUM_CHECKOUT_DIR}"
     mkdir -p ${CHROMIUM_CHECKOUT_DIR}
     cd ${CHROMIUM_CHECKOUT_DIR}
-    gclient config http://src.chromium.org/svn/trunk/src
+    rm -f .gclient
+    gclient config ${CHROMIUM_REPO}
     python -c 'execfile(".gclient");solutions[0]["custom_deps"]={"src/third_party/WebKit/LayoutTests":None,"src/webkit/data/layout_tests":None,};open(".gclient","w").write("solutions="+repr(solutions));';
-    gclient sync $GCLIENT_FORCE --revision src@${CHROMIUM_REV}
+    gclient sync $GCLIENT_FORCE ${CHROMIUM_REV}
     cd src/chrome
     xcodebuild -project chrome.xcodeproj -configuration Release -target chrome
 
@@ -320,13 +334,6 @@ elif [ x"${platform}" = x"Linux" ]; then
     echo "Without debug, it takes about 3.5 gigabytes of disk space to install and build the source tree."
     echo "Hit Ctrl-C if you are going to run out of space, so you don't end up with truncated objects."
     clean_dir ${CHROMIUM_INSTALL_DIR}
-    if [ \! -e ${CHROMIUM_CHECKOUT_DIR} ]; then
-        user_eval "export PATH=\"${CHROMIUM_DEPOTTOOLS_DIR}:${PATH}\" &&
-               mkdir -p ${CHROMIUM_CHECKOUT_DIR} &&
-               cd ${CHROMIUM_CHECKOUT_DIR} &&
-               gclient config http://src.chromium.org/svn/trunk/src &&
-               python -c '"'execfile(".gclient");solutions[0]["custom_deps"]={"src/third_party/WebKit/LayoutTests":None,"src/webkit/data/layout_tests":None,};open(".gclient","w").write("solutions="+repr(solutions));'"'";
-    fi
     if [ x"${CHROMIUM_DEBUG}" = xtrue ]; then
         echo "*** Building Chromium in Debug mode"
         MAKEFLAGS=" BUILDTYPE=Debug"
@@ -344,11 +351,13 @@ elif [ x"${platform}" = x"Linux" ]; then
     fi
     if [ -e ${CHROMIUM_CHECKOUT_DIR} ]; then
         user_eval "
+                 mkdir -p ${CHROMIUM_CHECKOUT_DIR} &&
                  cd ${CHROMIUM_CHECKOUT_DIR} &&
-                 python -c '"'execfile(".gclient");solutions[0]["custom_deps"]={"src/third_party/WebKit/LayoutTests":None,"src/webkit/data/layout_tests":None,};open(".gclient","w").write("solutions="+repr(solutions));'"' &&
                  export PATH=\"${CHROMIUM_DEPOTTOOLS_DIR}:${PATH}\" &&
+                 rm -f .gclient && gclient config ${CHROMIUM_REPO} &&
+                 python -c '"'execfile(".gclient");solutions[0]["custom_deps"]={"src/third_party/WebKit/LayoutTests":None,"src/webkit/data/layout_tests":None,};open(".gclient","w").write("solutions="+repr(solutions));'"' &&
                  export GYP_GENERATORS=make &&
-                 gclient sync $GCLIENT_FORCE --revision src@${CHROMIUM_REV}" &&
+                 gclient sync $GCLIENT_FORCE ${CHROMIUM_REV}" &&
         for patch in "${CHROMIUM_PATCHES_DIR}"/*.patch; do
             careful_patch "${CHROMIUM_CHECKOUT_DIR}/src" "${patch}"
         done &&
