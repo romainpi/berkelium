@@ -226,7 +226,7 @@ IF(CHROME_FOUND)
 
       SET(CHROME_SYMLINKS_COMMAND
         ln -sf ${CHROMIUM_DATADIR}/locales &&
-        ln -sf ${CHROMIUM_DATADIR}/resources &&
+        ln -sf ${CHROMIUM_DATADIR}/resources.pak &&
         ln -sf ${CHROMIUM_DATADIR}/chrome.pak
         )
 
