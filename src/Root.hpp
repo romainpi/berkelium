@@ -36,6 +36,9 @@
 #include "chrome/browser/profile.h"
 #include "chrome/common/notification_service.h"
 #include "base/scoped_nsautorelease_pool.h"
+#include "base/ref_counted.h"
+#include "base/message_loop.h"
+#include "base/scoped_ptr.h"
 
 class BrowserRenderProcessHost;
 class ProcessSingleton;

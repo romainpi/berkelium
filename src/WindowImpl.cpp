@@ -56,6 +56,8 @@
 #include "chrome/common/native_web_keyboard_event.h"
 #include "chrome/browser/renderer_host/render_process_host.h"
 #include "chrome/common/bindings_policy.h"
+#include "webkit/glue/context_menu.h"
+#include <iostream>
 
 #if BERKELIUM_PLATFORM == PLATFORM_LINUX
 #include <gdk/gdkcursor.h>

@@ -39,6 +39,7 @@
 #if defined(OS_MACOSX)
 #include "chrome/browser/renderer_host/accelerated_surface_container_manager_mac.h"#
 #endif
+#include "gfx/rect.h"
 //see chrome/browser/renderer_host/test/test_render_view_host.h for a stub impl.
 
 namespace Berkelium {
