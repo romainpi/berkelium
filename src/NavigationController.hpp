@@ -19,6 +19,7 @@
 #include "chrome/common/navigation_types.h"
 #include "chrome/common/page_transition_types.h"
 #include "chrome/common/render_messages.h"
+#include "chrome/common/render_messages_params.h"
 
 class NavigationEntry;
 class GURL;

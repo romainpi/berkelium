@@ -173,6 +173,8 @@ public: /******* RenderWidgetHostView *******/
   // Allocate a video layer for this view.
   virtual VideoLayer* AllocVideoLayer(const gfx::Size& size);
 
+  virtual void InitAsFullscreen(RenderWidgetHostView*);
+
 #if defined(OS_MACOSX)
 
   // Display a native control popup menu for WebKit.

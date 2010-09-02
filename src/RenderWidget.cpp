@@ -229,6 +229,9 @@ VideoLayer* RenderWidget::AllocVideoLayer(const gfx::Size& size) {
     return NULL;
 }
 
+void RenderWidget::InitAsFullscreen(RenderWidgetHostView*) {
+}
+
 #if defined(OS_MACOSX)
   // Display a native control popup menu for WebKit.
 void RenderWidget::ShowPopupWithItems(gfx::Rect bounds,

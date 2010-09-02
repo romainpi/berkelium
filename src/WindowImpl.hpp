@@ -294,6 +294,12 @@ protected: /******* RenderViewHostDelegate::View *******/
     virtual void HandleKeyboardEvent(const NativeWebKeyboardEvent& event);
     virtual void HandleMouseEvent();
     virtual void HandleMouseLeave();
+    virtual void CreateNewFullscreenWidget(int route_id, WebKit::WebPopupType popup_type);
+    virtual void ShowCreatedFullscreenWidget(int route_id);
+    virtual void Activate();
+    virtual void Deactivate();
+    virtual void HandleMouseMove();
+    virtual void HandleMouseDown();
     virtual void UpdatePreferredWidth(int pref_width);
     virtual void UpdatePreferredSize(const gfx::Size&);
     virtual bool PreHandleKeyboardEvent(const NativeWebKeyboardEvent& event,
@@ -325,6 +331,7 @@ protected: /******* RenderViewHostDelegate::BrowserIntegration *******/
                                   const std::string& original_lang,
                                   const std::string& translated_lang,
                                   TranslateErrors::Type error_type);
+    virtual void OnDisabledOutdatedPlugin(const string16&, const GURL&);
 
 private:
 

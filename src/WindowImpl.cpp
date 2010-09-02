@@ -435,7 +435,7 @@ bool WindowImpl::CreateRenderViewForRenderManager(
   //  renderer process remotely, calling CreateRenderView will crash the
   //  renderer by attempting to create a second copy of the window
   if (!remote_view_exists) {
-      if (!render_view_host->CreateRenderView(Root::getSingleton().getDefaultRequestContext(), string16()))
+      if (!render_view_host->CreateRenderView(string16()))
       return false;
   }
 
@@ -527,29 +527,6 @@ void WindowImpl::UpdateHistoryForNavigation(
     const ViewHostMsg_FrameNavigate_Params& params) {
   if (profile()->IsOffTheRecord())
     return;
-
-  // Add to history service.
-  HistoryService* hs = profile()->GetHistoryService(Profile::IMPLICIT_ACCESS);
-  if (hs) {
-    if (PageTransition::IsMainFrame(params.transition) &&
-        virtual_url != params.url) {
-      // Hack on the "virtual" URL so that it will appear in history. For some
-      // types of URLs, we will display a magic URL that is different from where
-      // the page is actually navigated. We want the user to see in history
-      // what they saw in the URL bar, so we add the virtual URL as a redirect.
-      // This only applies to the main frame, as the virtual URL doesn't apply
-      // to sub-frames.
-      std::vector<GURL> redirects = params.redirects;
-      if (!redirects.empty())
-        redirects.back() = virtual_url;
-      hs->AddPage(virtual_url, this, params.page_id, params.referrer,
-                  params.transition, redirects, details.did_replace_entry);
-    } else {
-      hs->AddPage(params.url, this, params.page_id, params.referrer,
-                  params.transition, params.redirects,
-                  details.did_replace_entry);
-    }
-  }
 }
 
 bool WindowImpl::UpdateTitleForEntry(NavigationEntry* entry,
@@ -716,6 +693,8 @@ void WindowImpl::OnPageTranslated(
     const std::string& original_lang,
     const std::string& translated_lang,
     TranslateErrors::Type error_type) {
+}
+void WindowImpl::OnDisabledOutdatedPlugin(const string16&, const GURL&) {
 }
 
 void WindowImpl::ProcessExternalHostMessage(const std::string& message,
@@ -1168,6 +1147,20 @@ void WindowImpl::HandleMouseEvent() {
 }
 void WindowImpl::HandleMouseLeave() {
     // Useless: just calls this when we hand it an input event.
+}
+void WindowImpl::CreateNewFullscreenWidget(int route_id, WebKit::WebPopupType popup_type) {
+    CreateNewWidget(route_id, popup_type);
+}
+void WindowImpl::ShowCreatedFullscreenWidget(int route_id) {
+    ShowCreatedFullscreenWidget(route_id);
+}
+void WindowImpl::Activate() {
+}
+void WindowImpl::Deactivate() {
+}
+void WindowImpl::HandleMouseMove() {
+}
+void WindowImpl::HandleMouseDown() {
 }
 void WindowImpl::UpdatePreferredWidth(int pref_width) {
 }

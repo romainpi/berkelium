@@ -49,7 +49,7 @@
 #include "chrome/common/chrome_switches.h"
 #include "chrome/common/url_constants.h"
 #include "chrome/browser/metrics/histogram_synchronizer.h"
-#include "chrome/browser/browser_prefs.h"
+#include "chrome/browser/prefs/browser_prefs.h"
 #include "chrome/browser/browser_process_impl.h"
 #include "chrome/browser/process_singleton.h"
 #include "chrome/browser/profile_manager.h"
@@ -63,7 +63,7 @@
 #include "app/resource_bundle.h"
 #include "app/app_paths.h"
 #include "app/system_monitor.h"
-#include "chrome/browser/pref_service.h"
+#include "chrome/browser/prefs/pref_service.h"
 #include "chrome/common/pref_names.h"
 #include "chrome/common/logging_chrome.h"
 #include "base/logging.h"
@@ -385,7 +385,7 @@ Root::Root (FileString homeDirectory) {
 //    ChildProcess* coreProcess=new ChildProcess;
 //    coreProcess->set_main_thread(new ChildThread);
     g_browser_process->SetApplicationLocale("en-US");
-    ResourceBundle::InitSharedInstance(L"en-US");// FIXME: lookup locale
+    ResourceBundle::InitSharedInstance("en-US");// FIXME: lookup locale
     // We only load the theme dll in the browser process.
     net::CookieMonster::EnableFileScheme();
 

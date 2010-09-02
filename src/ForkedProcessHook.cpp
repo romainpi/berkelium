@@ -244,7 +244,7 @@ void CommonSubprocessInit() {
   // Initialize ResourceBundle which handles files loaded from external
   // sources.  The language should have been passed in to us from the
   // browser process as a command line flag.
-  ResourceBundle::InitSharedInstance(std::wstring());
+  ResourceBundle::InitSharedInstance(std::string());
 
 #if defined(OS_WIN)
   // HACK: Let Windows know that we have started.  This is needed to suppress
