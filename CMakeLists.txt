@@ -182,14 +182,8 @@ IF(CHROME_FOUND)
   IF(NOT APPLE)
     INSTALL(FILES
           ${CHROMIUM_DATADIR}/chrome.pak
-            ${CHROMIUM_DATADIR}/libavcodec.so.52
-            ${CHROMIUM_DATADIR}/libavformat.so.52
-            ${CHROMIUM_DATADIR}/libavutil.so.50
+          ${CHROMIUM_DATADIR}/resources.pak
             DESTINATION bin)
-    INSTALL(DIRECTORY
-          ${CHROMIUM_DATADIR}/themes
-        DESTINATION
-            bin )
     INSTALL(DIRECTORY ${CHROMIUM_DATADIR}/locales
         DESTINATION bin)
     INSTALL(DIRECTORY ${CHROMIUM_DATADIR}/resources
