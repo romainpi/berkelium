@@ -90,6 +90,14 @@ struct WeakString {
         return ret;
     }
 
+    inline static WeakString<CharType> point_to(const CharType *input_data) {
+        WeakString<CharType> ret;
+        ret.mData = input_data;
+        for (ret.mLength = 0; input_data[ret.mLength]; ++ret.mLength) {
+        }
+        return ret;
+    }
+
     inline static WeakString<CharType> empty() {
         WeakString<CharType> ret;
         ret.mData = NULL;

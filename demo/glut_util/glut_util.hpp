@@ -51,6 +51,7 @@
 
 #include "berkelium/Berkelium.hpp"
 #include "berkelium/Window.hpp"
+#include "berkelium/ScriptUtil.hpp"
 
 #include <cstring>
 #include <string>
@@ -496,6 +497,42 @@ public:
             std::wcout << L"        Selected Text: " << args.selectedText << std::endl;
     }
 
+    virtual void onJavascriptCallback(Window *win, void* replyMsg, URLString url, WideString funcName, Script::Variant *args, size_t numArgs) {
+        std::cout << "*** onJavascriptCallback at URL " << url << ", "
+                  << (replyMsg?"synchronous":"async") << std::endl;
+        std::wcout << L"    Function name: " << funcName << std::endl;
+        for (size_t i = 0; i < numArgs; i++) {
+            WideString jsonStr = toJSON(args[i]);
+            std::wcout << L"    Argument " << i << ": ";
+            if (args[i].type() == Script::Variant::JSSTRING) {
+                std::wcout << L"(string) " << args[i].toString() << std::endl;
+            } else {
+                std::wcout << jsonStr << std::endl;
+            }
+            Script::toJSON_free(jsonStr);
+        }
+        if (replyMsg) {
+            win->synchronousScriptReturn(replyMsg, numArgs ? args[0] : Script::Variant());
+        }
+    }
+
+    /** Display a file chooser dialog, if necessary. The value to be returned should go ______.
+     * \param win  Window instance that fired this event.
+     * \param mode  Type of file chooser expected. See FileChooserType.
+     * \param title  Title for dialog. "Open" or "Save" should be used if empty.
+     * \param defaultFile  Default file to select in dialog.
+     */
+    virtual void onRunFileChooser(Window *win, int mode, WideString title, FileString defaultFile) {
+        std::wcout << L"*** onRunFileChooser type " << mode << L", title " << title << L":" << std::endl;
+#ifdef _WIN32
+        std::wcout <<
+#else
+        std::cout <<
+#endif
+            defaultFile << std::endl;
+
+        win->filesSelected(NULL);
+    }
 
     virtual void onExternalHost(
         Berkelium::Window *win,

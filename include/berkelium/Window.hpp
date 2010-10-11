@@ -36,13 +36,16 @@
 #include <vector>
 
 #include "berkelium/WeakString.hpp"
-#include "berkelium/Context.hpp"
-#include "berkelium/Rect.hpp"
 
 namespace Berkelium {
 
 class Widget;
 class WindowDelegate;
+class Context;
+
+namespace Script{
+class Variant;
+}
 
 enum KeyModifier {
     SHIFT_MOD      = 1 << 0,
@@ -292,6 +295,32 @@ public:
 
     /** Request all data be selected. */
     virtual void selectAll()=0;
+
+    /** Call after the file chooser has finished. Cancels if |files| is NULL or empty.
+     * \param files  List of FileString's terminated with empty FileString.
+     */
+    virtual void filesSelected(FileString *files)=0;
+
+    /** Call after the file chooser has finished. Cancels if |files| is NULL or empty.
+     * Note: This *MUST* be called after onJavascriptCallback is called with synchronous.
+     * If not called, the owning RenderViewHost will no longer run scripts.
+     *
+     * \param handle  Opaque |replyMsg| passed in WindowDelegate::onJavascriptCallback
+     * \param result  Javascript value to return.
+     */
+    virtual void synchronousScriptReturn(void *handle, const Script::Variant &result)=0;
+
+    /** Binds a proxy function in Javascript to call */
+    virtual void bind(WideString lvalue, const Script::Variant &rvalue)=0;
+
+    /** Binds a proxy function in Javascript at the beginning of each page load */
+    virtual void addBindOnStartLoading(WideString lvalue, const Script::Variant &rvalue)=0;
+
+    /** Runs code in Javascript at the beginning of each page load */
+    virtual void addEvalOnStartLoading(WideString script)=0;
+
+    /** Removes all bindings in Javascript */
+    virtual void clearStartLoading()=0;
 
 protected:
     void appendWidget(Widget *wid) {

@@ -38,7 +38,12 @@
 #include "Root.hpp"
 #include "berkelium/WindowDelegate.hpp"
 #include "berkelium/Cursor.hpp"
+#include "berkelium/Context.hpp"
+#include "berkelium/Rect.hpp"
+#include "berkelium/ScriptVariant.hpp"
+#include "ScriptUtilImpl.hpp"
 
+#include "app/message_box_flags.h"
 #include "base/file_util.h"
 #include "base/file_version_info.h"
 #include "base/values.h"
@@ -66,10 +71,22 @@
 
 namespace Berkelium {
 //WindowImpl temp;
+
+static const char letters[] = "abcdef0123456789";
+
 void WindowImpl::init(SiteInstance*site, int routing_id) {
     mId = routing_id;
     received_page_title_=false;
     is_crashed_=false;
+    mIsReentrant = false;
+    mUniqueId = std::wstring();
+    for (int i = 0; i < 32; i++) {
+        if (i == 8 || i == 12 || i == 16 || i == 20) {
+            mUniqueId.push_back('-');
+        }
+        mUniqueId.push_back(letters[rand() % (sizeof(letters)-1)]);
+    }
+	
     mRenderViewHost = RenderViewHostFactory::Create(
         site,
         this,
@@ -159,6 +176,133 @@ Widget *WindowImpl::getWidget() const {
     return static_cast<RenderWidget*>(view());
 }
 
+
+void WindowImpl::bind(WideString lvalue, const Script::Variant &rvalue) {
+    std::string jsonStr;
+    if (host() && Berkelium::Script::toJSON(rvalue, &jsonStr)) {
+        host()->ExecuteJavascriptInWebFrame(
+            std::wstring(), 
+            lvalue.get<std::wstring>() + L" = " + UTF8ToWide(jsonStr) + L";\n");
+    }
+}
+
+void WindowImpl::addBindOnStartLoading(WideString lvalue, const Script::Variant &rvalue) {
+    std::string jsonStr;
+    if (Berkelium::Script::toJSON(rvalue, &jsonStr)) {
+        mBindingJavascript += lvalue;
+        mBindingJavascript += L" = ";
+        mBindingJavascript += UTF8ToWide(jsonStr);
+        mBindingJavascript += L";\n";
+    }
+}
+
+void WindowImpl::addEvalOnStartLoading(WideString script) {
+    mBindingJavascript += script;
+    mBindingJavascript += L"\n";
+}
+
+void WindowImpl::clearStartLoading() {
+    mBindingJavascript = L"";
+}
+
+void WindowImpl::evalInitialJavascript() {
+    const char *berkeliumFunc = 
+        "if(!window.Berkelium){(function(bkID){"
+        "  var bkCallbacks = {};"
+        "  function syncAsyncCall(name, args, issync){"
+        "    var msg={'callee': ''+name};"
+        "    msg.arguments = [];"
+        "    for (var i = 0; i < args.length; i++) {"
+        "      msg.arguments[i] = args[i];"
+        "    }"
+        "    var msgStr = JSON.stringify(msg);"
+        "    var id = 'urn:uuid:' + bkID;"
+        "    if (!issync) {"
+        "      window.externalHost.postMessage(msgStr, id);"
+        "    } else {"
+        "      return JSON.parse(prompt(msgStr, id));"
+        "    }"
+        "  }"
+        "  window.Berkelium = function(operation, name, args){"
+        "    switch (operation) {"
+        "    case 'asyncCall':"
+        "      return syncAsyncCall(name, args, false);"
+        "    case 'syncCall':"
+        "      return syncAsyncCall(name, args, true);"
+        "    case 'callback':"
+        "      bkCallbacks[name].apply(this, args);"
+        "      break;"
+        "    case 'setCallback':"
+        "      bkCallbacks[name] = args;"
+        "      break;"
+        "    case 'unsetCallback':"
+        "      delete bkCallbacks[name];"
+        "      break;"
+        "    }"
+        "  };"
+        "})('";
+    std::wstring wideScript = UTF8ToWide(berkeliumFunc);
+    wideScript += mUniqueId + L"');}\n";
+    wideScript += mBindingJavascript;
+    host()->ExecuteJavascriptInWebFrame(std::wstring(), wideScript);
+}
+
+bool WindowImpl::javascriptCall(IPC::Message* reply_msg, URLString url, const std::wstring &args) {
+    if (!mDelegate) {
+        return false;
+    }
+    WideString thisFunc = WideString::point_to(L"WindowImpl::javascriptCall");
+    scoped_ptr<Value> val (Script::fromJSON(WideToUTF8(args)));
+    if (!val.get() || !val->IsType(Value::TYPE_DICTIONARY)) {
+        mDelegate->onConsoleMessage(this, WideString::point_to(L"Argument is not a dictionary."),
+                                    thisFunc, 1);
+        return false;
+    }
+    DictionaryValue *dict = static_cast<DictionaryValue*>(val.get());
+    std::string funcNameUTF8;
+    std::wstring funcName = UTF8ToWide(funcNameUTF8);
+    if (!dict->GetString(L"callee", &funcName)) {
+        mDelegate->onConsoleMessage(this, WideString::point_to(L"callee is not a string."),
+                                    thisFunc, 2);
+        return false;
+    }
+    ListValue *listValue = NULL;
+    if (!dict->GetList(L"arguments", &listValue)) {
+        mDelegate->onConsoleMessage(this, WideString::point_to(L"arguments is not an array."),
+                                    thisFunc, 3);
+        return false;
+    }
+    scoped_array<Script::Variant> list (new Script::Variant[listValue->GetSize()]);
+    for (size_t i = 0; i < listValue->GetSize(); i++) {
+        Value *element;
+        if (!listValue->Get(i, &element)) {
+            mDelegate->onConsoleMessage(this, WideString::point_to(L"a list element does not exist."),
+                                        thisFunc, 4);
+            return false;
+        }
+        if (!valueToVariant(element, list[i])) {
+            mDelegate->onConsoleMessage(this, WideString::point_to(L"Unable to convert value to variant."),
+                                        thisFunc, 5);
+            return false;
+        }
+    }
+    mDelegate->onJavascriptCallback(
+        this, reply_msg, url,
+        WideString::point_to(funcName),
+        list.get(), listValue->GetSize());
+    return true;
+}
+
+void WindowImpl::synchronousScriptReturn(void* reply_msg, const Script::Variant &result) {
+    std::string jsonStr = "null";
+    if (host()) {
+        bool success = Berkelium::Script::toJSON(result, &jsonStr);
+        host()->JavaScriptMessageBoxClosed(
+            static_cast<IPC::Message*>(reply_msg),
+            success,
+            UTF8ToWide(jsonStr));
+    }
+}
 
 void WindowImpl::setTransparent(bool istrans) {
     SkBitmap bg;
@@ -313,8 +457,10 @@ void WindowImpl::SetContainerBounds (const gfx::Rect &rc) {
 }
 
 void WindowImpl::executeJavascript(WideString javascript) {
-    if (host()) {
+    if (host() && !mIsReentrant) {
+        mIsReentrant = true;
         host()->ExecuteJavascriptInWebFrame(std::wstring(), javascript.get<std::wstring>());
+        mIsReentrant = false;
     }
 }
 
@@ -463,6 +609,8 @@ bool WindowImpl::CreateRenderViewForRenderManager(
 
 void WindowImpl::DidStartLoading() {
     SetIsLoading(true);
+
+    evalInitialJavascript();
 
     if (mDelegate) {
         mDelegate->onLoadingStateChanged(this, true);
@@ -735,6 +883,11 @@ void WindowImpl::ProcessExternalHostMessage(const std::string& message,
                                             const std::string& origin,
                                             const std::string& target)
 {
+    if (target == "urn:uuid:" + WideToUTF8(mUniqueId)) {
+        javascriptCall(NULL, URLString::point_to(origin), UTF8ToWide(message));
+        return;
+    }
+
     if (mDelegate) {
         std::wstring wide_message(UTF8ToWide(message));
         mDelegate->onExternalHost(this,
@@ -844,6 +997,42 @@ void WindowImpl::ShowRepostFormWarningDialog() {
 }
 
 void WindowImpl::RunFileChooser(const ViewHostMsg_RunFileChooser_Params&params) {
+  if (mDelegate) {
+      std::wstring title = UTF16ToWideHack(params.title);
+      const FilePath::StringType &filepath = params.default_file_name.value();
+      int mode;
+      switch (params.mode) {
+        case ViewHostMsg_RunFileChooser_Params::OpenMultiple:
+          mode = FileOpenMultiple;
+          break;
+// Not implemented until chromium7
+/*
+        case ViewHostMsg_RunFileChooser_Params::OpenFolder:
+          mode = FileOpenFolder;
+          break;
+*/
+        case ViewHostMsg_RunFileChooser_Params::Save:
+          mode = FileSaveAs;
+          break;
+        default:
+          mode = FileOpen;
+          break;
+      }
+      mDelegate->onRunFileChooser(this, mode, 
+                                  WideString::point_to(title),
+                                  FileString::point_to(filepath));
+  }
+}
+
+void WindowImpl::filesSelected(FileString *listOfFiles) {
+    std::vector<FilePath> files;
+    // Empty list means cancelled (default)
+    if (listOfFiles) {
+        for (size_t i = 0; listOfFiles[i].length(); i++) {
+            files.push_back(FilePath(listOfFiles[i].get<FilePath::StringType>()));
+        }
+    }
+    host()->FilesSelectedInChooser(files);
 /* Don't have access to a top level window, since this could be run in a
    windowless environment. Perhaps we need a function to return a native
    window handle or NULL if it does not want to allow file choosers.
@@ -896,7 +1085,6 @@ void WindowImpl::DomOperationResponse(const std::string& json_string,
                                        int automation_id) {
 }
 
-
 void WindowImpl::RunJavaScriptMessage(
     const std::wstring& message,
     const std::wstring& default_prompt,
@@ -908,14 +1096,36 @@ void WindowImpl::RunJavaScriptMessage(
     bool success = false;
     std::wstring promptstr;
 
+    if (default_prompt == L"urn:uuid:" + mUniqueId
+            && flags == MessageBoxFlags::kIsJavascriptPrompt) {
+        GURL origin = frame_url.GetOrigin();
+        const std::string &urlspec = origin.spec();
+        if (!javascriptCall(reply_msg, URLString::point_to(urlspec), message)) {
+            synchronousScriptReturn(reply_msg, Script::Variant());
+        }
+        return;
+    }
+
     if (mDelegate) {
         std::string frame_url_str (frame_url.spec());
         WideString prompt = WideString::empty();
+		int bkflags = 0;
+		switch (flags) {
+		case MessageBoxFlags::kIsJavascriptConfirm:
+			bkflags = JavascriptConfirm;
+			break;
+		case MessageBoxFlags::kIsJavascriptPrompt:
+			bkflags = JavascriptPrompt;
+			break;
+		default:
+			bkflags = JavascriptAlert;
+			break;
+		}
         mDelegate->onScriptAlert(
             this, WideString::point_to(message),
             WideString::point_to(default_prompt),
             URLString::point_to(frame_url_str),
-            flags, success, prompt
+            bkflags, success, prompt
         );
         prompt.get(promptstr);
         mDelegate->freeLastScriptAlert(prompt);

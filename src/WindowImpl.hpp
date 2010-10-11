@@ -52,6 +52,7 @@ class RenderWidget;
 class MemoryRenderViewHost;
 struct Rect;
 class NavigationController;
+class ContextImpl;
 
 class WindowImpl :
         public Window,
@@ -133,6 +134,8 @@ public:
     virtual void del();
     virtual void selectAll();
 
+    virtual void filesSelected(FileString *files);
+
     bool doNavigateTo(
         const GURL &newURL,
         const GURL &referrerURL,
@@ -164,6 +167,16 @@ public:
 
 	// Called by NavigationController.
 	void NavigationEntryCommitted(NavigationController::LoadCommittedDetails* details);
+
+    void synchronousScriptReturn(void *handle, const Script::Variant &returnValue);
+    void bind(WideString lvalue, const Script::Variant &rvalue);
+    void addBindOnStartLoading(WideString, const Script::Variant&);
+    void addEvalOnStartLoading(WideString);
+    void clearStartLoading();
+
+    void evalInitialJavascript();
+
+    bool javascriptCall(IPC::Message *sync, URLString msg, const std::wstring &args);
 
 protected:
     ContextImpl *getContextImpl() const;
@@ -347,9 +360,15 @@ private:
     std::map<int, WindowImpl*> mNewlyCreatedWindows;
     std::map<int, RenderWidget*> mNewlyCreatedWidgets;
 
+    std::set<std::string> mPermittedNames;
+	std::wstring mBindingJavascript;
+	std::wstring mUniqueId;
+
     bool received_page_title_;
     bool is_loading_;
     bool is_crashed_;
+
+	bool mIsReentrant;
 
     // Manages creation and swapping of render views.
     RenderViewHost *mRenderViewHost;
