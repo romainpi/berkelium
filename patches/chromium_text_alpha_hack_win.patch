@@ -1,7 +1,7 @@
 Index: third_party/WebKit/WebCore/platform/graphics/chromium/FontChromiumWin.cpp
 ===================================================================
---- third_party/WebKit/WebCore/platform/graphics/chromium/FontChromiumWin.cpp (revision 60728)
-+++ third_party/WebKit/WebCore/platform/graphics/chromium/FontChromiumWin.cpp (working copy)
+--- third_party/WebKit/WebCore/platform/graphics/chromium/FontChromiumWin.cpp	(revision 59685)
++++ third_party/WebKit/WebCore/platform/graphics/chromium/FontChromiumWin.cpp	(working copy)
 @@ -47,6 +47,167 @@
  
  #include <windows.h>
@@ -202,15 +202,15 @@ Index: third_party/WebKit/WebCore/platform/graphics/chromium/FontChromiumWin.cpp
      int y = lroundf(m_point.y() - m_font->ascent());
  
 +    COLORREF savedTextColor = GetTextColor(m_hdc);
-+    
++
 +    IntRect estBounds = estimateTextBounds();
 +    RECT boundsRect = { estBounds.x(), estBounds.y(), estBounds.right(), estBounds.bottom() };
 +    bool preserveAlpha = true;
 +
      // If there is a non-blur shadow and both the fill color and shadow color 
      // are opaque, handle without skia. 
-     IntSize shadowSize;
-     int shadowBlur;
+     FloatSize shadowSize;
+     float shadowBlur;
      Color shadowColor;
      if (m_graphicsContext->getShadow(shadowSize, shadowBlur, shadowColor)) {
 +        boundsRect.right += shadowSize.width();
@@ -252,4 +252,3 @@ Index: third_party/WebKit/WebCore/platform/graphics/chromium/FontChromiumWin.cpp
  {
      // This case really really sucks. There is no convenient way to estimate
      // the bounding box. So we run Uniscribe twice. If we find this happens a
-

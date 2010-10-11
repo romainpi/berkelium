@@ -142,11 +142,6 @@ NavigationController::NavigationController(WindowImpl* contents,
 NavigationController::~NavigationController() {
   DiscardNonCommittedEntriesInternal();
 
-  NotificationService::current()->Notify(
-      NotificationType::TAB_CLOSED,
-      Source<NavigationController>(this),
-      NotificationService::NoDetails());
-
   // When we go away, the session storage namespace will no longer be reachable.
   profile_->GetWebKitContext()->DeleteSessionStorageNamespace(
       session_storage_namespace_id_);
@@ -197,11 +192,6 @@ void NavigationController::ReloadInternal(bool check_for_repost,
     // The user is asking to reload a page with POST data. Prompt to make sure
     // they really want to do this. If they do, the dialog will call us back
     // with check_for_repost = false.
-    NotificationService::current()->Notify(
-        NotificationType::REPOST_WARNING_SHOWN,
-        Source<NavigationController>(this),
-        NotificationService::NoDetails());
-
     pending_reload_ = reload_type;
     tab_contents_->ShowRepostFormWarningDialog();
   } else {
@@ -286,10 +276,6 @@ void NavigationController::LoadEntry(NavigationEntry* entry) {
   // result in a download or a 'no content' response (e.g., a mailto: URL).
   DiscardNonCommittedEntriesInternal();
   pending_entry_ = entry;
-  NotificationService::current()->Notify(
-      NotificationType::NAV_ENTRY_PENDING,
-      Source<NavigationController>(this),
-      NotificationService::NoDetails());
   NavigateToPendingEntry(NO_RELOAD);
 }
 
@@ -1020,9 +1006,6 @@ void NavigationController::InsertOrReplaceEntry(NavigationEntry* entry,
 
 void NavigationController::SetWindowID(const SessionID& id) {
   window_id_ = id;
-  NotificationService::current()->Notify(NotificationType::TAB_PARENTED,
-                                         Source<NavigationController>(this),
-                                         NotificationService::NoDetails());
 }
 
 void NavigationController::NavigateToPendingEntry(ReloadType reload_type) {
@@ -1042,17 +1025,6 @@ void NavigationController::NotifyNavigationEntryCommitted(
     LoadCommittedDetails* details,
     int extra_invalidate_flags) {
   details->entry = GetActiveEntry();
-  NotificationDetails notification_details =
-      Details<LoadCommittedDetails>(details);
-
-  // TODO(pkasting): http://b/1113079 Probably these explicit notification paths
-  // should be removed, and interested parties should just listen for the
-  // notification below instead.
-
-  NotificationService::current()->Notify(
-      NotificationType::NAV_ENTRY_COMMITTED,
-      Source<NavigationController>(this),
-      notification_details);
 }
 
 // static
@@ -1081,9 +1053,6 @@ void NavigationController::NotifyEntryChanged(const NavigationEntry* entry,
   EntryChangedDetails det;
   det.changed_entry = entry;
   det.index = index;
-  NotificationService::current()->Notify(NotificationType::NAV_ENTRY_CHANGED,
-                                         Source<NavigationController>(this),
-                                         Details<EntryChangedDetails>(&det));
 }
 
 void NavigationController::FinishRestore(int selected_index,

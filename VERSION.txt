@@ -1,4 +1,4 @@
-tested = mac linux
-win = 6.0.472.0
-mac = 6.0.472.30
-linux = 6.0.472.30
+tested = win
+win = 6.0.472.63
+mac = 6.0.472.63
+linux = 6.0.472.63

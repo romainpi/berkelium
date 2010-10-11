@@ -399,10 +399,14 @@ bool RenderWidget::ContainsNativeView(gfx::NativeView native_view) const {
 }
 
 void RenderWidget::focus() {
-    mHost->Focus();
+    if (mHost) {
+        mHost->Focus();
+	}
 }
 void RenderWidget::unfocus() {
-    mHost->Blur();
+    if (mHost) {
+        mHost->Blur();
+	}
 }
 
 bool RenderWidget::hasFocus() const {
@@ -435,7 +439,9 @@ void RenderWidget::mouseMoved(int xPos, int yPos) {
     mMouseX=xPos;
     mMouseY=yPos;
 	event.button = WebKit::WebMouseEvent::ButtonNone;
-    GetRenderWidgetHost()->ForwardMouseEvent(event);
+	if (GetRenderWidgetHost()) {
+		GetRenderWidgetHost()->ForwardMouseEvent(event);
+	}
 }
 
 void RenderWidget::mouseWheel(int scrollX, int scrollY) {
@@ -454,7 +460,9 @@ void RenderWidget::mouseWheel(int scrollX, int scrollY) {
 	event.wheelTicksY = scrollY;
 	event.scrollByPage = false;
 
-    GetRenderWidgetHost()->ForwardWheelEvent(event);
+	if (GetRenderWidgetHost()) {
+		GetRenderWidgetHost()->ForwardWheelEvent(event);
+	}
 }
 
 void RenderWidget::mouseButton(unsigned int mouseButton, bool down) {
@@ -497,7 +505,9 @@ void RenderWidget::mouseButton(unsigned int mouseButton, bool down) {
 	event.windowY = mMouseY;
 	event.globalX = mMouseX+mRect.x();
 	event.globalY = mMouseY+mRect.y();
-    GetRenderWidgetHost()->ForwardMouseEvent(event);
+	if (GetRenderWidgetHost()) {
+		GetRenderWidgetHost()->ForwardMouseEvent(event);
+	}
 }
 
 void RenderWidget::keyEvent(bool pressed, int modifiers, int vk_code, int scancode){
@@ -525,8 +535,9 @@ void RenderWidget::keyEvent(bool pressed, int modifiers, int vk_code, int scanco
 
 	event.setKeyIdentifierFromWindowsKeyCode();
 
-	GetRenderWidgetHost()->ForwardKeyboardEvent(event);
-
+	if (GetRenderWidgetHost()) {
+		GetRenderWidgetHost()->ForwardKeyboardEvent(event);
+	}
 	// keep track of persistent modifiers.
     unsigned int test=(WebKit::WebInputEvent::LeftButtonDown|WebKit::WebInputEvent::MiddleButtonDown|WebKit::WebInputEvent::RightButtonDown);
 	mModifiers = ((mModifiers&test) |  (event.modifiers& (Berkelium::SHIFT_MOD|Berkelium::CONTROL_MOD|Berkelium::ALT_MOD|Berkelium::META_MOD)));
@@ -536,6 +547,9 @@ void RenderWidget::keyEvent(bool pressed, int modifiers, int vk_code, int scanco
 void RenderWidget::textEvent(const wchar_t * text, size_t textLength) {
 	// generate one of these events for each lengthCap chunks.
 	// 1 less because we need to null terminate.
+    if (!GetRenderWidgetHost()) {
+		return;
+	}
 	const size_t lengthCap = WebKit::WebKeyboardEvent::textLengthCap-1;
 	NativeWebKeyboardEvent event;
 	zeroWebEvent(event,mModifiers, WebKit::WebInputEvent::Char);

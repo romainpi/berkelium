@@ -166,7 +166,9 @@ void WindowImpl::setTransparent(bool istrans) {
         bg.setConfig(SkBitmap::kA1_Config, 1, 1);
         bg.setPixels(&bitmap);
     }
-    host()->Send(new ViewMsg_SetBackground(host()->routing_id(),bg));
+    if (host()) {
+        host()->Send(new ViewMsg_SetBackground(host()->routing_id(),bg));
+    }
 }
 
 void WindowImpl::focus() {
@@ -179,7 +181,9 @@ void WindowImpl::focus() {
         (*iter)->unfocus();
         ++iter;
     }
-    getWidget()->focus();
+    if (getWidget()) {
+        getWidget()->focus();
+    }
 }
 void WindowImpl::unfocus() {
     FrontToBackIter iter = frontIter();
@@ -268,11 +272,15 @@ void WindowImpl::refresh() {
 }
 
 void WindowImpl::stop() {
-  host()->Stop();
+  if (host()) {
+    host()->Stop();
+  }
 }
 
 void WindowImpl::adjustZoom(int mode) {
-  host()->Zoom((PageZoom::Function)mode);
+  if (host()) {
+    host()->Zoom((PageZoom::Function)mode);
+  }
 }
 
 void WindowImpl::goBack() {
@@ -435,7 +443,7 @@ bool WindowImpl::CreateRenderViewForRenderManager(
   //  renderer process remotely, calling CreateRenderView will crash the
   //  renderer by attempting to create a second copy of the window
   if (!remote_view_exists) {
-      if (!render_view_host->CreateRenderView(Root::getSingleton().getDefaultRequestContext(), string16()))
+      if (!render_view_host->CreateRenderView(string16()))
       return false;
   }
 
@@ -899,7 +907,9 @@ void WindowImpl::RunJavaScriptMessage(
         prompt.get(promptstr);
         mDelegate->freeLastScriptAlert(prompt);
     }
-    host()->JavaScriptMessageBoxClosed(reply_msg, success, promptstr);
+    if (host()) {
+        host()->JavaScriptMessageBoxClosed(reply_msg, success, promptstr);
+    }
 }
 
 
