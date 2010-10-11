@@ -814,6 +814,14 @@ void WindowImpl::UpdateState(RenderViewHost* rvh,
   mController->NotifyEntryChanged(entry, entry_index);
 }
 
+void WindowImpl::NavigationEntryCommitted(NavigationController::LoadCommittedDetails* details) {
+	GURL url = details->entry->url();
+	const std::string&spec=url.spec();
+	if (mDelegate) {
+		mDelegate->onAddressBarChanged(this, URLString::point_to(spec));
+	}
+}
+
 void WindowImpl::UpdateTitle(RenderViewHost* rvh,
                               int32 page_id, const std::wstring& title) {
   // If we have a title, that's a pretty good indication that we've started

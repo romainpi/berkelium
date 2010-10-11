@@ -1025,6 +1025,7 @@ void NavigationController::NotifyNavigationEntryCommitted(
     LoadCommittedDetails* details,
     int extra_invalidate_flags) {
   details->entry = GetActiveEntry();
+  tab_contents()->NavigationEntryCommitted(details);
 }
 
 // static

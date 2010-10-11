@@ -161,6 +161,10 @@ public:
         const std::wstring& source_id);
 
     void UpdateCursor(const WebCursor& cursor);
+
+	// Called by NavigationController.
+	void NavigationEntryCommitted(NavigationController::LoadCommittedDetails* details);
+
 protected:
     ContextImpl *getContextImpl() const;
 

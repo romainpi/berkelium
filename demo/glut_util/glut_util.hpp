@@ -365,6 +365,10 @@ public:
         std::wcout << L"Error! " << error << std::endl;
     }
 
+    virtual void onAddressBarChanged(Berkelium::Window *win, Berkelium::URLString newURL) {
+		std::cout << "*** onAddressBarChanged to "<<newURL<<std::endl;
+	}
+
     virtual void onExternalHost(
         Berkelium::Window *win,
         Berkelium::WideString message,

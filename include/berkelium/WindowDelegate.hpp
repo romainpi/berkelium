@@ -182,7 +182,10 @@ public:
      */
     virtual void onNavigationRequested(Window *win, URLString newUrl,
                                        URLString referrer, bool isNewWindow,
-                                       bool &cancelDefaultAction) {}
+                                       bool &cancelDefaultAction) {
+        // Override to permit popup windows only if you support onCreatedWindow.
+        if (isNewWindow) cancelDefaultAction = true;
+    }
     /**
      * Notifies if a page is loading.
      * This callback is only useful for deciding whether to show a loading
