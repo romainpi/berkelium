@@ -69,6 +69,8 @@ public:
 
     Rect getRect() const;
 
+    void textEvent(WideString text);
+
 public: /******* RenderWidgetHostView *******/
 
   // Perform all the initialization steps necessary for this object to represent

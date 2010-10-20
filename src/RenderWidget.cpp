@@ -545,12 +545,24 @@ void RenderWidget::keyEvent(bool pressed, int modifiers, int vk_code, int scanco
 
 
 void RenderWidget::textEvent(const wchar_t * text, size_t textLength) {
+    textEvent(WideString::point_to(text, textLength));
+}
+
+void RenderWidget::textEvent(WideString wideText) {
 	// generate one of these events for each lengthCap chunks.
 	// 1 less because we need to null terminate.
     if (!GetRenderWidgetHost()) {
 		return;
 	}
-	const size_t lengthCap = WebKit::WebKeyboardEvent::textLengthCap-1;
+
+    string16 text16;
+    if (!WideToUTF16(wideText.data(), wideText.length(), &text16)) {
+        // error in conversion.
+        return;
+    }
+
+    // assert(WebKit::WebKeyboardEvent::textLengthCap > 2);
+
 	NativeWebKeyboardEvent event;
 	zeroWebEvent(event,mModifiers, WebKit::WebInputEvent::Char);
 	event.isSystemKey = false;
@@ -558,19 +570,17 @@ void RenderWidget::textEvent(const wchar_t * text, size_t textLength) {
 	event.nativeKeyCode = 0;
 	event.keyIdentifier[0]=0;
 	size_t i;
-	for (i = 0; i + lengthCap < textLength; i+=lengthCap) {
-		memcpy(event.text, text+i, lengthCap*sizeof(WebKit::WebUChar));
-		event.text[lengthCap]=0;
-		memcpy(event.unmodifiedText, text+i, lengthCap*sizeof(WebKit::WebUChar));
-		event.unmodifiedText[lengthCap]=0;
-        GetRenderWidgetHost()->ForwardKeyboardEvent(event);
-	}
-	if (i < textLength) {
-		assert(textLength-i <= lengthCap);
-		memcpy(event.unmodifiedText, text+i, (textLength-i)*sizeof(WebKit::WebUChar));
-		memcpy(event.text, text+i, (textLength-i)*sizeof(WebKit::WebUChar));
-		event.text[textLength-i]=0;
-		event.unmodifiedText[textLength-i]=0;
+	for (i = 0; i < text16.length(); i++) {
+        event.text[0] = event.unmodifiedText[0] = text16[i];
+        if (event.text[0] >= 0xD800 && event.text[0] < 0xDC00 && i < text16.length() - 1) {
+            // Surrogate pairs are the only case with two utf-16 chars.
+            event.text[1] = event.unmodifiedText[1] = text16[i + 1];
+            event.text[2] = event.unmodifiedText[1] = 0;
+            i++;
+        } else {
+            // Otherwise, only send one at a time.
+            event.text[1] = event.unmodifiedText[1] = 0;
+        }
         GetRenderWidgetHost()->ForwardKeyboardEvent(event);
 	}
 }

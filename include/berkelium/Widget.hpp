@@ -34,6 +34,7 @@
 #define _BERKELIUM_WIDGET_HPP_
 
 #include "berkelium/Rect.hpp"
+#include "berkelium/WeakString.hpp"
 
 namespace Berkelium {
 
@@ -71,6 +72,8 @@ public:
 
     virtual Rect getRect() const=0;
     virtual void setPos(int x, int y)=0;
+
+    virtual void textEvent(WideString text)=0;
 };
 
 }

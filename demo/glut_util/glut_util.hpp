@@ -253,7 +253,7 @@ int mapGLUTModsToBerkeliumMods(int modifiers) {
  *  which cannot be handled directly via the textEvent method and must be
  *  handled using keyEvent instead.
  */
-unsigned int isASCIISpecialToBerkelium(unsigned char glut_char) {
+unsigned int isASCIISpecialToBerkelium(unsigned int glut_char) {
     unsigned char ASCII_BACKSPACE = 8;
     unsigned char ASCII_TAB       = 9;
     unsigned char ASCII_ESCAPE    = 27;
@@ -272,7 +272,13 @@ BK_KEYCODE_PRIOR = 0x21,
 BK_KEYCODE_NEXT = 0x22,
 BK_KEYCODE_END = 0x23,
 BK_KEYCODE_HOME = 0x24,
+BK_KEYCODE_LEFT = 0x25,
+BK_KEYCODE_UP = 0x26,
+BK_KEYCODE_RIGHT = 0x27,
+BK_KEYCODE_DOWN = 0x28,
 BK_KEYCODE_INSERT = 0x2D,
+BK_KEYCODE_DELETE = 0x2E
+
 };
 
 /** Given an input key from GLUT, convert it to a form that can be passed to
@@ -286,6 +292,10 @@ unsigned int mapGLUTKeyToBerkeliumKey(int glut_key) {
         MAP_VK(END, END);
         MAP_VK(PAGE_UP, PRIOR);
         MAP_VK(PAGE_DOWN, NEXT);
+        MAP_VK(LEFT, LEFT);
+        MAP_VK(RIGHT, RIGHT);
+        MAP_VK(UP, UP);
+        MAP_VK(DOWN, DOWN);
       default: return 0;
     }
 }
