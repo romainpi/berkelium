@@ -114,35 +114,51 @@ void reshape( int w, int h )
     glutPostRedisplay();
 }
 
-void keyboard( unsigned char key, int x, int y )
+void keyboard( unsigned char key_, int x, int y )
 {
+    unsigned int key = key_;
     if (key == 27) { // ESC
         delete bk_texture_window;
         Berkelium::destroy();
         exit(0);
     }
+    if (key == ']') { // unicode test
+        key = 0x6708; // Chinese character [moon].
+    }
+    if (key == '[') { // surrogate test
+        // The bug that occurs when backspacing this happens in standalone chrome too.
+        key = 0x201d1; // Chinese character [person + father], surrogate pair.
+    }
 
     // Some keys that come through this are actually special keys, despite being
     // represented as ASCII characters.
-    if (isASCIISpecialToBerkelium(key)) {
+    if (key == '\b' || key == '\r' || key == '\n' || key == ' ' || key == 127 ||
+        key >= 'a' && key <= 'z' || key >= 'A' && key <= 'Z') {
         bool pressed = true;
         int wvmods = mapGLUTModsToBerkeliumMods(glutGetModifiers());
-        int vk_code = key;
+        int vk_code = key == 127 ? BK_KEYCODE_DELETE : tolower(key);
         int scancode = 0;
 
         bk_texture_window->getWindow()->keyEvent(pressed, wvmods, vk_code, scancode);
     }
-    else { // Regular text can be sent via textEvent
+    if (!isASCIISpecialToBerkelium(key)) {
+        // Regular text can be sent via textEvent
         wchar_t outchars[2];
         outchars[0] = key;
         outchars[1] = 0;
         bk_texture_window->getWindow()->textEvent(outchars,1);
+        if (key == ';') {
+            wchar_t outchars[20] = L"Hello World! 123456";
+            bk_texture_window->getWindow()->textEvent(outchars,19);
+        }
     }
 
     glutPostRedisplay();
 }
 
 void special_keyboard(int key, int x, int y) {
+// Sample code for using wheel:
+/*
     if (key == GLUT_KEY_LEFT)
         bk_texture_window->getWindow()->mouseWheel(20, 0);
     else if (key == GLUT_KEY_RIGHT)
@@ -151,7 +167,9 @@ void special_keyboard(int key, int x, int y) {
         bk_texture_window->getWindow()->mouseWheel(0, 20);
     else if (key == GLUT_KEY_DOWN)
         bk_texture_window->getWindow()->mouseWheel(0, -20);
-    else {
+    else
+*/
+    {
         bool pressed = true;
         int wvmods = mapGLUTModsToBerkeliumMods(glutGetModifiers());
         int vk_code = mapGLUTKeyToBerkeliumKey(key);

@@ -47,6 +47,7 @@
 #include "chrome/browser/in_process_webkit/webkit_context.h"
 #include "chrome/browser/renderer_host/render_view_host.h"
 #include "chrome/browser/renderer_host/site_instance.h"
+#include "chrome/browser/renderer_preferences_util.h"
 #include "chrome/browser/tab_contents/tab_contents.h"
 #include "chrome/browser/dom_ui/dom_ui.h"
 #include "chrome/browser/dom_ui/dom_ui_factory.h"
@@ -166,7 +167,9 @@ void WindowImpl::setTransparent(bool istrans) {
         bg.setConfig(SkBitmap::kA1_Config, 1, 1);
         bg.setPixels(&bitmap);
     }
-    host()->Send(new ViewMsg_SetBackground(host()->routing_id(),bg));
+    if (host()) {
+        host()->Send(new ViewMsg_SetBackground(host()->routing_id(),bg));
+    }
 }
 
 void WindowImpl::focus() {
@@ -179,7 +182,9 @@ void WindowImpl::focus() {
         (*iter)->unfocus();
         ++iter;
     }
-    getWidget()->focus();
+    if (getWidget()) {
+        getWidget()->focus();
+    }
 }
 void WindowImpl::unfocus() {
     FrontToBackIter iter = frontIter();
@@ -268,11 +273,15 @@ void WindowImpl::refresh() {
 }
 
 void WindowImpl::stop() {
-  host()->Stop();
+  if (host()) {
+    host()->Stop();
+  }
 }
 
 void WindowImpl::adjustZoom(int mode) {
-  host()->Zoom((PageZoom::Function)mode);
+  if (host()) {
+    host()->Zoom((PageZoom::Function)mode);
+  }
 }
 
 void WindowImpl::goBack() {
@@ -512,7 +521,11 @@ RenderViewHostDelegate::BrowserIntegration* WindowImpl::GetBrowserIntegrationDel
 }
 
 RendererPreferences WindowImpl::GetRendererPrefs(Profile*) const {
-    return RendererPreferences();
+    RendererPreferences ret;
+    renderer_preferences_util::UpdateFromSystemSettings(
+        &ret, profile());
+    ret.browser_handles_top_level_requests = true;
+    return ret;
 }
 
 WebPreferences WindowImpl::GetWebkitPrefs() {
@@ -785,6 +798,14 @@ void WindowImpl::UpdateState(RenderViewHost* rvh,
   mController->NotifyEntryChanged(entry, entry_index);
 }
 
+void WindowImpl::NavigationEntryCommitted(NavigationController::LoadCommittedDetails* details) {
+	GURL url = details->entry->url();
+	const std::string&spec=url.spec();
+	if (mDelegate) {
+		mDelegate->onAddressBarChanged(this, URLString::point_to(spec));
+	}
+}
+
 void WindowImpl::UpdateTitle(RenderViewHost* rvh,
                               int32 page_id, const std::wstring& title) {
   // If we have a title, that's a pretty good indication that we've started
@@ -878,7 +899,9 @@ void WindowImpl::RunJavaScriptMessage(
         prompt.get(promptstr);
         mDelegate->freeLastScriptAlert(prompt);
     }
-    host()->JavaScriptMessageBoxClosed(reply_msg, success, promptstr);
+    if (host()) {
+        host()->JavaScriptMessageBoxClosed(reply_msg, success, promptstr);
+    }
 }
 
 
@@ -1130,6 +1153,7 @@ void WindowImpl::StartDragging(const WebDropData& drop_data,
                                const SkBitmap& image,
                                const gfx::Point& image_offset) {
     // TODO: Add dragging event
+    host()->DragSourceSystemDragEnded();
 }
 void WindowImpl::UpdateDragCursor(WebKit::WebDragOperation operation) {
     // TODO: Add dragging event

@@ -69,6 +69,8 @@ public:
 
     Rect getRect() const;
 
+    void textEvent(WideString text);
+
 public: /******* RenderWidgetHostView *******/
 
   // Perform all the initialization steps necessary for this object to represent
@@ -227,6 +229,7 @@ public: /******* RenderWidgetHostView *******/
 
 private:
     uint32 mModifiers;
+    int32 mButton;
     int32 mMouseX;
     int32 mMouseY;
 

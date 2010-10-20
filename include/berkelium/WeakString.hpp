@@ -99,19 +99,19 @@ struct WeakString {
 };
 
 template <class StrType, class CharType>
-inline StrType &operator+(const StrType&lhs, WeakString<CharType>&rhs) {
+inline StrType &operator+(const StrType&lhs, const WeakString<CharType>&rhs) {
     StrType temp;
     return lhs + rhs.get(temp);
 }
 
 template <class StrType, class CharType>
-inline StrType &operator+=(StrType&lhs, WeakString<CharType>&rhs) {
+inline StrType &operator+=(StrType&lhs, const WeakString<CharType>&rhs) {
     StrType temp;
     return lhs += rhs.get(temp);
 }
 
 template <class OstreamType, class CharType>
-inline OstreamType &operator<< (OstreamType&lhs, WeakString<CharType>&rhs) {
+inline OstreamType &operator<< (OstreamType&lhs, const WeakString<CharType>&rhs) {
     size_t length = rhs.length();
     const CharType *data = rhs.data();
     for (size_t i = 0; i < length; i++) {

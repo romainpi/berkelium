@@ -402,10 +402,14 @@ bool RenderWidget::ContainsNativeView(gfx::NativeView native_view) const {
 }
 
 void RenderWidget::focus() {
-    mHost->Focus();
+    if (mHost) {
+        mHost->Focus();
+	}
 }
 void RenderWidget::unfocus() {
-    mHost->Blur();
+    if (mHost) {
+        mHost->Blur();
+	}
 }
 
 bool RenderWidget::hasFocus() const {
@@ -430,15 +434,20 @@ void zeroWebEvent(T &event, int modifiers, WebKit::WebInputEvent::Type t) {
 
 void RenderWidget::mouseMoved(int xPos, int yPos) {
     WebKit::WebMouseEvent event;
-    zeroWebEvent(event,mModifiers,WebKit::WebInputEvent::MouseMove);
+    zeroWebEvent(event, mModifiers, WebKit::WebInputEvent::MouseMove);
 	event.x = xPos;
 	event.y = yPos;
 	event.globalX = xPos+mRect.x();
 	event.globalY = yPos+mRect.y();
     mMouseX=xPos;
     mMouseY=yPos;
-	event.button = WebKit::WebMouseEvent::ButtonNone;
-    GetRenderWidgetHost()->ForwardMouseEvent(event);
+
+	event.button = (WebKit::WebMouseEvent::Button)mButton;
+    event.clickCount = (mButton != (int32)WebKit::WebMouseEvent::ButtonNone);
+
+	if (GetRenderWidgetHost()) {
+		GetRenderWidgetHost()->ForwardMouseEvent(event);
+	}
 }
 
 void RenderWidget::mouseWheel(int scrollX, int scrollY) {
@@ -450,14 +459,18 @@ void RenderWidget::mouseWheel(int scrollX, int scrollY) {
 	event.windowY = mMouseY;
 	event.globalX = mMouseX+mRect.x();
 	event.globalY = mMouseY+mRect.y();
-	event.button = WebKit::WebMouseEvent::ButtonNone;
 	event.deltaX = scrollX; // PRHFIXME: want x and y scroll.
 	event.deltaY = scrollY;
 	event.wheelTicksX = scrollX; // PRHFIXME: want x and y scroll.
 	event.wheelTicksY = scrollY;
 	event.scrollByPage = false;
 
-    GetRenderWidgetHost()->ForwardWheelEvent(event);
+	event.button = (WebKit::WebMouseEvent::Button)mButton;
+    event.clickCount = (mButton != (int32)WebKit::WebMouseEvent::ButtonNone);
+
+	if (GetRenderWidgetHost()) {
+		GetRenderWidgetHost()->ForwardWheelEvent(event);
+	}
 }
 
 void RenderWidget::mouseButton(unsigned int mouseButton, bool down) {
@@ -479,7 +492,7 @@ void RenderWidget::mouseButton(unsigned int mouseButton, bool down) {
         mModifiers&=(~buttonChangeMask);
     }
     WebKit::WebMouseEvent event;
-    zeroWebEvent(event,mModifiers,down?WebKit::WebInputEvent::MouseDown:WebKit::WebInputEvent::MouseUp);
+    zeroWebEvent(event, mModifiers, down?WebKit::WebInputEvent::MouseDown:WebKit::WebInputEvent::MouseUp);
     switch(mouseButton) {
       case 0:
         event.button = WebKit::WebMouseEvent::ButtonLeft;
@@ -493,6 +506,9 @@ void RenderWidget::mouseButton(unsigned int mouseButton, bool down) {
     }
     if (down){
         event.clickCount=1;
+        this->mButton = event.button;
+    } else {
+        this->mButton = WebKit::WebMouseEvent::ButtonNone;
     }
 	event.x = mMouseX;
 	event.y = mMouseY;
@@ -500,7 +516,9 @@ void RenderWidget::mouseButton(unsigned int mouseButton, bool down) {
 	event.windowY = mMouseY;
 	event.globalX = mMouseX+mRect.x();
 	event.globalY = mMouseY+mRect.y();
-    GetRenderWidgetHost()->ForwardMouseEvent(event);
+	if (GetRenderWidgetHost()) {
+		GetRenderWidgetHost()->ForwardMouseEvent(event);
+	}
 }
 
 void RenderWidget::keyEvent(bool pressed, int modifiers, int vk_code, int scancode){
@@ -528,8 +546,9 @@ void RenderWidget::keyEvent(bool pressed, int modifiers, int vk_code, int scanco
 
 	event.setKeyIdentifierFromWindowsKeyCode();
 
-	GetRenderWidgetHost()->ForwardKeyboardEvent(event);
-
+	if (GetRenderWidgetHost()) {
+		GetRenderWidgetHost()->ForwardKeyboardEvent(event);
+	}
 	// keep track of persistent modifiers.
     unsigned int test=(WebKit::WebInputEvent::LeftButtonDown|WebKit::WebInputEvent::MiddleButtonDown|WebKit::WebInputEvent::RightButtonDown);
 	mModifiers = ((mModifiers&test) |  (event.modifiers& (Berkelium::SHIFT_MOD|Berkelium::CONTROL_MOD|Berkelium::ALT_MOD|Berkelium::META_MOD)));
@@ -537,29 +556,42 @@ void RenderWidget::keyEvent(bool pressed, int modifiers, int vk_code, int scanco
 
 
 void RenderWidget::textEvent(const wchar_t * text, size_t textLength) {
+    textEvent(WideString::point_to(text, textLength));
+}
+
+void RenderWidget::textEvent(WideString wideText) {
 	// generate one of these events for each lengthCap chunks.
 	// 1 less because we need to null terminate.
-	const size_t lengthCap = WebKit::WebKeyboardEvent::textLengthCap-1;
+    if (!GetRenderWidgetHost()) {
+		return;
+	}
+
+    string16 text16;
+    if (!WideToUTF16(wideText.data(), wideText.length(), &text16)) {
+        // error in conversion.
+        return;
+    }
+
+    // assert(WebKit::WebKeyboardEvent::textLengthCap > 2);
+
 	NativeWebKeyboardEvent event;
-	zeroWebEvent(event,mModifiers, WebKit::WebInputEvent::Char);
+	zeroWebEvent(event,mModifiers,WebKit::WebInputEvent::Char);
 	event.isSystemKey = false;
 	event.windowsKeyCode = 0;
 	event.nativeKeyCode = 0;
 	event.keyIdentifier[0]=0;
 	size_t i;
-	for (i = 0; i + lengthCap < textLength; i+=lengthCap) {
-		memcpy(event.text, text+i, lengthCap*sizeof(WebKit::WebUChar));
-		event.text[lengthCap]=0;
-		memcpy(event.unmodifiedText, text+i, lengthCap*sizeof(WebKit::WebUChar));
-		event.unmodifiedText[lengthCap]=0;
-        GetRenderWidgetHost()->ForwardKeyboardEvent(event);
-	}
-	if (i < textLength) {
-		assert(textLength-i <= lengthCap);
-		memcpy(event.unmodifiedText, text+i, (textLength-i)*sizeof(WebKit::WebUChar));
-		memcpy(event.text, text+i, (textLength-i)*sizeof(WebKit::WebUChar));
-		event.text[textLength-i]=0;
-		event.unmodifiedText[textLength-i]=0;
+	for (i = 0; i < text16.length(); i++) {
+        event.text[0] = event.unmodifiedText[0] = text16[i];
+        if (event.text[0] >= 0xD800 && event.text[0] < 0xDC00 && i < text16.length() - 1) {
+            // Surrogate pairs are the only case with two utf-16 chars.
+            event.text[1] = event.unmodifiedText[1] = text16[i + 1];
+            event.text[2] = event.unmodifiedText[1] = 0;
+            i++;
+        } else {
+            // Otherwise, only send one at a time.
+            event.text[1] = event.unmodifiedText[1] = 0;
+        }
         GetRenderWidgetHost()->ForwardKeyboardEvent(event);
 	}
 }
