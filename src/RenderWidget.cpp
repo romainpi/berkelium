@@ -431,14 +431,17 @@ void zeroWebEvent(T &event, int modifiers, WebKit::WebInputEvent::Type t) {
 
 void RenderWidget::mouseMoved(int xPos, int yPos) {
     WebKit::WebMouseEvent event;
-    zeroWebEvent(event,mModifiers,WebKit::WebInputEvent::MouseMove);
+    zeroWebEvent(event, mModifiers, WebKit::WebInputEvent::MouseMove);
 	event.x = xPos;
 	event.y = yPos;
 	event.globalX = xPos+mRect.x();
 	event.globalY = yPos+mRect.y();
     mMouseX=xPos;
     mMouseY=yPos;
-	event.button = WebKit::WebMouseEvent::ButtonNone;
+
+	event.button = (WebKit::WebMouseEvent::Button)mButton;
+    event.clickCount = (mButton != (int32)WebKit::WebMouseEvent::ButtonNone);
+
 	if (GetRenderWidgetHost()) {
 		GetRenderWidgetHost()->ForwardMouseEvent(event);
 	}
@@ -453,12 +456,14 @@ void RenderWidget::mouseWheel(int scrollX, int scrollY) {
 	event.windowY = mMouseY;
 	event.globalX = mMouseX+mRect.x();
 	event.globalY = mMouseY+mRect.y();
-	event.button = WebKit::WebMouseEvent::ButtonNone;
 	event.deltaX = scrollX; // PRHFIXME: want x and y scroll.
 	event.deltaY = scrollY;
 	event.wheelTicksX = scrollX; // PRHFIXME: want x and y scroll.
 	event.wheelTicksY = scrollY;
 	event.scrollByPage = false;
+
+	event.button = (WebKit::WebMouseEvent::Button)mButton;
+    event.clickCount = (mButton != (int32)WebKit::WebMouseEvent::ButtonNone);
 
 	if (GetRenderWidgetHost()) {
 		GetRenderWidgetHost()->ForwardWheelEvent(event);
@@ -484,7 +489,7 @@ void RenderWidget::mouseButton(unsigned int mouseButton, bool down) {
         mModifiers&=(~buttonChangeMask);
     }
     WebKit::WebMouseEvent event;
-    zeroWebEvent(event,mModifiers,down?WebKit::WebInputEvent::MouseDown:WebKit::WebInputEvent::MouseUp);
+    zeroWebEvent(event, mModifiers, down?WebKit::WebInputEvent::MouseDown:WebKit::WebInputEvent::MouseUp);
     switch(mouseButton) {
       case 0:
         event.button = WebKit::WebMouseEvent::ButtonLeft;
@@ -498,6 +503,9 @@ void RenderWidget::mouseButton(unsigned int mouseButton, bool down) {
     }
     if (down){
         event.clickCount=1;
+        this->mButton = event.button;
+    } else {
+        this->mButton = WebKit::WebMouseEvent::ButtonNone;
     }
 	event.x = mMouseX;
 	event.y = mMouseY;
@@ -564,7 +572,7 @@ void RenderWidget::textEvent(WideString wideText) {
     // assert(WebKit::WebKeyboardEvent::textLengthCap > 2);
 
 	NativeWebKeyboardEvent event;
-	zeroWebEvent(event,mModifiers, WebKit::WebInputEvent::Char);
+	zeroWebEvent(event,mModifiers,WebKit::WebInputEvent::Char);
 	event.isSystemKey = false;
 	event.windowsKeyCode = 0;
 	event.nativeKeyCode = 0;

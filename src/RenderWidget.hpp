@@ -227,6 +227,7 @@ public: /******* RenderWidgetHostView *******/
 
 private:
     uint32 mModifiers;
+    int32 mButton;
     int32 mMouseX;
     int32 mMouseY;
 

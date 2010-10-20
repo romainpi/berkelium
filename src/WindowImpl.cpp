@@ -47,6 +47,7 @@
 #include "chrome/browser/in_process_webkit/webkit_context.h"
 #include "chrome/browser/renderer_host/render_view_host.h"
 #include "chrome/browser/renderer_host/site_instance.h"
+#include "chrome/browser/renderer_preferences_util.h"
 #include "chrome/browser/tab_contents/tab_contents.h"
 #include "chrome/browser/dom_ui/dom_ui.h"
 #include "chrome/browser/dom_ui/dom_ui_factory.h"
@@ -520,7 +521,11 @@ RenderViewHostDelegate::BrowserIntegration* WindowImpl::GetBrowserIntegrationDel
 }
 
 RendererPreferences WindowImpl::GetRendererPrefs(Profile*) const {
-    return RendererPreferences();
+    RendererPreferences ret;
+    renderer_preferences_util::UpdateFromSystemSettings(
+        &ret, profile());
+    ret.browser_handles_top_level_requests = true;
+    return ret;
 }
 
 WebPreferences WindowImpl::GetWebkitPrefs() {
@@ -1169,6 +1174,7 @@ void WindowImpl::StartDragging(const WebDropData& drop_data,
                                const SkBitmap& image,
                                const gfx::Point& image_offset) {
     // TODO: Add dragging event
+    host()->DragSourceSystemDragEnded();
 }
 void WindowImpl::UpdateDragCursor(WebKit::WebDragOperation operation) {
     // TODO: Add dragging event
