@@ -58,6 +58,8 @@
 
 #define DEBUG_PAINT false
 
+using namespace Berkelium;
+
 /** Handles an onPaint call by mapping the results into an OpenGL texture. The
  *  first parameters are the same as Berkelium::WindowDelegate::onPaint.  The
  *  additional parameters and return value are:
@@ -371,13 +373,129 @@ public:
         }
     }
 
-    virtual void onLoadError(Berkelium::Window *win, Berkelium::WideString error) {
-        std::wcout << L"Error! " << error << std::endl;
+    virtual void onAddressBarChanged(Window *win, URLString newURL) {
+        std::cout << "*** onAddressBarChanged " << newURL << std::endl;
+    }
+    virtual void onStartLoading(Window *win, URLString newURL) {
+        std::cout << "*** onStartLoading " << newURL << std::endl;
+    }
+    virtual void onLoad(Window *win) {
+        std::wcout << L"*** onLoad " << std::endl;
+    }
+    virtual void onCrashedWorker(Window *win) {
+        std::wcout << L"*** onCrashedWorker " << std::endl;
+    }
+    virtual void onCrashedPlugin(Window *win, WideString pluginName) {
+        std::wcout << L"*** onCrashedPlugin " << pluginName << std::endl;
+    }
+    virtual void onProvisionalLoadError(Window *win, URLString url,
+                                        int errorCode, bool isMainFrame) {
+        std::cout << "*** onProvisionalLoadError " << url << ": " << errorCode;
+        if (isMainFrame) std::cout << " (main frame)";
+        std::cout << std::endl;
+    }
+    virtual void onConsoleMessage(Window *win, WideString message,
+                                  WideString sourceId, int line_no) {
+        std::wcout << L"*** onConsoleMessage " << message << L" from "
+                   << sourceId << L" line " << line_no << std::endl;
+    }
+    virtual void onScriptAlert(Window *win, WideString message,
+                              WideString defaultValue, URLString url,
+                              int flags, bool &success, WideString &value) {
+        std::wcout << L"*** onScriptAlert " << message << std::endl;
+    }
+    virtual void onNavigationRequested(Window *win, URLString newURL,
+                                       URLString referrer, bool isNewWindow,
+                                       bool &cancelDefaultAction) {
+        std::cout << "*** onNavigationRequested " << newURL << " by " << referrer
+                  << (isNewWindow?"  (new window)" : " (same window)") << std::endl;
+    }
+    virtual void onLoadingStateChanged(Window *win, bool isLoading) {
+        std::cout << "*** onLoadingStateChanged "
+                  << (isLoading?"started":"stopped") << std::endl;
+    }
+    virtual void onTitleChanged(Window *win, WideString title) {
+        std::wcout << L"*** onTitleChanged " << title << std::endl;
+    }
+    virtual void onTooltipChanged(Window *win, WideString text) {
+        std::wcout << L"*** onTooltipChanged " << text << std::endl;
+    }
+    virtual void onCrashed(Window *win) {
+        std::cout << "*** onCrashed " << std::endl;
+    }
+    virtual void onUnresponsive(Window *win) {
+        std::cout << "*** onUnresponsive " << std::endl;
+    }
+    virtual void onResponsive(Window *win) {
+        std::cout << "*** onResponsive " << std::endl;
+    }
+    virtual void onCreatedWindow(Window *win, Window *newWindow,
+                                 const Rect &initialRect) {
+        std::cout << "*** onCreatedWindow "
+                  << initialRect.mLeft << "," << initialRect.mTop << ": "
+                  << initialRect.mWidth << "x" << initialRect.mHeight << std::endl;
+    }
+    virtual void onWidgetCreated(Window *win, Widget *newWidget, int zIndex) {
+        std::cout << "*** onWidgetCreated " << newWidget << " index " << zIndex << std::endl;
+    }
+    virtual void onWidgetResize(Window *win, Widget *wid, int newWidth, int newHeight) {
+        std::cout << "*** onWidgetResize " << wid << " "
+                  << newWidth << "x" << newHeight << std::endl;
+    }
+    virtual void onWidgetMove(Window *win, Widget *wid, int newX, int newY) {
+        std::cout << "*** onWidgetMove " << wid << " "
+                  << newX << "," << newY << std::endl;
+    }
+    virtual void onShowContextMenu(Window *win,
+                                   const ContextMenuEventArgs& args) {
+        std::cout << "*** onShowContextMenu at " << args.mouseX << "," << args.mouseY;
+        std::cout << "; type: ";
+        switch (args.mediaType) {
+          case ContextMenuEventArgs::MediaTypeImage:
+            std::cout << "image";
+            break;
+          case ContextMenuEventArgs::MediaTypeVideo:
+            std::cout << "video";
+            break;
+          case ContextMenuEventArgs::MediaTypeAudio:
+            std::cout << "audio";
+            break;
+          default:
+            std::cout << "other";
+        }
+        if (args.isEditable || args.editFlags) {
+            std::cout << " (";
+            if (args.isEditable)
+                std::cout << "editable; ";
+            if (args.editFlags & ContextMenuEventArgs::CanUndo)
+                std::cout << "Undo, ";
+            if (args.editFlags & ContextMenuEventArgs::CanRedo)
+                std::cout << "Redo, ";
+            if (args.editFlags & ContextMenuEventArgs::CanCut)
+                std::cout << "Cut, ";
+            if (args.editFlags & ContextMenuEventArgs::CanCopy)
+                std::cout << "Copy, ";
+            if (args.editFlags & ContextMenuEventArgs::CanPaste)
+                std::cout << "Paste, ";
+            if (args.editFlags & ContextMenuEventArgs::CanDelete)
+                std::cout << "Delete, ";
+            if (args.editFlags & ContextMenuEventArgs::CanSelectAll)
+                std::cout << "Select All";
+            std::cout << ")";
+        }
+        std::cout << std::endl;
+        if (args.linkUrl.length())
+            std::cout << "        Link URL: " << args.linkUrl << std::endl;
+        if (args.srcUrl.length())
+            std::cout << "        Source URL: " << args.srcUrl << std::endl;
+        if (args.pageUrl.length())
+            std::cout << "        Page URL: " << args.pageUrl << std::endl;
+        if (args.frameUrl.length())
+            std::cout << "        Frame URL: " << args.frameUrl << std::endl;
+        if (args.selectedText.length())
+            std::wcout << L"        Selected Text: " << args.selectedText << std::endl;
     }
 
-    virtual void onAddressBarChanged(Berkelium::Window *win, Berkelium::URLString newURL) {
-		std::cout << "*** onAddressBarChanged to "<<newURL<<std::endl;
-	}
 
     virtual void onExternalHost(
         Berkelium::Window *win,
