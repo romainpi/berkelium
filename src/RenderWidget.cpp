@@ -45,7 +45,7 @@
 #include <time.h>
 #endif
 
-
+#include "base/utf_string_conversions.h"
 
 #include "berkelium/Platform.hpp"
 #include "RenderWidget.hpp"
