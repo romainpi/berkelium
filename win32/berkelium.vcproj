@@ -223,6 +223,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\ScriptUtilImpl.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\ScriptVariant.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\src\Window.cpp"
 				>
 			</File>
@@ -254,6 +262,10 @@
 			</File>
 			<File
 				RelativePath="..\src\Root.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\ScriptUtilImpl.hpp"
 				>
 			</File>
 			<File
@@ -327,7 +339,19 @@
 				>
 			</File>
 			<File
+				RelativePath="..\include\berkelium\ScriptUtil.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\berkelium\ScriptVariant.hpp"
+				>
+			</File>
+			<File
 				RelativePath="..\include\berkelium\Singleton.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\berkelium\WeakString.hpp"
 				>
 			</File>
 			<File

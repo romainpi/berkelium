@@ -354,6 +354,8 @@ elif [ x"${platform}" = x"Linux" ]; then
     else
         CHROME_PLATFORM=ia32
     fi
+    echo "${CHROMIUM_CHECKOUT_DIR}"
+    mkdir -p ${CHROMIUM_CHECKOUT_DIR}
     if [ -e ${CHROMIUM_CHECKOUT_DIR} ]; then
         user_eval "
                  mkdir -p ${CHROMIUM_CHECKOUT_DIR} &&

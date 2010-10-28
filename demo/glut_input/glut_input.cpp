@@ -256,6 +256,30 @@ int main (int argc, char** argv) {
     // Initialize Berkelium and create a window
     Berkelium::init(Berkelium::FileString::empty());
     bk_texture_window = new GLTextureWindow(WIDTH, HEIGHT, USE_TRANSPARENCY);
+    bk_texture_window->window()->addBindOnStartLoading(
+        Berkelium::WideString::point_to(L"glutCallback"),
+        Berkelium::Script::Variant::bindFunction(Berkelium::WideString::point_to(L"glutCB"), false));
+    bk_texture_window->window()->addBindOnStartLoading(
+        Berkelium::WideString::point_to(L"glutCallbackSync"),
+        Berkelium::Script::Variant::bindFunction(Berkelium::WideString::point_to(L"glutCB"), true));
+    bk_texture_window->window()->addBindOnStartLoading(
+        Berkelium::WideString::point_to(L"glutObjectTest"),
+        Berkelium::Script::Variant::emptyObject());
+    bk_texture_window->window()->addBindOnStartLoading(
+        Berkelium::WideString::point_to(L"glutObjectTest.someArray"),
+        Berkelium::Script::Variant::emptyArray());
+    bk_texture_window->window()->addBindOnStartLoading(
+        Berkelium::WideString::point_to(L"glutObjectTest.someArray[0]"),
+        Berkelium::Script::Variant::bindFunction(Berkelium::WideString::point_to(L"arrayFunc"), false));
+    bk_texture_window->window()->addBindOnStartLoading(
+        Berkelium::WideString::point_to(L"glutObjectTest.someArray[1]"),
+        Berkelium::Script::Variant::bindFunction(Berkelium::WideString::point_to(L"arrayFunc"), true));
+    bk_texture_window->window()->addBindOnStartLoading(
+        Berkelium::WideString::point_to(L"glutObjectTest.nullValue"),
+        Berkelium::Script::Variant());
+    bk_texture_window->window()->addBindOnStartLoading(
+        Berkelium::WideString::point_to(L"glutObjectTest.stringValue"),
+        Berkelium::Script::Variant("Hello, World!"));
     bk_texture_window->window()->focus();
 
     if (argc < 2) {

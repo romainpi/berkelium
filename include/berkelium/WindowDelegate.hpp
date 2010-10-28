@@ -34,6 +34,9 @@
 #define _BERKELIUM_WINDOW_DELEGATE_HPP_
 
 #include "berkelium/WeakString.hpp"
+#include "berkelium/Rect.hpp"
+#include "berkelium/ScriptVariant.hpp"
+#include "berkelium/Window.hpp"
 
 namespace Berkelium {
 
@@ -73,6 +76,19 @@ struct ContextMenuEventArgs {
   bool isEditable;
 
   int editFlags;
+};
+
+enum ScriptAlertType {
+	JavascriptAlert = 0,
+	JavascriptConfirm = 1,
+	JavascriptPrompt = 2
+};
+
+enum FileChooserType {
+    FileOpen = 0,
+    FileOpenMultiple = 1,
+    FileOpenFolder = 2,
+    FileSaveAs = 3
 };
 
 /**
@@ -152,7 +168,7 @@ public:
      * \param message  Alert message
      * \param defaultValue  What to display in a text field if this is prompt.
      * \param url  Originator (script? or page?) of the alert box.
-     * \param flags  enum? What type of alert/confirm/prompt.
+     * \param flags  What type of alert/confirm/prompt. See ScriptAlertType.
      * \param success  True if the OK button, false if CANCEL.
      * \param value  Allocated (strdup is easiest) return, default empty/null.
      */
@@ -385,6 +401,32 @@ public:
      */
     virtual void onShowContextMenu(Window *win,
                                    const ContextMenuEventArgs& args) {}
+
+    /** Javascript has called a bound function on this Window.
+     * Make sure to h
+     *
+     * \param win  Window instance that fired this event.
+     * \param replyMsg  If non-NULL, opaque reply identifier to be passed to synchronousScriptReturn.
+     * \param url  Origin of the sending script.
+     * \param funcName  name of function to call.
+     * \param args  list of variants passed into function.
+     * \param numArgs  number of arguments.
+     */
+    virtual void onJavascriptCallback(Window *win, void* replyMsg, URLString origin, WideString funcName, Script::Variant *args, size_t numArgs) {
+        if (replyMsg) {
+            win->synchronousScriptReturn(replyMsg, Script::Variant());
+        }
+    }
+
+    /** Display a file chooser dialog, if necessary. The value to be returned should go ______.
+     * \param win  Window instance that fired this event.
+     * \param mode  Type of file chooser expected. See FileChooserType.
+     * \param title  Title for dialog. "Open" or "Save" should be used if empty.
+     * \param defaultFile  Default file to select in dialog.
+     */
+    virtual void onRunFileChooser(Window *win, int mode, WideString title, FileString defaultFile) {
+        win->filesSelected(NULL);
+    }
 
 /**************************
    Might want messages for:
