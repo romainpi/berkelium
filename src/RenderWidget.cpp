@@ -32,6 +32,7 @@
 
 #include "chrome/browser/renderer_host/backing_store_manager.h"
 #if defined(OS_LINUX)
+#include "webkit/glue/plugins/webplugin.h"
 #include "webkit/glue/plugins/gtk_plugin_container_manager.h"
 #include "webkit/glue/plugins/gtk_plugin_container.h"
 #include <gtk/gtk.h>

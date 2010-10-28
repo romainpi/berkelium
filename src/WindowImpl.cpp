@@ -63,6 +63,8 @@
 #include "chrome/browser/renderer_host/render_process_host.h"
 #include "chrome/common/bindings_policy.h"
 #include "webkit/glue/context_menu.h"
+#include "chrome/common/render_messages.h"
+#include "chrome/common/render_messages_params.h"
 #include <iostream>
 
 #if BERKELIUM_PLATFORM == PLATFORM_LINUX
@@ -91,8 +93,7 @@ void WindowImpl::init(SiteInstance*site, int routing_id) {
         site,
         this,
         routing_id,
-        profile()->GetWebKitContext()->
-        dom_storage_context()->AllocateSessionStorageNamespaceId());
+        mController->session_storage_namespace_);
     host()->AllowBindings(
         BindingsPolicy::EXTERNAL_HOST);
 }
@@ -100,7 +101,7 @@ void WindowImpl::init(SiteInstance*site, int routing_id) {
 WindowImpl::WindowImpl(const Context*otherContext):
         Window(otherContext)
 {
-    mController = new NavigationController(this, profile());
+    mController = new NavigationController(this, profile(), otherContext->getImpl()->sessionStorageNamespace());
     mMouseX = 0;
     mMouseY = 0;
     mCurrentURL = GURL("about:blank");
@@ -111,7 +112,7 @@ WindowImpl::WindowImpl(const Context*otherContext):
 WindowImpl::WindowImpl(const Context*otherContext, int routing_id):
         Window(otherContext)
 {
-    mController = new NavigationController(this, profile());
+    mController = new NavigationController(this, profile(), otherContext->getImpl()->sessionStorageNamespace());
     mMouseX = 0;
     mMouseY = 0;
     mCurrentURL = GURL("about:blank");
@@ -161,15 +162,10 @@ ViewType::Type WindowImpl::GetRenderViewType()const {
     return ViewType::TAB_CONTENTS;
 }
 
-static void MakeNavigateParams(const NavigationEntry& entry, NavigationController::ReloadType reload,
-                        ViewMsg_Navigate_Params* params) {
-  params->page_id = entry.page_id();
-  params->url = entry.url();
-  params->referrer = entry.referrer();
-  params->transition = entry.transition_type();
-  params->state = entry.content_state();
-  params->navigation_type = (ViewMsg_Navigate_Params::NavigationType)(int)reload;
-  params->request_time = base::Time::Now();
+void WindowImpl::UpdateInspectorSetting(const std::string&, const std::string&) {
+}
+
+void WindowImpl::ClearInspectorSettings() {
 }
 
 Widget *WindowImpl::getWidget() const {
@@ -413,7 +409,8 @@ void WindowImpl::selectAll() {
 }
 
 void WindowImpl::refresh() {
-    doNavigateTo(mCurrentURL, GURL(), NavigationController::RELOAD);
+    mController->Reload(true);
+    // mController->ReloadIgnoringCache(true)
 }
 
 void WindowImpl::stop() {
@@ -475,48 +472,13 @@ void WindowImpl::insertCSS(WideString css, WideString id) {
 
 bool WindowImpl::navigateTo(URLString url) {
     this->mCurrentURL = GURL(url.get<std::string>());
-    return doNavigateTo(this->mCurrentURL, GURL(), NavigationController::NO_RELOAD);
+    mController->LoadURL(this->mCurrentURL, GURL(), PageTransition::TYPED);
+    return true;
 }
 
 void WindowImpl::TooltipChanged(const std::wstring& tooltipText) {
    if (mDelegate)
        mDelegate->onTooltipChanged(this, WideString::point_to(tooltipText));
-}
-
-bool WindowImpl::doNavigateTo(
-        const GURL &newURL,
-        const GURL &referrerURL,
-        NavigationController::ReloadType reload)
-{
-    if (view()) {
-        view()->Hide();
-    }
-    mController->LoadEntry(mController->CreateNavigationEntry(
-        newURL,
-        referrerURL,
-        PageTransition::TYPED,
-        profile()));
-    NavigateToPendingEntry(reload);
-
-    return true;
-}
-
-bool WindowImpl::NavigateToPendingEntry(NavigationController::ReloadType reload) {
-    const NavigationEntry& entry = *mController->pending_entry();
-
-    if (!host()) {
-        return false;  // Unable to create the desired render view host.
-    }
-
-    // Navigate in the desired RenderViewHost.
-    ViewMsg_Navigate_Params navigate_params;
-    MakeNavigateParams(entry, reload, &navigate_params);
-    host()->Navigate(navigate_params);
-    if (view()) {
-        view()->Show();
-    }
-
-    return true;
 }
 
 void WindowImpl::UpdateMaxPageID(int32 page_id) {
@@ -689,6 +651,84 @@ void WindowImpl::UpdateHistoryForNavigation(
     const ViewHostMsg_FrameNavigate_Params& params) {
   if (profile()->IsOffTheRecord())
     return;
+}
+
+ViewMsg_Navigate_Params::NavigationType GetNavigationType(
+    Profile* profile, const NavigationEntry& entry,
+    NavigationController::ReloadType reload_type) {
+  switch (reload_type) {
+    case NavigationController::RELOAD:
+      return ViewMsg_Navigate_Params::RELOAD;
+    case NavigationController::RELOAD_IGNORING_CACHE:
+      return ViewMsg_Navigate_Params::RELOAD_IGNORING_CACHE;
+    case NavigationController::NO_RELOAD:
+      break;  // Fall through to rest of function.
+  }
+
+  if (entry.restore_type() == NavigationEntry::RESTORE_LAST_SESSION &&
+      profile->DidLastSessionExitCleanly())
+    return ViewMsg_Navigate_Params::RESTORE;
+
+  return ViewMsg_Navigate_Params::NORMAL;
+}
+
+
+static void MakeNavigateParams(const NavigationEntry& entry,
+                        const NavigationController& controller,
+                        NavigationController::ReloadType reload_type,
+                        ViewMsg_Navigate_Params* params) {
+  params->page_id = entry.page_id();
+  params->pending_history_list_offset = controller.GetIndexOfEntry(&entry);
+  params->current_history_list_offset = controller.last_committed_entry_index();
+  params->current_history_list_length = controller.entry_count();
+  params->url = entry.url();
+  params->referrer = entry.referrer();
+  params->transition = entry.transition_type();
+  params->state = entry.content_state();
+  params->navigation_type =
+      GetNavigationType(controller.profile(), entry, reload_type);
+  params->request_time = base::Time::Now();
+}
+
+
+bool WindowImpl::NavigateToPendingEntry(NavigationController::ReloadType reload_type) {
+  const NavigationEntry& entry = *(mController->pending_entry());
+  RenderViewHost* dest_render_view_host = host();
+
+// FIXME(patrick): computing preferred size is a requested feature. We should expose this
+/*
+  if (delegate_ && delegate_->ShouldEnablePreferredSizeNotifications()) {
+    dest_render_view_host->EnablePreferredSizeChangedMode(
+        kPreferredSizeWidth | kPreferredSizeHeightThisIsSlow);
+  }
+*/
+
+  // Tell DevTools agent that it is attached prior to the navigation.
+/*
+  DevToolsManager* devtools_manager = DevToolsManager::GetInstance();
+  if (devtools_manager) {  // NULL in unit tests.
+    devtools_manager->OnNavigatingToPendingEntry(render_view_host(),
+                                                 dest_render_view_host,
+                                                 entry.url());
+  }
+*/
+
+  // Navigate in the desired RenderViewHost.
+  ViewMsg_Navigate_Params navigate_params;
+  MakeNavigateParams(entry, *mController, reload_type, &navigate_params);
+  dest_render_view_host->Navigate(navigate_params);
+
+  if (entry.page_id() == -1) {
+    // HACK!!  This code suppresses javascript: URLs from being added to
+    // session history, which is what we want to do for javascript: URLs that
+    // do not generate content.  What we really need is a message from the
+    // renderer telling us that a new page was not created.  The same message
+    // could be used for mailto: URLs and the like.
+    if (entry.url().SchemeIs("javascript"))
+      return false;
+  }
+
+  return true;
 }
 
 bool WindowImpl::UpdateTitleForEntry(NavigationEntry* entry,
@@ -1058,7 +1098,7 @@ void WindowImpl::RequestOpenURL(const GURL& url, const GURL& referrer,
   }
 
   if (!cancelDefault)
-    doNavigateTo(url, referrer, NavigationController::NO_RELOAD);
+    mController->LoadURL(url, referrer, PageTransition::LINK);
 }
 
 void WindowImpl::DomOperationResponse(const std::string& json_string,
@@ -1126,6 +1166,7 @@ RenderWidgetHostView* WindowImpl::CreateViewForWidget(RenderWidgetHost * render_
 
 void WindowImpl::DidStartProvisionalLoadForFrame(
         RenderViewHost* render_view_host,
+        long long frame_id,
         bool is_main_frame,
         const GURL& url) {
     if (!is_main_frame) {
@@ -1188,6 +1229,7 @@ void WindowImpl::DidLoadResourceFromMemoryCache(
 
 void WindowImpl::DidFailProvisionalLoadWithError(
         RenderViewHost* render_view_host,
+        long long frame_id,
         bool is_main_frame,
         int error_code,
         const GURL& url,
@@ -1383,6 +1425,23 @@ void WindowImpl::HandleMouseEvent() {
 void WindowImpl::HandleMouseLeave() {
     // Useless: just calls this when we hand it an input event.
 }
+
+void WindowImpl::OnSetSuggestResult(int32, const std::string&) {
+}
+
+void WindowImpl::ShowPopupMenu(const gfx::Rect&, int, double, int, const std::vector<WebMenuItem>&, bool) {
+    // FIXME(patrick): We need to expose this to the public API!
+}
+
+void WindowImpl::LostCapture() {
+}
+
+void WindowImpl::HandleMouseUp() {
+}
+
+void WindowImpl::HandleMouseActivate() {
+}
+
 void WindowImpl::CreateNewFullscreenWidget(int route_id, WebKit::WebPopupType popup_type) {
     CreateNewWidget(route_id, popup_type);
 }
@@ -1409,7 +1468,7 @@ void WindowImpl::UpdatePreferredSize(const gfx::Size&) {
 // be handled in HandleKeyboardEvent() method as a normal keyboard shortcut,
 // |*is_keyboard_shortcut| should be set to true.
 bool WindowImpl::PreHandleKeyboardEvent(const NativeWebKeyboardEvent& event, bool* is_keyboard_shortcut) {
-    *is_keyboard_shortcut = false;
+    // FIXME(patrick): Is keyboard shortcut might be useful to ask application...
     return false;
 }
 

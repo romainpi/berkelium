@@ -43,7 +43,6 @@
 #include "base/command_line.h"
 #include "base/file_util.h"
 #include "base/i18n/icu_util.h"
-#include "base/histogram.h"
 #include "net/base/cookie_monster.h"
 #include "chrome/common/chrome_paths.h"
 #include "chrome/common/chrome_switches.h"
@@ -56,7 +55,7 @@
 #include "chrome/browser/plugin_service.h"
 #include "chrome/browser/renderer_host/resource_dispatcher_host.h"
 #include "chrome/browser/renderer_host/browser_render_process_host.h"
-#include "chrome/browser/chrome_thread.h"
+#include "chrome/browser/browser_thread.h"
 #include "chrome/browser/browser_url_handler.h"
 #include "chrome/browser/net/predictor_api.h"
 #include "app/hi_res_timer_manager.h"
@@ -286,7 +285,7 @@ Root::Root (FileString homeDirectory) {
     mMessageLoop.reset(new MessageLoop(MessageLoop::TYPE_UI));
     mSysMon.reset(new SystemMonitor);
     mTimerMgr.reset(new HighResolutionTimerManager);
-    mUIThread.reset(new ChromeThread(ChromeThread::UI, mMessageLoop.get()));
+    mUIThread.reset(new BrowserThread(BrowserThread::UI, mMessageLoop.get()));
     mErrorHandler = 0;
 
     mProcessSingleton.reset(new ProcessSingleton(homedirpath));
@@ -396,9 +395,6 @@ Root::Root (FileString homeDirectory) {
     browser_process->cache_thread();
     browser_process->io_thread();
 
-    // Initialize histogram statistics gathering system.
-    mStatistics.reset(new StatisticsRecorder);
-
     // Initialize histogram synchronizer system. This is a singleton and is used
     // for posting tasks via NewRunnableMethod. Its deleted when it goes out of
     // scope. Even though NewRunnableMethod does AddRef and Release, the object
@@ -422,8 +418,7 @@ Root::Root (FileString homeDirectory) {
     mDNSPrefetch.reset(new chrome_browser_net::PredictorInit(
       user_prefs,
       browser_process->local_state(),
-      CommandLine::ForCurrentProcess()->HasSwitch(switches::kEnablePreconnect),
-      false));
+      CommandLine::ForCurrentProcess()->HasSwitch(switches::kEnablePreconnect)));
 
     BrowserURLHandler::InitURLHandlers();
 
@@ -473,7 +468,6 @@ Root::~Root(){
     mTimerMgr.reset();
     mSysMon.reset();
     mHistogramSynchronizer = NULL;
-    mStatistics.reset();
     mDNSPrefetch.reset();
     mNotificationService.reset();
     delete g_browser_process;

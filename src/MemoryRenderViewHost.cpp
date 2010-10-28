@@ -41,6 +41,7 @@
 #include "chrome/browser/renderer_host/render_process_host.h"
 #include "chrome/common/notification_service.h"
 #include "chrome/common/render_messages.h"
+#include "chrome/common/render_messages_params.h"
 
 namespace Berkelium {
 
@@ -50,7 +51,7 @@ MemoryRenderViewHost::MemoryRenderViewHost(
         SiteInstance* instance,
         RenderViewHostDelegate* delegate,
         int routing_id,
-        int64 ssn_id) // session_storage_namespace_id
+        SessionStorageNamespace *ssn_id) // session_storage_namespace_id
     : MemoryRenderHostImpl<RenderViewHost>(instance, delegate, routing_id, ssn_id) {
 
     mWindow = static_cast<WindowImpl*>(delegate);
@@ -296,7 +297,7 @@ RenderViewHost* MemoryRenderViewHostFactory::CreateRenderViewHost(
     SiteInstance* instance,
     RenderViewHostDelegate* delegate,
     int routing_id,
-    int64 ssn_id)
+    SessionStorageNamespace *ssn_id)
 {
     return new MemoryRenderViewHost(instance, delegate,
                                     routing_id, ssn_id);

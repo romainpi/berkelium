@@ -136,11 +136,6 @@ public:
 
     virtual void filesSelected(FileString *files);
 
-    bool doNavigateTo(
-        const GURL &newURL,
-        const GURL &referrerURL,
-        NavigationController::ReloadType reload);
-
     virtual void goBack();
     virtual void goForward();
 
@@ -243,6 +238,9 @@ protected: /******* RenderViewHostDelegate *******/
     virtual int GetBrowserWindowID() const;
     ViewType::Type GetRenderViewType()const;
 
+    virtual void UpdateInspectorSetting(const std::string&, const std::string&);
+    virtual void ClearInspectorSettings();
+
 protected: /******* RenderViewHostDelegate::Resource *******/
 
     void GetContainerBounds(gfx::Rect* rc) const{
@@ -257,6 +255,7 @@ protected: /******* RenderViewHostDelegate::Resource *******/
     virtual RenderWidgetHostView* CreateViewForWidget(RenderWidgetHost*render_widget_host);
     virtual void DidStartProvisionalLoadForFrame(
         RenderViewHost* render_view_host,
+        long long frame_id,
         bool is_main_frame,
         const GURL& url);
 
@@ -281,6 +280,7 @@ protected: /******* RenderViewHostDelegate::Resource *******/
 
     virtual void DidFailProvisionalLoadWithError(
         RenderViewHost* render_view_host,
+        long long frame_id,
         bool is_main_frame,
         int error_code,
         const GURL& url,
@@ -321,6 +321,10 @@ protected: /******* RenderViewHostDelegate::View *******/
     virtual void UpdatePreferredSize(const gfx::Size&);
     virtual bool PreHandleKeyboardEvent(const NativeWebKeyboardEvent& event,
                                          bool* is_keyboard_shortcut);
+    virtual void ShowPopupMenu(const gfx::Rect&, int, double, int, const std::vector<WebMenuItem>&, bool);
+    virtual void LostCapture();
+    virtual void HandleMouseUp();
+    virtual void HandleMouseActivate();
 
 protected: /******* RenderViewHostDelegate::BrowserIntegration *******/
     virtual void OnUserGesture();
@@ -349,6 +353,7 @@ protected: /******* RenderViewHostDelegate::BrowserIntegration *******/
                                   const std::string& translated_lang,
                                   TranslateErrors::Type error_type);
     virtual void OnDisabledOutdatedPlugin(const string16&, const GURL&);
+    virtual void OnSetSuggestResult(int32, const std::string&);
 
 private:
 

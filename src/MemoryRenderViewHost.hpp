@@ -99,7 +99,7 @@ public:
         SiteInstance* instance,
         RenderViewHostDelegate* delegate,
         int routing_id,
-        int64 session_storage_namespace_id);
+        SessionStorageNamespace *session_storage_namespace_id);
     ~MemoryRenderViewHost();
 
     void Memory_OnAddMessageToConsole(
@@ -119,7 +119,7 @@ public:
         SiteInstance* instance,
         RenderViewHostDelegate* delegate,
         int routing_id,
-        int64 session_storage_namespace_id);
+        SessionStorageNamespace *ssn_id);
 };
 
 

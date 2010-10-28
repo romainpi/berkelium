@@ -36,25 +36,31 @@
 #include "Root.hpp"
 #include "ContextImpl.hpp"
 #include "chrome/browser/profile.h"
+#include "chrome/browser/in_process_webkit/session_storage_namespace.h"
+#include "chrome/browser/in_process_webkit/webkit_context.h"
+
 
 namespace Berkelium {
 ContextImpl::ContextImpl(const ContextImpl&other) {
-    other.mSiteInstance->AddRef();
-    mSiteInstance=other.mSiteInstance;
-    mProfile = other.mProfile;
+    init(other.mProfile, other.mSiteInstance, other.mSessionNamespace);
 }
-ContextImpl::ContextImpl(Profile *prof, SiteInstance*si) {
-    mSiteInstance = si;
-    mSiteInstance->AddRef();
-    mProfile = prof;
+ContextImpl::ContextImpl(Profile *prof, SiteInstance*si, SessionStorageNamespace *ssn) {
+    init(prof, si, ssn);
 }
 ContextImpl::ContextImpl(Profile *prof) {
-    mSiteInstance = SiteInstance::CreateSiteInstance(prof);
-    mSiteInstance->AddRef();
-    mProfile = prof;
+    init(prof,
+         SiteInstance::CreateSiteInstance(prof),
+         new SessionStorageNamespace(prof));
 }
+
+void ContextImpl::init(Profile*prof, SiteInstance*si, SessionStorageNamespace *ssn) {
+    mSiteInstance = si;
+    mProfile = prof;
+    mSessionNamespace = ssn;
+}
+
+
 ContextImpl::~ContextImpl() {
-    mSiteInstance->Release();
 }
 Context* ContextImpl::clone() const{
     return new ContextImpl(*this);

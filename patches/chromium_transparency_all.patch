@@ -1,16 +1,16 @@
 Index: chrome/renderer/render_widget.cc
 ===================================================================
---- chrome/renderer/render_widget.cc	(revision 26900)
-+++ chrome/renderer/render_widget.cc	(working copy)
-@@ -482,6 +482,11 @@
-     NOTREACHED();
-     return;
-   }
-+  if (!background_.empty() && !background_.isOpaque()) {
-+    // If the background contains any transparency, we must clear the output
-+    // buffer, or we will end up with garbage from the last render.
-+    canvas->drawARGB(0,0,0,0,SkXfermode::kClear_Mode);
-+  }
+--- chrome/renderer/render_widget.cc   (revision 64206)
++++ chrome/renderer/render_widget.cc   (working copy)
+@@ -527,6 +527,11 @@ void RenderWidget::DoDeferredUpdate() {
+       NOTREACHED();
+       return;
+     }
++    if (!background_.empty() && !background_.isOpaque()) {
++      // If the background contains any transparency, we must clear the output
++      // buffer, or we will end up with garbage from the last render.
++      canvas->drawARGB(0,0,0,0,SkXfermode::kClear_Mode);
++    }
  
-   // We may get back a smaller canvas than we asked for.
-   // TODO(darin): This seems like it could cause painting problems!
+     // We may get back a smaller canvas than we asked for.
+     // TODO(darin): This seems like it could cause painting problems!

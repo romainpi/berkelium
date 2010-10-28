@@ -34,11 +34,14 @@
 #define _BERKELIUM_CONTEXTIMPL_HPP_
 #include "berkelium/Context.hpp"
 #include "chrome/browser/browsing_instance.h"
+
+class SessionStorageNamespace;
+
 namespace Berkelium {
 class ContextImpl :public Context{
 public:
     ContextImpl(const ContextImpl&other);
-    ContextImpl(Profile*prof, SiteInstance*si);
+    ContextImpl(Profile*prof, SiteInstance*si, SessionStorageNamespace *ssn);
     ContextImpl(Profile*prof);
     ~ContextImpl();
 
@@ -52,10 +55,18 @@ public:
         return mProfile;
     }
 
+    SessionStorageNamespace *sessionStorageNamespace()const {
+        return mSessionNamespace;
+    }
+
     Context*clone()const;
 private:
-    SiteInstance *mSiteInstance;
+
+    void init(Profile*prof, SiteInstance*si, SessionStorageNamespace *ssn);
+
+    scoped_refptr<SiteInstance> mSiteInstance;
     Profile *mProfile;
+    scoped_refptr<SessionStorageNamespace> mSessionNamespace;
     
 };
 

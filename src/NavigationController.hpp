@@ -5,34 +5,35 @@
 #ifndef BERKELIUM_NAVIGATION_CONTROLLER_HPP_
 #define BERKELIUM_NAVIGATION_CONTROLLER_HPP_
 
+// Copyright (c) 2010 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
 #include "build/build_config.h"
 
 #include <string>
 #include <vector>
 
 #include "base/linked_ptr.h"
-#include "base/string16.h"
 #include "base/time.h"
 #include "googleurl/src/gurl.h"
 #include "chrome/browser/sessions/session_id.h"
 #include "chrome/browser/ssl/ssl_manager.h"
 #include "chrome/common/navigation_types.h"
 #include "chrome/common/page_transition_types.h"
-#include "chrome/common/render_messages.h"
-#include "chrome/common/render_messages_params.h"
 
 class NavigationEntry;
-class GURL;
 class Profile;
+class SessionStorageNamespace;
 class SiteInstance;
-class SkBitmap;
+class TabContents;
 class TabNavigation;
 struct ViewHostMsg_FrameNavigate_Params;
-
 
 namespace Berkelium {
 
 class WindowImpl;
+typedef WindowImpl TabContents;
 
 // A NavigationController maintains the back-forward list for a single tab and
 // manages all navigation within that list.
@@ -137,15 +138,17 @@ class NavigationController {
     int count;
   };
 
-  enum ReloadType{
-      RELOAD = ViewMsg_Navigate_Params::RELOAD,
-      RELOAD_IGNORING_CACHE = ViewMsg_Navigate_Params::RELOAD_IGNORING_CACHE,
-      NO_RELOAD = ViewMsg_Navigate_Params::NORMAL
+  enum ReloadType {
+    NO_RELOAD,                // Normal load.
+    RELOAD,                   // Normal (cache-validating) reload.
+    RELOAD_IGNORING_CACHE     // Reload bypassing the cache, aka shift-reload.
   };
 
   // ---------------------------------------------------------------------------
 
-  NavigationController(WindowImpl* tab_contents, Profile* profile);
+  NavigationController(TabContents* tab_contents,
+                       Profile* profile,
+                       SessionStorageNamespace* session_storage_namespace);
   ~NavigationController();
 
   // Returns the profile for this controller. It can never be NULL.
@@ -164,10 +167,8 @@ class NavigationController {
   // from_last_session is true, navigations are from the previous session,
   // otherwise they are from the current session (undo tab close).
   // This is used for session restore.
-  /*
   void RestoreFromState(const std::vector<TabNavigation>& navigations,
                         int selected_navigation, bool from_last_session);
-  */
 
   // Active entry --------------------------------------------------------------
 
@@ -313,7 +314,7 @@ class NavigationController {
 
   // Returns the tab contents associated with this controller. Non-NULL except
   // during set-up of the tab.
-  WindowImpl* tab_contents() const {
+  TabContents* tab_contents() const {
     // This currently returns the active tab contents which should be renamed to
     // tab_contents.
     return tab_contents_;
@@ -321,9 +322,6 @@ class NavigationController {
 
   // Called when a document has been loaded in a frame.
   void DocumentLoadedInFrame();
-
-  // Called when the user presses the mouse, enter key or space bar.
-  void OnUserGesture();
 
   // For use by TabContents ----------------------------------------------------
 
@@ -372,6 +370,24 @@ class NavigationController {
   // one should be empty (just created).
   void CopyStateFrom(const NavigationController& source);
 
+  // A variant of CopyStateFrom. Removes all entries from this except the last
+  // entry, inserts all entries from |source| before and including the active
+  // entry and resets the |session_id_| of this to match |source|.  This is
+  // intended for use when you're going to throw away |source| and replace it
+  // with this. This method is intended for use when the last entry of |this|
+  // is the active entry. For example:
+  // source: A B *C* D
+  // this:   E F *G*   (last must be active or pending)
+  // result: A B *G*
+  // This ignores the transient index of the source and honors that of 'this'.
+  // This should only be used when you are going to destroy |source| right after
+  // invoking this.
+  void CopyStateFromAndPrune(NavigationController* source);
+
+  // Removes all the entries except the active entry. If there is a new pending
+  // navigation it is preserved.
+  void PruneAllButActive();
+
   // Random data ---------------------------------------------------------------
 
   // Returns the identifier used by session restore.
@@ -385,13 +401,19 @@ class NavigationController {
   // invoked). This is true for session/tab restore and cloned tabs.
   bool needs_reload() const { return needs_reload_; }
 
+  // Sets the max restored page ID this NavigationController has seen, if it
+  // was restored from a previous session.
+  void set_max_restored_page_id(int32 max_id) {
+    max_restored_page_id_ = max_id;
+  }
+
   // Returns the largest restored page ID seen in this navigation controller,
   // if it was restored from a previous session.  (-1 otherwise)
-  int max_restored_page_id() const { return max_restored_page_id_; }
+  int32 max_restored_page_id() const { return max_restored_page_id_; }
 
-  // The session storage namespace id that all child render views should use.
-  int64 session_storage_namespace_id() const {
-    return session_storage_namespace_id_;
+  // The session storage namespace that all child render views should use.
+  SessionStorageNamespace* session_storage_namespace() const {
+    return session_storage_namespace_;
   }
 
   // Disables checking for a repost and prompting the user. This is used during
@@ -461,7 +483,7 @@ class NavigationController {
   bool RendererDidNavigateAutoSubframe(
       const ViewHostMsg_FrameNavigate_Params& params);
 
-  // Helper function for code shared between Reload() and ReloadAll().
+  // Helper function for code shared between Reload() and ReloadIgnoringCache().
   void ReloadInternal(bool check_for_repost, ReloadType reload_type);
 
   // Actually issues the navigation held in pending_entry.
@@ -474,10 +496,6 @@ class NavigationController {
   // added to the flags sent to the delegate's NotifyNavigationStateChanged.
   void NotifyNavigationEntryCommitted(LoadCommittedDetails* details,
                                       int extra_invalidate_flags);
-
-  // Sets the max restored page ID this NavigationController has seen, if it
-  // was restored from a previous session.
-  void set_max_restored_page_id(int max_id) { max_restored_page_id_ = max_id; }
 
   // Updates the virtual URL of an entry to match a new URL, for cases where
   // the real renderer URL is derived from the virtual URL, like view-source:
@@ -504,6 +522,18 @@ class NavigationController {
   // Returns true if the navigation is likley to be automatic rather than
   // user-initiated.
   bool IsLikelyAutoNavigation(base::TimeTicks now);
+
+  // Creates a new NavigationEntry for each TabNavigation in navigations, adding
+  // the NavigationEntry to entries. This is used during session restore.
+  void CreateNavigationEntriesFromTabNavigations(
+      const std::vector<TabNavigation>& navigations,
+      std::vector<linked_ptr<NavigationEntry> >* entries);
+
+  // Inserts up to |max_index| entries from |source| into this. This does NOT
+  // adjust any of the members that reference entries_
+  // (last_committed_entry_index_, pending_entry_index_ or
+  // transient_entry_index_).
+  void InsertEntriesFrom(const NavigationController& source, int max_index);
 
   // ---------------------------------------------------------------------------
 
@@ -533,18 +563,18 @@ class NavigationController {
   // The index for the entry that is shown until a navigation occurs.  This is
   // used for interstitial pages. -1 if there are no such entry.
   // Note that this entry really appears in the list of entries, but only
-  // temporarily (until the next navigation).  Any index poiting to an entry
+  // temporarily (until the next navigation).  Any index pointing to an entry
   // after the transient entry will become invalid if you navigate forward.
   int transient_entry_index_;
 
   // The tab contents associated with the controller. Possibly NULL during
   // setup.
-  WindowImpl* tab_contents_;
+  TabContents* tab_contents_;
 
   // The max restored page ID in this controller, if it was restored.  We must
   // store this so that TabContents can tell any renderer in charge of one of
   // the restored entries to update its max page ID.
-  int max_restored_page_id_;
+  int32 max_restored_page_id_;
 
   // Whether we need to be reloaded when made active.
   bool needs_reload_;
@@ -552,7 +582,7 @@ class NavigationController {
   // Unique identifier of this controller for session restore. This id is only
   // unique within the current session, and is not guaranteed to be unique
   // across sessions.
-  const SessionID session_id_;
+  SessionID session_id_;
 
   // Unique identifier of the window we're in. Used by session restore.
   SessionID window_id_;
@@ -560,11 +590,8 @@ class NavigationController {
   // The time ticks at which the last document was loaded.
   base::TimeTicks last_document_loaded_;
 
-  // Whether a user gesture has been observed since the last navigation.
-  bool user_gesture_observed_;
-
   // The session storage id that any (indirectly) owned RenderView should use.
-  int64 session_storage_namespace_id_;
+  scoped_refptr<SessionStorageNamespace> session_storage_namespace_;
 
   // Should Reload check for post data? The default is true, but is set to false
   // when testing.
@@ -582,4 +609,4 @@ class NavigationController {
 
 }
 
-#endif  // CHROME_BROWSER_TAB_CONTENTS_NAVIGATION_CONTROLLER_H_
+#endif  // BERKELIUM_NAVIGATION_CONTROLLER_HPP_

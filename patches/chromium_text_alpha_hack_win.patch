@@ -1,6 +1,6 @@
 Index: third_party/WebKit/WebCore/platform/graphics/chromium/FontChromiumWin.cpp
 ===================================================================
---- third_party/WebKit/WebCore/platform/graphics/chromium/FontChromiumWin.cpp	(revision 59685)
+--- third_party/WebKit/WebCore/platform/graphics/chromium/FontChromiumWin.cpp	(revision 70691)
 +++ third_party/WebKit/WebCore/platform/graphics/chromium/FontChromiumWin.cpp	(working copy)
 @@ -47,6 +47,167 @@
  
@@ -209,12 +209,12 @@ Index: third_party/WebKit/WebCore/platform/graphics/chromium/FontChromiumWin.cpp
 +
      // If there is a non-blur shadow and both the fill color and shadow color 
      // are opaque, handle without skia. 
-     FloatSize shadowSize;
+     FloatSize shadowOffset;
      float shadowBlur;
      Color shadowColor;
-     if (m_graphicsContext->getShadow(shadowSize, shadowBlur, shadowColor)) {
-+        boundsRect.right += shadowSize.width();
-+        boundsRect.bottom += shadowSize.height();
+     if (m_graphicsContext->getShadow(shadowOffset, shadowBlur, shadowColor)) {
++        boundsRect.right += shadowOffset.width();
++        boundsRect.bottom += shadowOffset.height();
 +
          // If there is a shadow and this code is reached, windowsCanHandleDrawTextShadow()
          // will have already returned true during the ctor initiatization of m_useGDI
@@ -224,8 +224,8 @@ Index: third_party/WebKit/WebCore/platform/graphics/chromium/FontChromiumWin.cpp
          COLORREF textColor = skia::SkColorToCOLORREF(SkColorSetARGB(255, shadowColor.red(), shadowColor.green(), shadowColor.blue()));
 -        COLORREF savedTextColor = GetTextColor(m_hdc);
          SetTextColor(m_hdc, textColor);
--        ExtTextOut(m_hdc, x + shadowSize.width(), y + shadowSize.height(), ETO_GLYPH_INDEX, 0, reinterpret_cast<const wchar_t*>(&glyphs[0]), numGlyphs, &advances[0]);
-+        AlphaAwareExtTextOut(m_hdc, x + shadowSize.width(), y + shadowSize.height(), ETO_GLYPH_INDEX, &boundsRect, reinterpret_cast<const wchar_t*>(&glyphs[0]), numGlyphs, &advances[0]);
+-        ExtTextOut(m_hdc, x + shadowOffset.width(), y + shadowOffset.height(), ETO_GLYPH_INDEX, 0, reinterpret_cast<const wchar_t*>(&glyphs[0]), numGlyphs, &advances[0]);
++        AlphaAwareExtTextOut(m_hdc, x + shadowOffset.width(), y + shadowOffset.height(), ETO_GLYPH_INDEX, &boundsRect, reinterpret_cast<const wchar_t*>(&glyphs[0]), numGlyphs, &advances[0]);
          SetTextColor(m_hdc, savedTextColor);
      }
      

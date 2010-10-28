@@ -35,14 +35,17 @@
 #include "berkelium/Singleton.hpp"
 #include "chrome/browser/profile.h"
 #include "chrome/common/notification_service.h"
-#include "base/scoped_nsautorelease_pool.h"
 #include "base/ref_counted.h"
 #include "base/message_loop.h"
 #include "base/scoped_ptr.h"
 
+#if defined(OS_MACOSX)
+#include "base/mac/scoped_nsautorelease_pool.h"
+#endif
+
 class BrowserRenderProcessHost;
 class ProcessSingleton;
-class ChromeThread;
+class BrowserThread;
 class URLRequestContext;
 class SystemMonitor;
 class HighResolutionTimerManager;
@@ -66,11 +69,12 @@ class Root : public AutoSingleton<Root> {
     scoped_ptr<MessageLoop> mMessageLoop;
     scoped_ptr<NotificationService> mNotificationService;
     scoped_ptr<ProcessSingleton> mProcessSingleton;
-    scoped_ptr<ChromeThread> mUIThread;
+    scoped_ptr<BrowserThread> mUIThread;
     scoped_ptr<MemoryRenderViewHostFactory> mRenderViewHostFactory;
+#if defined(OS_MAC)
     base::ScopedNSAutoreleasePool mAutoreleasePool;
+#endif
     scoped_refptr<HistogramSynchronizer> mHistogramSynchronizer;
-    scoped_ptr<StatisticsRecorder> mStatistics;
 
     ErrorDelegate* mErrorHandler;
 public:
