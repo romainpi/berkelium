@@ -12,7 +12,7 @@ Value *toValue(const Variant &var) {
 	  {
 		std::wstring str;
 		var.toString().get(str);
-		return Value::CreateStringValue(str);
+		return Value::CreateStringValue(WideToUTF8(str));
 	  }
 	case Variant::JSBOOLEAN:
 		return Value::CreateBooleanValue(var.toBoolean());

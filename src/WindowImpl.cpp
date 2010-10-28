@@ -260,14 +260,14 @@ bool WindowImpl::javascriptCall(IPC::Message* reply_msg, URLString url, const st
     }
     DictionaryValue *dict = static_cast<DictionaryValue*>(val.get());
     std::string funcNameUTF8;
-    std::wstring funcName = UTF8ToWide(funcNameUTF8);
-    if (!dict->GetString(L"callee", &funcName)) {
+    if (!dict->GetString("callee", &funcNameUTF8)) {
         mDelegate->onConsoleMessage(this, WideString::point_to(L"callee is not a string."),
                                     thisFunc, 2);
         return false;
     }
+    std::wstring funcName = UTF8ToWide(funcNameUTF8);
     ListValue *listValue = NULL;
-    if (!dict->GetList(L"arguments", &listValue)) {
+    if (!dict->GetList("arguments", &listValue)) {
         mDelegate->onConsoleMessage(this, WideString::point_to(L"arguments is not an array."),
                                     thisFunc, 3);
         return false;
@@ -679,6 +679,7 @@ RendererPreferences WindowImpl::GetRendererPrefs(Profile*) const {
 WebPreferences WindowImpl::GetWebkitPrefs() {
     WebPreferences web_prefs;
     web_prefs.experimental_webgl_enabled = true;
+    web_prefs.allow_file_access_from_file_urls = true;
     return web_prefs;
 }
 
