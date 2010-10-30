@@ -38,6 +38,7 @@
 #include "base/ref_counted.h"
 #include "base/message_loop.h"
 #include "base/scoped_ptr.h"
+#include "chrome/browser/browser_thread.h"
 
 #if defined(OS_MACOSX)
 #include "base/mac/scoped_nsautorelease_pool.h"
@@ -45,7 +46,6 @@
 
 class BrowserRenderProcessHost;
 class ProcessSingleton;
-class BrowserThread;
 class URLRequestContext;
 class SystemMonitor;
 class HighResolutionTimerManager;

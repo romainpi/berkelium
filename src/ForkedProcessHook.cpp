@@ -76,17 +76,15 @@
 #include "base/at_exit.h"
 #include "base/command_line.h"
 #include "base/debug_util.h"
-#include "base/debug/debugger.h"
 #include "base/i18n/icu_util.h"
-#include "base/mac/scoped_nsautorelease_pool.h"
+#include "base/scoped_nsautorelease_pool.h"
 #include "base/message_loop.h"
-#include "base/metrics/stats_counters.h"
-#include "base/metrics/stats_table.h"
 #include "base/path_service.h"
 #include "base/process_util.h"
 #include "base/string_number_conversions.h"
 #include "base/string_util.h"
 #include "base/utf_string_conversions.h"
+#include "base/win_util.h"
 #include "chrome/browser/defaults.h"
 #include "chrome/browser/diagnostics/diagnostics_main.h"
 #include "chrome/browser/renderer_host/render_process_host.h"
@@ -132,6 +130,7 @@
 #endif
 
 #if defined(OS_WIN)
+#include "sandbox/src/dep.h"
 #include "sandbox/src/sandbox.h"
 #include "tools/memory_watcher/memory_watcher.h"
 #endif
@@ -159,20 +158,8 @@ extern int NaClBrokerMain(const MainFunctionParams&);
 extern int ServiceProcessMain(const MainFunctionParams&);
 
 #if defined(OS_WIN)
-// TODO(erikkay): isn't this already defined somewhere?
-#define DLLEXPORT __declspec(dllexport)
-
-// We use extern C for the prototype DLLEXPORT to avoid C++ name mangling.
-extern "C" {
-DLLEXPORT int __cdecl ChromeMain(HINSTANCE instance,
-                                 sandbox::SandboxInterfaceInfo* sandbox_info,
-                                 TCHAR* command_line);
-}
-#elif defined(OS_POSIX)
-extern "C" {
-__attribute__((visibility("default")))
-int ChromeMain(int argc, char** argv);
-}
+EXTERN_C IMAGE_DOS_HEADER __ImageBase;
+#define HINST_THISCOMPONENT ((HINSTANCE)&__ImageBase)
 #endif
 
 namespace {
@@ -482,17 +469,6 @@ void InitializeStatsTable(base::ProcessId browser_pid,
   // Chrome.  These lines can be commented out to effectively turn
   // counters 'off'.  The table is created and exists for the life
   // of the process.  It is not cleaned up.
-  if (parsed_command_line.HasSwitch(switches::kEnableStatsTable) ||
-      parsed_command_line.HasSwitch(switches::kEnableBenchmarking)) {
-    // NOTIMPLEMENTED: we probably need to shut this down correctly to avoid
-    // leaking shared memory regions on posix platforms.
-    std::string statsfile =
-        StringPrintf("%s-%u", chrome::kStatsFilename,
-                     static_cast<unsigned int>(browser_pid));
-    base::StatsTable *stats_table = new base::StatsTable(statsfile,
-        chrome::kStatsMaxThreads, chrome::kStatsMaxCounters);
-    base::StatsTable::set_current(stats_table);
-  }
 }
 
 }  // namespace
@@ -531,7 +507,7 @@ void forkedProcessHook(int argc, char **argv)
   // event loop, but we don't want to leave them hanging around until the
   // app quits. Each "main" needs to flush this pool right before it goes into
   // its main event loop to get rid of the cruft.
-  base::mac::ScopedNSAutoreleasePool autorelease_pool;
+  base::ScopedNSAutoreleasePool autorelease_pool;
 
 #if defined(OS_CHROMEOS)
   chromeos::BootTimesLoader::Get()->SaveChromeMainStats();
@@ -754,9 +730,6 @@ void forkedProcessHook(int argc, char **argv)
 
   InitializeStatsTable(browser_pid, parsed_command_line);
 
-  base::StatsScope<base::StatsCounterTimer>
-      startup_timer(chrome::Counters::chrome_main());
-
   // Enable the heap profiler as early as possible!
   EnableHeapProfiler(parsed_command_line);
 
@@ -769,7 +742,21 @@ void forkedProcessHook(int argc, char **argv)
   // its initialization.
   SandboxInitWrapper sandbox_wrapper;
 #if defined(OS_WIN)
-  sandbox_wrapper.SetServices(sandbox_info);
+  win_util::WinVersion win_version = win_util::GetWinVersion();
+  if (win_version < win_util::WINVERSION_VISTA) {
+    // On Vista, this is unnecessary since it is controlled through the
+    // /NXCOMPAT linker flag.
+    // Enforces strong DEP support.
+    (*ptrSetCurrentProcessDEP)(sandbox::DEP_ENABLED);
+  }
+
+  // Get the interface pointer to the BrokerServices or TargetServices,
+  // depending who we are.
+  sandbox::SandboxInterfaceInfo sandbox_info = {0};
+  sandbox_info.broker_services = (*ptrGetBrokerServices)();
+  if (!sandbox_info.broker_services)
+    sandbox_info.target_services = (*ptrGetTargetServices)();
+  sandbox_wrapper.SetServices(&sandbox_info);
 #endif
 
   // OS X enables sandboxing later in the startup process.
@@ -778,7 +765,7 @@ void forkedProcessHook(int argc, char **argv)
 #endif  // !OS_MACOSX
 
 #if defined(OS_WIN)
-  _Module.Init(NULL, instance);
+  _Module.Init(NULL, HINST_THISCOMPONENT);
 #endif
 
   bool single_process =
@@ -864,8 +851,6 @@ void forkedProcessHook(int argc, char **argv)
                                   << process_type;
   }
 #endif  // OS_MACOSX
-
-  startup_timer.Stop();  // End of Startup Time Measurement.
 
   MainFunctionParams main_params(parsed_command_line, sandbox_wrapper,
                                  &autorelease_pool);
