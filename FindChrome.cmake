@@ -164,19 +164,16 @@ IF(CHROME_FOUND)
       SET(CHROMIUM_FRAMEWORK Chromium\ Framework.framework)
       SET(CHROME_LANG en)
       SET(CHROMIUM_FRAMEWORK_PATH ${CHROME_ROOT}/src/xcodebuild/${CHROMIUMMODE}/${CHROMIUM_FRAMEWORK})
-      SET(LOCAL_CHROMIUM_FRAMEWORK ${CHROME_APP_NAME}/Contents/Versions/$$VERSION/${CHROMIUM_FRAMEWORK})
+      SET(LOCAL_CHROMIUM_FRAMEWORK ${CHROME_APP_NAME}/Contents/lib/${CHROMIUM_FRAMEWORK})
       SET(CHROME_SYMLINKS_COMMAND
-        eval `cat ${CHROME_ROOT}/src/chrome/VERSION` &&
-        VERSION=$$MAJOR.$$MINOR.$$BUILD.$$PATCH &&
         mkdir -p ${CHROME_APP_NAME} &&
         mkdir -p ${CHROME_APP_NAME}/Contents &&
-        mkdir -p ${CHROME_APP_NAME}/Contents/Resources &&
-        mkdir -p ${CHROME_APP_NAME}/Contents/Frameworks &&
+        mkdir -p ${CHROME_APP_NAME}/Contents/lib &&
         mkdir -p ${CHROME_APP_NAME}/Contents/MacOS &&
         mkdir -p ${LOCAL_CHROMIUM_FRAMEWORK} &&
         mkdir -p ${LOCAL_CHROMIUM_FRAMEWORK}/Libraries &&
         mkdir -p ${LOCAL_CHROMIUM_FRAMEWORK}/Resources &&
-        ln -sf  ${CHROME_APP_NAME}/Contents/Frameworks/${CHROMIUM_FRAMEWORK} &&
+        sh util/make-info-plist.sh ${CHROME_ROOT} ${CHROME_APP_NAME} ${CHROME_APP_APP} org.berkelium.${CHROME_APP_APP} &&
         ln -sf ${CHROMIUM_FRAMEWORK_PATH}/Libraries/libffmpegsumo.dylib ${LOCAL_CHROMIUM_FRAMEWORK}/Libraries/ &&
         ln -sf ${CHROMIUM_FRAMEWORK_PATH}/Resources/chrome.pak ${LOCAL_CHROMIUM_FRAMEWORK}/Resources/ &&
         ln -sf ${CHROMIUM_FRAMEWORK_PATH}/Resources/${CHROME_LANG}.lproj ${LOCAL_CHROMIUM_FRAMEWORK}/Resources/ &&

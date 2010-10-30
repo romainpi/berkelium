@@ -128,8 +128,8 @@ FilePath GetVersionedDirectory() {
     // .app's versioned directory.
     path = path.DirName().DirName();
   } else {
-    // Go into the versioned directory.
-    path = path.Append("Versions").Append(chrome::kChromeVersion);
+    // Go into the berkelium lib directory.
+    path = path.Append("lib");
   }
 
   return path;
