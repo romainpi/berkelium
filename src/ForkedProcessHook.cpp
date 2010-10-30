@@ -84,7 +84,6 @@
 #include "base/string_number_conversions.h"
 #include "base/string_util.h"
 #include "base/utf_string_conversions.h"
-#include "base/win_util.h"
 #include "chrome/browser/defaults.h"
 #include "chrome/browser/diagnostics/diagnostics_main.h"
 #include "chrome/browser/renderer_host/render_process_host.h"
@@ -130,6 +129,7 @@
 #endif
 
 #if defined(OS_WIN)
+#include "base/win_util.h"
 #include "sandbox/src/dep.h"
 #include "sandbox/src/sandbox.h"
 #include "tools/memory_watcher/memory_watcher.h"
@@ -654,7 +654,7 @@ void forkedProcessHook(int argc, char **argv)
     //
     // Note that we *can't* rely on BeingDebugged to catch this case because we
     // are the child process, which is not being debugged.
-    if (!base::debug::BeingDebugged())
+    if (!DebugUtil::BeingDebugged())
       signal(SIGINT, SIG_IGN);
 #endif
   }
@@ -715,13 +715,8 @@ void forkedProcessHook(int argc, char **argv)
   // startup/initialization order.
 
   // The helper's Info.plist marks it as a background only app.
-  if (mac_util::IsBackgroundOnlyProcess()) {
-    CHECK(parsed_command_line.HasSwitch(switches::kProcessType))
-        << "Helper application requires --type.";
-  } else {
-    CHECK(!parsed_command_line.HasSwitch(switches::kProcessType))
-        << "Main application forbids --type, saw \"" << process_type << "\".";
-  }
+  CHECK(parsed_command_line.HasSwitch(switches::kProcessType))
+      << "Berkelium helper application requires --type.";
 #endif  // defined(OS_MACOSX)
 
   if (IsCrashReporterEnabled())

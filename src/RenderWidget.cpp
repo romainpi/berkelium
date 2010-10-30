@@ -264,8 +264,8 @@ void RenderWidget::WindowFrameChanged() {
 }
 
   // Methods associated with GPU-accelerated plug-in instances.
-gfx::PluginWindowHandle RenderWidget::AllocateFakePluginWindowHandle(bool opaque) {
-  return plugin_container_manager_.AllocateFakePluginWindowHandle(opaque);
+gfx::PluginWindowHandle RenderWidget::AllocateFakePluginWindowHandle(bool opaque, bool root) {
+  return plugin_container_manager_.AllocateFakePluginWindowHandle(opaque, root);
 }
 void RenderWidget::DestroyFakePluginWindowHandle(gfx::PluginWindowHandle window) {
   plugin_container_manager_.DestroyFakePluginWindowHandle(window);
@@ -291,24 +291,17 @@ void RenderWidget::AcceleratedSurfaceBuffersSwapped(gfx::PluginWindowHandle wind
   // FIXME: What do we do here.
   //[cocoa_view_ drawAcceleratedPluginLayer];
 }
-  // Draws the current GPU-accelerated plug-in instances into the given context.
-void RenderWidget::DrawAcceleratedSurfaceInstances(CGLContextObj context) {
-  CGLSetCurrentContext(context);
-  gfx::Rect rect = GetWindowRect();
-  glMatrixMode(GL_PROJECTION);
-  glLoadIdentity();
-  // Note that we place the origin at the upper left corner with +y
-  // going down
-  glOrtho(0, rect.width(), rect.height(), 0, -1, 1);
-  glMatrixMode(GL_MODELVIEW);
-  glLoadIdentity();
 
-  plugin_container_manager_.Draw(context);
+void RenderWidget::SetTakesFocusOnlyOnMouseDown(bool) {
+}
+void RenderWidget::SetPluginImeEnabled(bool, int) {
+}
+bool RenderWidget::PostProcessEventForPluginIme(const NativeWebKeyboardEvent&) {
+  return false;
+}
+void RenderWidget::GpuRenderingStateDidChange() {
 }
 
-void RenderWidget::AcceleratedSurfaceContextChanged() {
-  plugin_container_manager_.ForceTextureReload();
-}
 #endif
 
 #if defined(OS_LINUX)
@@ -358,7 +351,7 @@ void RenderWidget::CreatePluginContainer(gfx::PluginWindowHandle id){
     gtk_widget_show(widget);
 
 }
-void RenderWidget::DestroyPluginContainer(gfx::PluginWindowHandle id){
+void RenderWidget::DeallocPluginContainer(gfx::PluginWindowHandle id){
     std::cerr<<"DESTROYED PLUGIN CONTAINER: "<<id<<std::endl;
     std::map<gfx::PluginWindowHandle, GtkWidget*>::iterator iter;
     iter = activeWidgets.find(id);

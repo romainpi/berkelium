@@ -1,4 +1,4 @@
-tested = win
+tested = win mac
 win = 8.0.552.23
 mac = 8.0.552.23
 linux = 64206

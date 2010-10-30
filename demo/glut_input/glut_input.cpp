@@ -57,9 +57,9 @@ using namespace Berkelium;
 GLTextureWindow* bk_texture_window = NULL;
 
 // And some global constants
-#define WIDTH 512
-#define HEIGHT 512
-#define USE_TRANSPARENCY false
+#define WIDTH 1024
+#define HEIGHT 1024
+#define USE_TRANSPARENCY true
 
 unsigned int win_width = WIDTH;
 unsigned int win_height = HEIGHT;

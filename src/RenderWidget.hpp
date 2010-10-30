@@ -202,16 +202,18 @@ public: /******* RenderWidgetHostView *******/
   virtual void WindowFrameChanged();
 
   // Methods associated with GPU-accelerated plug-in instances.
-  virtual gfx::PluginWindowHandle AllocateFakePluginWindowHandle(bool);
+  virtual gfx::PluginWindowHandle AllocateFakePluginWindowHandle(bool, bool);
   virtual void DestroyFakePluginWindowHandle(gfx::PluginWindowHandle window);
   virtual void AcceleratedSurfaceSetIOSurface(gfx::PluginWindowHandle window,
                                               int32 width, int32 height, uint64_t io_surface_id);
   virtual void AcceleratedSurfaceSetTransportDIB(gfx::PluginWindowHandle window,
                                               int32 width, int32 height, base::SharedMemoryHandle transport_dib);
   virtual void AcceleratedSurfaceBuffersSwapped(gfx::PluginWindowHandle window);
-  // Draws the current GPU-accelerated plug-in instances into the given context.
-  virtual void DrawAcceleratedSurfaceInstances(CGLContextObj context);
-  virtual void AcceleratedSurfaceContextChanged();
+  virtual void SetTakesFocusOnlyOnMouseDown(bool);
+  virtual void SetPluginImeEnabled(bool, int);
+  virtual bool PostProcessEventForPluginIme(const NativeWebKeyboardEvent&);
+  virtual void GpuRenderingStateDidChange();
+
  #endif
 
 #if defined(OS_LINUX)

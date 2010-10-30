@@ -30,6 +30,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "base/scoped_nsautorelease_pool.h"
 #include "berkelium/Platform.hpp"
 #include "berkelium/Berkelium.hpp"
 #include "berkelium/Singleton.hpp"
@@ -39,10 +40,6 @@
 #include "base/message_loop.h"
 #include "base/scoped_ptr.h"
 #include "chrome/browser/browser_thread.h"
-
-#if defined(OS_MACOSX)
-#include "base/mac/scoped_nsautorelease_pool.h"
-#endif
 
 class BrowserRenderProcessHost;
 class ProcessSingleton;
@@ -71,9 +68,7 @@ class Root : public AutoSingleton<Root> {
     scoped_ptr<ProcessSingleton> mProcessSingleton;
     scoped_ptr<BrowserThread> mUIThread;
     scoped_ptr<MemoryRenderViewHostFactory> mRenderViewHostFactory;
-#if defined(OS_MAC)
     base::ScopedNSAutoreleasePool mAutoreleasePool;
-#endif
     scoped_refptr<HistogramSynchronizer> mHistogramSynchronizer;
 
     ErrorDelegate* mErrorHandler;

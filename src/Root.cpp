@@ -44,6 +44,7 @@
 #include "base/file_util.h"
 #include "base/i18n/icu_util.h"
 #include "net/base/cookie_monster.h"
+#include "chrome/common/chrome_constants.h"
 #include "chrome/common/chrome_paths.h"
 #include "chrome/common/chrome_switches.h"
 #include "chrome/common/url_constants.h"
@@ -109,6 +110,30 @@ namespace sandbox {
     // Not exported.
     HANDLE g_shared_section = NULL;
     bool s_is_broker = true;
+}
+#endif
+
+#if defined(OS_MACOSX)
+namespace chrome {
+FilePath GetVersionedDirectory() {
+  // Start out with the path to the running executable.
+  FilePath path;
+  PathService::Get(base::FILE_EXE, &path);
+  // One step up to MacOS, another to Contents.
+  path = path.DirName().DirName();
+
+  if (false && mac_util::IsBackgroundOnlyProcess()) {
+    // path identifies the helper .app's Contents directory in the browser
+    // .app's versioned directory.  Go up two steps to get to the browser
+    // .app's versioned directory.
+    path = path.DirName().DirName();
+  } else {
+    // Go into the versioned directory.
+    path = path.Append("Versions").Append(chrome::kChromeVersion);
+  }
+
+  return path;
+}
 }
 #endif
 
@@ -208,12 +233,12 @@ Root::Root (FileString homeDirectory) {
     CommandLine::ForCurrentProcess()->ParseFromString(subprocess_str);
 #elif defined(OS_MACOSX)
     FilePath app_contents;
-    PathService::Get(base::DIR_CURRENT, &app_contents);
-    subprocess = app_contents.Append("MacOS").Append("berkelium");
+    PathService::Get(base::FILE_EXE, &app_contents);
+    subprocess = app_contents.DirName().Append("berkelium");
     std::string subprocess_str = "--browser-subprocess-path=";
     subprocess_str += subprocess.value();
     const char* argv[] = { "berkelium", subprocess_str.c_str(),
-        "--enable-webgl","--in-process-webgl" };
+        "--enable-webgl" };
     CommandLine::Init(arraysize(argv), argv);
 #elif defined(OS_POSIX)
     FilePath module_file;

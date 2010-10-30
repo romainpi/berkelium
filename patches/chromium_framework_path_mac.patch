@@ -1,0 +1,13 @@
+Index: chrome/common/chrome_paths_mac.mm
+===================================================================
+--- chrome/common/chrome_paths_mac.mm	(revision 64330)
++++ chrome/common/chrome_paths_mac.mm	(working copy)
+@@ -56,7 +56,7 @@
+   return mac_util::GetUserDirectory(NSDesktopDirectory, result);
+ }
+ 
+-FilePath GetVersionedDirectory() {
++FilePath OrigGetVersionedDirectory() {
+   if (g_override_versioned_directory)
+     return *g_override_versioned_directory;
+ 
