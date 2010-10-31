@@ -173,7 +173,7 @@ IF(CHROME_FOUND)
         mkdir -p ${LOCAL_CHROMIUM_FRAMEWORK} &&
         mkdir -p ${LOCAL_CHROMIUM_FRAMEWORK}/Libraries &&
         mkdir -p ${LOCAL_CHROMIUM_FRAMEWORK}/Resources &&
-        sh util/make-info-plist.sh ${CHROME_ROOT} ${CHROME_APP_NAME} ${CHROME_APP_APP} org.berkelium.${CHROME_APP_APP} &&
+        sh ${BERKELIUM_TOP_LEVEL}/util/make-info-plist.sh ${CHROME_ROOT} ${CHROME_APP_NAME} ${CHROME_APP_APP} org.berkelium.${CHROME_APP_APP} &&
         ln -sf ${CHROMIUM_FRAMEWORK_PATH}/Libraries/libffmpegsumo.dylib ${LOCAL_CHROMIUM_FRAMEWORK}/Libraries/ &&
         ln -sf ${CHROMIUM_FRAMEWORK_PATH}/Resources/chrome.pak ${LOCAL_CHROMIUM_FRAMEWORK}/Resources/ &&
         ln -sf ${CHROMIUM_FRAMEWORK_PATH}/Resources/${CHROME_LANG}.lproj ${LOCAL_CHROMIUM_FRAMEWORK}/Resources/ &&
