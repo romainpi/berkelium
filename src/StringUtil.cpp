@@ -35,6 +35,8 @@
 
 #include "base/utf_string_conversions.h"
 
+#include <cstring>
+
 namespace Berkelium {
 
 namespace {

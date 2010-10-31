@@ -351,7 +351,7 @@ void RenderWidget::CreatePluginContainer(gfx::PluginWindowHandle id){
     gtk_widget_show(widget);
 
 }
-void RenderWidget::DeallocPluginContainer(gfx::PluginWindowHandle id){
+void RenderWidget::DestroyPluginContainer(gfx::PluginWindowHandle id){
     std::cerr<<"DESTROYED PLUGIN CONTAINER: "<<id<<std::endl;
     std::map<gfx::PluginWindowHandle, GtkWidget*>::iterator iter;
     iter = activeWidgets.find(id);
