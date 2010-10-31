@@ -41,7 +41,7 @@ namespace {
 template <class CharType, class StrType>
 inline WeakString<CharType> newWeakString(const StrType &str) {
 	CharType *outChar = new CharType[str.length()];
-	memcpy(outChar, str.data(), str.length());
+	std::memcpy(outChar, str.data(), sizeof(CharType) * str.length());
 	return WeakString<CharType>::point_to(outChar, str.length());
 }
 }
@@ -59,7 +59,7 @@ UTF8String BERKELIUM_EXPORT WideToUTF8(const WideString &in) {
 
 WideString BERKELIUM_EXPORT UTF16ToWide(const UTF16String &in) {
 	std::wstring out;
-	::UTF16ToWide(in.data(), in.length(), &out);
+	::UTF16ToWide((::char16*)in.data(), in.length(), &out);
 	return newWeakString<wchar_t, std::wstring>(out);
 }
 UTF16String BERKELIUM_EXPORT wideToUTF16(const WideString &in) {
@@ -70,7 +70,7 @@ UTF16String BERKELIUM_EXPORT wideToUTF16(const WideString &in) {
 
 UTF8String BERKELIUM_EXPORT UTF16ToUTF8(const UTF16String &in) {
 	std::string out;
-	::UTF16ToUTF8(in.data(), in.length(), &out);
+	::UTF16ToUTF8((::char16*)in.data(), in.length(), &out);
 	return newWeakString<char, std::string>(out);
 }
 UTF16String BERKELIUM_EXPORT UTF8ToUTF16(const UTF8String &in) {

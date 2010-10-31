@@ -31,6 +31,7 @@
  */
 
 #include "berkelium/ScriptVariant.hpp"
+#include "berkelium/StringUtil.hpp"
 
 #include <cstdlib>
 #include <cstring>
@@ -51,13 +52,7 @@ namespace Script {
 	void Variant::initmb(const char* str, size_t length) {
 		mType = JSSTRING;
 		if (str && length) {
-			wchar_t* wide = new wchar_t[length + 1];
-#ifdef _WIN32
-			mbstowcs_s(&length, wide, length+1, str, length);
-#else
-			length = std::mbstowcs(wide, str, length);
-#endif
-			mStrPointer = WideString::point_to(wide, length);
+			mStrPointer = UTF8ToWide(UTF8String::point_to(str, length));
 		} else {
 			mStrPointer = WideString::empty();
 		}
