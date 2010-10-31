@@ -231,6 +231,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\StringUtil.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\src\Window.cpp"
 				>
 			</File>
@@ -348,6 +352,10 @@
 			</File>
 			<File
 				RelativePath="..\include\berkelium\Singleton.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\berkelium\StringUtil.hpp"
 				>
 			</File>
 			<File
