@@ -291,7 +291,7 @@ bool WindowImpl::javascriptCall(IPC::Message* reply_msg, URLString url, const st
 
 void WindowImpl::synchronousScriptReturn(void* reply_msg, const Script::Variant &result) {
     std::string jsonStr = "null";
-    if (host()) {
+    if (host() && reply_msg) {
         bool success = Berkelium::Script::toJSON(result, &jsonStr);
         host()->JavaScriptMessageBoxClosed(
             static_cast<IPC::Message*>(reply_msg),

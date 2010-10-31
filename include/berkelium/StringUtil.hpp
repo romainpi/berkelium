@@ -1,5 +1,5 @@
 /*  Berkelium - Embedded Chromium
- *  ScriptUtil.hpp
+ *  StringUtil.hpp
  *
  *  Copyright (c) 2010, Patrick Reiter Horn
  *  All rights reserved.
@@ -30,22 +30,32 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _BERKELIUM_SCRIPT_URIL_HPP_
-#define _BERKELIUM_SCRIPT_URIL_HPP_
+#ifndef _BERKELIUM_STRING_URIL_HPP_
+#define _BERKELIUM_STRING_URIL_HPP_
 
 #include "berkelium/WeakString.hpp"
 
 namespace Berkelium {
-namespace Script {
-class Variant;
 
-WideString BERKELIUM_EXPORT toJSON(const Variant &var);
+typedef unsigned short char16;
 
-void BERKELIUM_EXPORT toJSON_free(WideString returnedValue);
+typedef WeakString<char> UTF8String;
+typedef WeakString<char16> UTF16String;
 
-bool BERKELIUM_EXPORT fromJSON(WideString str, Variant &out);
+WideString BERKELIUM_EXPORT UTF8ToWide(const UTF8String &in);
+UTF8String BERKELIUM_EXPORT WideToUTF8(const WideString &in);
 
-}
+WideString BERKELIUM_EXPORT UTF16ToWide(const UTF16String &in);
+UTF16String BERKELIUM_EXPORT WideToUTF16(const WideString &in);
+
+UTF8String BERKELIUM_EXPORT UTF16ToUTF8(const UTF16String &in);
+UTF16String BERKELIUM_EXPORT UTF8ToUTF16(const UTF8String &in);
+
+void BERKELIUM_EXPORT stringUtil_free(WideString returnedValue);
+void BERKELIUM_EXPORT stringUtil_free(UTF8String returnedValue);
+void BERKELIUM_EXPORT stringUtil_free(UTF16String returnedValue);
+
 }
 
 #endif
+
