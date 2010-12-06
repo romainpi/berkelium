@@ -113,30 +113,6 @@ namespace sandbox {
 }
 #endif
 
-#if defined(OS_MACOSX)
-namespace chrome {
-FilePath GetVersionedDirectory() {
-  // Start out with the path to the running executable.
-  FilePath path;
-  PathService::Get(base::FILE_EXE, &path);
-  // One step up to MacOS, another to Contents.
-  path = path.DirName().DirName();
-
-  if (false && mac_util::IsBackgroundOnlyProcess()) {
-    // path identifies the helper .app's Contents directory in the browser
-    // .app's versioned directory.  Go up two steps to get to the browser
-    // .app's versioned directory.
-    path = path.DirName().DirName();
-  } else {
-    // Go into the berkelium lib directory.
-    path = path.Append("lib");
-  }
-
-  return path;
-}
-}
-#endif
-
 AUTO_SINGLETON_INSTANCE(Berkelium::Root);
 namespace Berkelium {
 
@@ -404,7 +380,7 @@ Root::Root (FileString homeDirectory) {
   CHECK(icu_result);
 
     mRenderViewHostFactory.reset(new MemoryRenderViewHostFactory);
-    
+
 //    mNotificationService=new NotificationService();
 //    ChildProcess* coreProcess=new ChildProcess;
 //    coreProcess->set_main_thread(new ChildThread);
