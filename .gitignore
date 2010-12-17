@@ -33,6 +33,7 @@ chrome_debug.log
 chrome.log
 First Run
 /win32/resources
+installed-chromium
 
 # generated documentation
 berkelium_docs
