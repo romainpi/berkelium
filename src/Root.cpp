@@ -289,6 +289,23 @@ Root::Root (FileString homeDirectory) {
     mUIThread.reset(new BrowserThread(BrowserThread::UI, mMessageLoop.get()));
     mErrorHandler = 0;
 
+#if defined(OS_LINUX)
+    g_thread_init(NULL);
+    // Glib type system initialization. Needed at least for gconf,
+    // used in net/proxy/proxy_config_service_linux.cc. Most likely
+    // this is superfluous as gtk_init() ought to do this. It's
+    // definitely harmless, so retained as a reminder of this
+    // requirement for gconf.
+    g_type_init();
+    // gtk_init() can change |argc| and |argv|.
+    char argv0data[] = "[Berkelium]";
+    char *argv0 = argv0data;
+    char **argv = &argv0;
+    int argc = 1;
+    gtk_init(&argc, &argv);
+    SetUpGLibLogHandler();
+#endif
+
     mProcessSingleton.reset(new ProcessSingleton(homedirpath));
     BrowserProcessImpl *browser_process;
     browser_process=new BrowserProcessImpl(*CommandLine::ForCurrentProcess());
@@ -339,21 +356,6 @@ Root::Root (FileString homeDirectory) {
 
     // We want to be sure to init NSPR on the main thread.
     base::EnsureNSPRInit();
-
-    g_thread_init(NULL);
-    // Glib type system initialization. Needed at least for gconf,
-    // used in net/proxy/proxy_config_service_linux.cc. Most likely
-    // this is superfluous as gtk_init() ought to do this. It's
-    // definitely harmless, so retained as a reminder of this
-    // requirement for gconf.
-    g_type_init();
-    // gtk_init() can change |argc| and |argv|.
-    char argv0data[] = "[Berkelium]";
-    char *argv0 = argv0data;
-    char **argv = &argv0;
-    int argc = 1;
-    gtk_init(&argc, &argv);
-    SetUpGLibLogHandler();
 #endif  // defined(OS_LINUX)
 
   SandboxInitWrapper sandbox_wrapper;
