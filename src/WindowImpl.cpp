@@ -642,6 +642,7 @@ WebPreferences WindowImpl::GetWebkitPrefs() {
     WebPreferences web_prefs;
     web_prefs.experimental_webgl_enabled = true;
     web_prefs.allow_file_access_from_file_urls = true;
+    web_prefs.uses_universal_detector = true;
     return web_prefs;
 }
 
