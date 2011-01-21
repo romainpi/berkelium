@@ -196,7 +196,10 @@ int main (int argc, char** argv) {
     glutIdleFunc(idle);
 
     // Initialize Berkelium and create a window
-    Berkelium::init(FileString::empty());
+    if (!Berkelium::init(FileString::empty())) {
+        std::cout << "Failed to initialize berkelium!" << std::endl;
+        return 1;
+    }
     bk_texture_window = new GLTextureWindow(WIDTH, HEIGHT, USE_TRANSPARENCY);
     bk_texture_window->window()->focus();
 

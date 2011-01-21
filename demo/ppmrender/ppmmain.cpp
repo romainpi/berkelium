@@ -189,7 +189,10 @@ public:
 
 int main (int argc, char **argv) {
     printf("RUNNING MAIN!\n");
-    Berkelium::init(FileString::empty());
+    if (!Berkelium::init(FileString::empty())) {
+        std::cout << "Failed to initialize berkelium!" << std::endl;
+        return 1;
+    }
     std::string url;
 /*
     std::auto_ptr<Window> win(Window::create());

@@ -95,6 +95,7 @@
 #if defined(USE_NSS)
 #include "base/nss_util.h"
 #endif
+#include <iostream>
 
 #if !defined(OS_WIN)
 extern "C"
@@ -177,7 +178,10 @@ void Root::SetUpGLibLogHandler() {
 #endif  // defined(OS_POSIX) && !defined(OS_MACOSX)
 
 
-Root::Root (FileString homeDirectory) {
+Root::Root () {
+}
+
+bool Root::init(FileString homeDirectory) {
 
     new base::AtExitManager();
 
@@ -257,17 +261,12 @@ Root::Root (FileString homeDirectory) {
         PathService::Override(base::DIR_USER_CACHE, homeDirectoryPath);
 #endif
     } else {
-        FilePath tmpPath;
-#if defined(OS_WIN)
-        FilePath::StringType dirName(L"berkeliumyyyy");
-#else
-        FilePath::StringType dirName("berkeliumyyyy");
-#endif
-        if (file_util::CreateNewTempDirectory(dirName, &tmpPath)) {
-            PathService::Override(chrome::DIR_USER_DATA, tmpPath);
-            PathService::Override(chrome::DIR_LOGS, tmpPath);
+        mTempProfileDir.reset(new ScopedTempDir());
+        if (mTempProfileDir->CreateUniqueTempDir()) {
+            PathService::Override(chrome::DIR_USER_DATA, mTempProfileDir->path());
+            PathService::Override(chrome::DIR_LOGS, mTempProfileDir->path());
 #if defined(OS_POSIX)
-            PathService::Override(base::DIR_USER_CACHE, tmpPath);
+            PathService::Override(base::DIR_USER_CACHE, mTempProfileDir->path());
 #endif
         }
     }
@@ -405,8 +404,23 @@ Root::Root (FileString homeDirectory) {
     mHistogramSynchronizer= (new HistogramSynchronizer());
 
     browser::RegisterLocalState(g_browser_process->local_state());
+
     ProfileManager* profile_manager = browser_process->profile_manager();
+    homedirpath = homedirpath.Append(profile_manager->GetCurrentProfileDir());
+    {
+        std::cout << "Profile path: " << homedirpath.value() << std::endl;
+        FilePath prefs_path (ProfileManager::GetProfilePrefsPath(homedirpath));
+        FILE *fp = file_util::OpenFile(prefs_path, "a");
+        file_util::CloseFile(fp);
+        FilePath history_path (homedirpath);
+        history_path = history_path.Append(chrome::kHistoryFilename);
+        std::cout << "  Profile exists: " << ProfileManager::IsProfile(homedirpath) << std::endl;
+    }
     mProf = profile_manager->GetProfile(homedirpath, false);
+    if (!mProf) {
+        mProcessSingleton.reset();
+        return false;
+    }
     mProf->GetPrefs()->SetBoolean(prefs::kSafeBrowsingEnabled, false);
     mProf->GetPrefs()->RegisterStringPref(prefs::kSafeBrowsingClientKey, "");
     mProf->GetPrefs()->RegisterStringPref(prefs::kSafeBrowsingWrappedKey, "");
@@ -426,26 +440,17 @@ Root::Root (FileString homeDirectory) {
     BrowserURLHandler::InitURLHandlers();
 
     {
-#ifndef OS_WIN
-        char dir[L_tmpnam+1];
-        tmpnam(dir);
-        mkdir(dir
-              ,0777
-            );
-#else
-        FilePath dir;
-        if (!file_util::CreateNewTempDirectory(std::wstring(L"plugin_"),
-                                               &dir)) {
-            return;
+        FilePath plugindata = homedirpath.Append("plugin_");
+        if (!file_util::CreateDirectory(plugindata)) {
+            return false;
         }
-#endif
-        FilePath path(dir);
-        PluginService::GetInstance()->SetChromePluginDataDir(path);
+        PluginService::GetInstance()->SetChromePluginDataDir(plugindata);
     }
     PluginService::GetInstance()->LoadChromePlugins(
         g_browser_process->resource_dispatcher_host());
 
     mDefaultRequestContext=mProf->GetRequestContext();
+    return true;
 }
 
 /*
@@ -477,7 +482,10 @@ Root::~Root(){
     mUIThread.reset();
     mMessageLoop.reset();
 
-    mProcessSingleton->Cleanup();
+    if (mProcessSingleton.get()) {
+        mProcessSingleton->Cleanup();
+    }
+    mTempProfileDir.reset(); // Delete the profile if necessary.
 }
 
 

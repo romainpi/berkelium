@@ -254,7 +254,10 @@ int main (int argc, char** argv) {
     glutIdleFunc(idle);
 
     // Initialize Berkelium and create a window
-    Berkelium::init(Berkelium::FileString::empty());
+    if (!Berkelium::init(argc > 2 ? Berkelium::FileString::point_to(argv[2], strlen(argv[2])) : Berkelium::FileString::empty())) {
+        std::cout << "Failed to initialize berkelium!" << std::endl;
+        return 1;
+    }
     bk_texture_window = new GLTextureWindow(WIDTH, HEIGHT, USE_TRANSPARENCY);
     bk_texture_window->window()->addBindOnStartLoading(
         Berkelium::WideString::point_to(L"glutCallback"),

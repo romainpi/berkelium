@@ -37,8 +37,13 @@ namespace Berkelium {
 
 // See ForkedProcessHook.cpp for Berkelium::forkedProcessHook
 
-void init (FileString homeDirectory) {
-    new Root(homeDirectory);
+bool init (FileString homeDirectory) {
+    new Root();
+    if (!Root::getSingleton().init(homeDirectory)) {
+        Root::destroy();
+        return false;
+    }
+    return true;
 }
 void destroy () {
     Root::destroy();

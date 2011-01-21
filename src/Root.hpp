@@ -47,6 +47,7 @@ class URLRequestContext;
 class SystemMonitor;
 class HighResolutionTimerManager;
 class HistogramSynchronizer;
+class ScopedTempDir;
 class StatisticsRecorder;
 namespace chrome_browser_net {
 class PredictorInit;
@@ -71,10 +72,19 @@ class Root : public AutoSingleton<Root> {
     base::ScopedNSAutoreleasePool mAutoreleasePool;
     scoped_refptr<HistogramSynchronizer> mHistogramSynchronizer;
 
+    scoped_ptr<ScopedTempDir> mTempProfileDir; // Used only if non-null
+
     ErrorDelegate* mErrorHandler;
+
 public:
-    Root(FileString homeDirectory);
+    Root();
     ~Root();
+
+    bool init(FileString homeDirectory);
+
+    bool initialized() {
+        return mProf ? true : false;
+    }
 
 //    void runUntilStopped();
 //    void stopRunning();
