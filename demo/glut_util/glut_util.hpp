@@ -57,7 +57,7 @@
 #include <string>
 #include <iostream>
 
-#define DEBUG_PAINT false
+#define DEBUG_PAINT true
 
 using namespace Berkelium;
 
@@ -181,7 +181,7 @@ bool mapOnPaintToTexture(
     }
 
     if (DEBUG_PAINT) {
-      std::cout << "Bitmap rect: w="
+      std::cout << (void*)wini << " Bitmap rect: w="
                 << bitmap_rect.width()<<", h="<<bitmap_rect.height()
                 <<", ("<<bitmap_rect.top()<<","<<bitmap_rect.left()
                 <<") tex size "<<dest_texture_width<<"x"<<dest_texture_height
@@ -193,7 +193,7 @@ bool mapOnPaintToTexture(
         int top = copy_rects[i].top() - bitmap_rect.top();
         int left = copy_rects[i].left() - bitmap_rect.left();
         if (DEBUG_PAINT) {
-            std::cout << "Copy rect: w=" << wid << ", h=" << hig << ", ("
+            std::cout << (void*)wini << " Copy rect: w=" << wid << ", h=" << hig << ", ("
                       << top << "," << left << ")" << std::endl;
         }
         for(int jj = 0; jj < hig; jj++) {
@@ -375,16 +375,16 @@ public:
     }
 
     virtual void onAddressBarChanged(Window *win, URLString newURL) {
-        std::cout << "*** onAddressBarChanged " << newURL << std::endl;
+        std::cout << (void*)win << "*** onAddressBarChanged " << newURL << std::endl;
     }
     virtual void onStartLoading(Window *win, URLString newURL) {
-        std::cout << "*** onStartLoading " << newURL << std::endl;
+        std::cout << (void*)win << "*** onStartLoading " << newURL << std::endl;
     }
     virtual void onLoad(Window *win) {
-        std::wcout << L"*** onLoad " << std::endl;
+        std::wcout << (void*)win << L"*** onLoad " << std::endl;
     }
     virtual void onCrashedWorker(Window *win) {
-        std::wcout << L"*** onCrashedWorker " << std::endl;
+        std::wcout << (void*)win << L"*** onCrashedWorker " << std::endl;
     }
     virtual void onCrashedPlugin(Window *win, WideString pluginName) {
         std::wcout << L"*** onCrashedPlugin " << pluginName << std::endl;
@@ -408,11 +408,11 @@ public:
     virtual void onNavigationRequested(Window *win, URLString newURL,
                                        URLString referrer, bool isNewWindow,
                                        bool &cancelDefaultAction) {
-        std::cout << "*** onNavigationRequested " << newURL << " by " << referrer
+        std::cout << (void*)win << "*** onNavigationRequested " << newURL << " by " << referrer
                   << (isNewWindow?"  (new window)" : " (same window)") << std::endl;
     }
     virtual void onLoadingStateChanged(Window *win, bool isLoading) {
-        std::cout << "*** onLoadingStateChanged "
+        std::cout << (void*)win << "*** onLoadingStateChanged "
                   << (isLoading?"started":"stopped") << std::endl;
     }
     virtual void onTitleChanged(Window *win, WideString title) {
@@ -432,9 +432,13 @@ public:
     }
     virtual void onCreatedWindow(Window *win, Window *newWindow,
                                  const Rect &initialRect) {
-        std::cout << "*** onCreatedWindow "
+        std::cout << (void*)win << "*** onCreatedWindow " << (void*)newWindow<<" "
                   << initialRect.mLeft << "," << initialRect.mTop << ": "
                   << initialRect.mWidth << "x" << initialRect.mHeight << std::endl;
+        if (initialRect.mWidth < 1 || initialRect.mHeight < 1) {
+            //newWindow->resize(this->width, this->height);
+        }
+        newWindow->setDelegate(this);
     }
     virtual void onWidgetCreated(Window *win, Widget *newWidget, int zIndex) {
         std::cout << "*** onWidgetCreated " << newWidget << " index " << zIndex << std::endl;
