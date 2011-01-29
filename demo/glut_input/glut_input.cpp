@@ -254,7 +254,11 @@ int main (int argc, char** argv) {
     glutIdleFunc(idle);
 
     // Initialize Berkelium and create a window
-    if (!Berkelium::init(argc > 2 ? Berkelium::FileString::point_to(argv[2], strlen(argv[2])) : Berkelium::FileString::empty())) {
+    if (!Berkelium::init(
+#ifndef _WIN32
+            argc > 2 ? Berkelium::FileString::point_to(argv[2], strlen(argv[2])) :
+#endif
+                Berkelium::FileString::empty())) {
         std::cout << "Failed to initialize berkelium!" << std::endl;
         return 1;
     }

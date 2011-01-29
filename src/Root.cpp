@@ -409,13 +409,13 @@ bool Root::init(FileString homeDirectory) {
     ProfileManager* profile_manager = browser_process->profile_manager();
     homedirpath = homedirpath.Append(profile_manager->GetCurrentProfileDir());
     {
-        std::cout << "Profile path: " << homedirpath.value() << std::endl;
+        //std::cout << "Profile path: " << homedirpath.value() << std::endl;
         FilePath prefs_path (ProfileManager::GetProfilePrefsPath(homedirpath));
         FILE *fp = file_util::OpenFile(prefs_path, "a");
         file_util::CloseFile(fp);
         FilePath history_path (homedirpath);
         history_path = history_path.Append(chrome::kHistoryFilename);
-        std::cout << "  Profile exists: " << ProfileManager::IsProfile(homedirpath) << std::endl;
+        //std::cout << "  Profile exists: " << ProfileManager::IsProfile(homedirpath) << std::endl;
     }
     mProf = profile_manager->GetProfile(homedirpath, false);
     if (!mProf) {
@@ -441,7 +441,7 @@ bool Root::init(FileString homeDirectory) {
     BrowserURLHandler::InitURLHandlers();
 
     {
-        FilePath plugindata = homedirpath.Append("plugin_");
+        FilePath plugindata = homedirpath.AppendASCII("plugin_");
         if (!file_util::CreateDirectory(plugindata)) {
             return false;
         }
