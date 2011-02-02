@@ -257,8 +257,8 @@ elif [ x"${platform}" = x"Linux" ]; then
                     sudo apt-get install subversion pkg-config python ruby perl g++ g++-multilib
                     sudo apt-get install bison flex gperf libnss3-dev libnspr4-dev libgtk2.0-dev libnspr4-0d libasound2-dev
                     sudo apt-get install msttcorefonts libgconf2-dev libcairo2-dev libdbus-1-dev
-                    sudo apt-get install liborbit2-dev libpopt-dev orbit2
-                    sudo apt-get install libnss3-dev
+                    sudo apt-get install liborbit2-dev libpopt-dev orbit2 libjpeg-dev libbz2-dev
+                    sudo apt-get install libnss3-dev libgnome-keyring-dev libdbus-glib-1-dev
                     ;;
                 fedora )
                     sudo yum install subversion pkgconfig python perl ruby gcc-c++ bison \
