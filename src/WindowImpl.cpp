@@ -611,7 +611,7 @@ void WindowImpl::UpdateCursor(const WebCursor& cursor) {
     GdkCursor* cursorPtr = cursorType == GDK_CURSOR_IS_PIXMAP ? cursor.GetCustomCursor() : NULL;
     Cursor new_cursor(cursorType, cursorPtr);
 #elif BERKELIUM_PLATFORM == PLATFORM_MAC
-    Cursor new_cursor;
+    Cursor new_cursor( cursor.GetCursor() );
 #else
     Cursor new_cursor;
 #endif
