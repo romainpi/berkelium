@@ -43,6 +43,7 @@ mkdir -p "$outdir/lib/Chromium Framework.framework/Resources/en.lproj"
 for copyfile in chrome.pak common.sb nacl_loader.sb renderer.sb utility.sb worker.sb en.lproj/locale.pak; do
     cp "$versionsrc/Chromium Framework.framework/Resources/$copyfile" "$outdir/lib/Chromium Framework.framework/Resources/$copyfile"
 done
+cp build/chromium/src/third_party/WebKit/WebCore/Resources/*Cursor.png "$outdir/lib/Chromium Framework.framework/Resources/"
 for header in "include/berkelium"/*; do
     cp "$header" "$outdir/$header"
 done
