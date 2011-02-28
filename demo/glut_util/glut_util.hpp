@@ -436,7 +436,7 @@ public:
                   << initialRect.mLeft << "," << initialRect.mTop << ": "
                   << initialRect.mWidth << "x" << initialRect.mHeight << std::endl;
         if (initialRect.mWidth < 1 || initialRect.mHeight < 1) {
-            //newWindow->resize(this->width, this->height);
+            newWindow->resize(this->width, this->height);
         }
         newWindow->setDelegate(this);
     }
