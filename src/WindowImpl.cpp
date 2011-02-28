@@ -634,7 +634,14 @@ RendererPreferences WindowImpl::GetRendererPrefs(Profile*) const {
     RendererPreferences ret;
     renderer_preferences_util::UpdateFromSystemSettings(
         &ret, profile());
-    ret.browser_handles_top_level_requests = true;
+
+    // We may want to support this eventually...
+    // But until we properly support top-level requests, this causes certain
+    // popup windows (such as descriptions of youtube videos) to redirect
+    // infinitely, or else never load with a provisional load error
+    //     net::ERR_ABORTED (-3)
+    // Enable the following line at your own risk
+    //ret.browser_handles_top_level_requests = true;
     return ret;
 }
 
@@ -1292,7 +1299,9 @@ void WindowImpl::ShowCreatedWindow(int route_id,
     mNewlyCreatedWindows.erase(iter);
     newwin->host()->Init();
 
-    newwin->resize(initial_pos.width(), initial_pos.height());
+    if (initial_pos.width() != 0 && initial_pos.height() != 0) {
+        newwin->resize(initial_pos.width(), initial_pos.height());
+    }
 
     if (!newwin->process()->HasConnection()) {
         // The view has gone away or the renderer crashed. Nothing to do.
