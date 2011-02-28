@@ -51,7 +51,7 @@
 #include "chrome/browser/in_process_webkit/session_storage_namespace.h"
 #include "chrome/browser/in_process_webkit/webkit_context.h"
 #include "chrome/browser/prefs/pref_service.h"
-#include "chrome/browser/profile.h"
+#include "chrome/browser/profiles/profile.h"
 #include "chrome/browser/renderer_host/site_instance.h"
 #include "chrome/browser/sessions/session_types.h"
 #include "chrome/browser/tab_contents/interstitial_page.h"
@@ -62,6 +62,7 @@
 #include "chrome/common/navigation_types.h"
 #include "chrome/common/notification_service.h"
 #include "chrome/common/pref_names.h"
+#include "chrome/common/page_type.h"
 #include "chrome/common/render_messages_params.h"
 #include "chrome/common/url_constants.h"
 #include "net/base/escape.h"
@@ -709,7 +710,7 @@ void NavigationController::RendererDidNavigateToNewPage(
     // Don't use the page type from the pending entry. Some interstitial page
     // may have set the type to interstitial. Once we commit, however, the page
     // type must always be normal.
-    new_entry->set_page_type(NavigationEntry::NORMAL_PAGE);
+    new_entry->set_page_type(NORMAL_PAGE);
   } else {
     new_entry = new NavigationEntry;
   }
@@ -1157,7 +1158,7 @@ void NavigationController::InsertEntriesFrom(
   for (int i = 0; i < max_index; i++) {
     // When cloning a tab, copy all entries except interstitial pages
     if (source.entries_[i].get()->page_type() !=
-        NavigationEntry::INTERSTITIAL_PAGE) {
+        INTERSTITIAL_PAGE) {
       entries_.insert(entries_.begin() + insert_index++,
                       linked_ptr<NavigationEntry>(
                           new NavigationEntry(*source.entries_[i])));

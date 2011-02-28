@@ -35,7 +35,7 @@
 #include "Root.hpp"
 #include "ContextImpl.hpp"
 
-#include "chrome/browser/profile.h"
+#include "chrome/browser/profiles/profile.h"
 
 namespace Berkelium {
 

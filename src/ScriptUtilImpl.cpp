@@ -17,7 +17,7 @@ Value *toValue(const Variant &var) {
 	case Variant::JSBOOLEAN:
 		return Value::CreateBooleanValue(var.toBoolean());
 	case Variant::JSDOUBLE:
-		return Value::CreateRealValue(var.toDouble());
+		return Value::CreateDoubleValue(var.toDouble());
 	case Variant::JSNULL:
 		return Value::CreateNullValue();
 	default:
@@ -107,10 +107,10 @@ bool valueToVariant(Value *value, Variant &out) {
 		out = Variant(val);
 		break;
 	}
-	case Value::TYPE_REAL:
+	case Value::TYPE_DOUBLE:
 	{
 		double val = 0.0;
-		value->GetAsReal(&val);
+		value->GetAsDouble(&val);
 		out = Variant(val);
 		break;
 	}

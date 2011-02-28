@@ -61,20 +61,22 @@ MemoryRenderViewHost::MemoryRenderViewHost(
 MemoryRenderViewHost::~MemoryRenderViewHost() {
 }
 
-void MemoryRenderViewHost::OnMessageReceived(const IPC::Message& msg) {
+bool MemoryRenderViewHost::OnMessageReceived(const IPC::Message& msg) {
   bool msg_is_ok = true;
+  bool handled = true;
   IPC_BEGIN_MESSAGE_MAP_EX(MemoryRenderViewHost, msg, msg_is_ok)
     IPC_MESSAGE_HANDLER(ViewHostMsg_UpdateRect, Memory_OnMsgUpdateRect)
     IPC_MESSAGE_HANDLER(ViewHostMsg_AddMessageToConsole, Memory_OnAddMessageToConsole)
-    IPC_MESSAGE_UNHANDLED(RenderViewHost::OnMessageReceived(msg))
+    IPC_MESSAGE_UNHANDLED(handled = RenderViewHost::OnMessageReceived(msg))
   IPC_END_MESSAGE_MAP_EX()
       ;
 
   if (!msg_is_ok) {
     // The message had a handler, but its de-serialization failed.
     // Kill the renderer.
-    process()->ReceivedBadMessage(msg.type());
+    process()->ReceivedBadMessage();
   }
+  return handled;
 }
 
 void MemoryRenderViewHost::Memory_OnAddMessageToConsole(const std::wstring& message,
@@ -102,19 +104,21 @@ MemoryRenderWidgetHost::MemoryRenderWidgetHost(
 MemoryRenderWidgetHost::~MemoryRenderWidgetHost() {
 }
 
-void MemoryRenderWidgetHost::OnMessageReceived(const IPC::Message& msg) {
+bool MemoryRenderWidgetHost::OnMessageReceived(const IPC::Message& msg) {
   bool msg_is_ok = true;
+  bool handled = true;
   IPC_BEGIN_MESSAGE_MAP_EX(MemoryRenderWidgetHost, msg, msg_is_ok)
     IPC_MESSAGE_HANDLER(ViewHostMsg_UpdateRect, Memory_OnMsgUpdateRect)
-    IPC_MESSAGE_UNHANDLED(this->RenderWidgetHost::OnMessageReceived(msg))
+    IPC_MESSAGE_UNHANDLED(handled = this->RenderWidgetHost::OnMessageReceived(msg))
   IPC_END_MESSAGE_MAP_EX()
       ;
 
   if (!msg_is_ok) {
     // The message had a handler, but its de-serialization failed.
     // Kill the renderer.
-    process()->ReceivedBadMessage(msg.type());
+    process()->ReceivedBadMessage();
   }
+  return handled;
 }
 
 
@@ -152,7 +156,7 @@ template <class T> void MemoryRenderHostImpl<T>::Memory_WasResized() {
         mResizeAckPending = true;
     
     if (!this->process()->Send(new ViewMsg_Resize(this->routing_id(), new_size,
-                                            this->GetRootWindowResizerRect())))
+                                                  this->view()->reserved_contents_rect())))
         mResizeAckPending = false;
     else
         mInFlightSize = new_size;
@@ -189,7 +193,7 @@ template <class T> void MemoryRenderHostImpl<T>::Memory_OnMsgUpdateRect(
   if (dib) {
     if (dib->size() < size) {
       DLOG(WARNING) << "Transport DIB too small for given rectangle";
-      this->process()->ReceivedBadMessage(ViewHostMsg_UpdateRect__ID);
+      this->process()->ReceivedBadMessage();
     } else {
       // Paint the backing store. This will update it with the renderer-supplied
       // bits. The view will read out of the backing store later to actually

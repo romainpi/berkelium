@@ -35,8 +35,8 @@
 #include "berkelium/Widget.hpp"
 #include "berkelium/Window.hpp"
 #include "NavigationController.hpp"
-#include "gfx/rect.h"
-#include "gfx/size.h"
+#include "ui/gfx/rect.h"
+#include "ui/gfx/size.h"
 #include "chrome/browser/renderer_host/render_widget_host.h"
 #include "chrome/browser/renderer_host/render_view_host.h"
 #include "chrome/browser/renderer_host/render_view_host_delegate.h"
@@ -57,9 +57,7 @@ class ContextImpl;
 class WindowImpl :
         public Window,
         public RenderViewHostDelegate,
-        public RenderViewHostDelegate::Resource,
-        public RenderViewHostDelegate::View,
-        public RenderViewHostDelegate::BrowserIntegration
+        public RenderViewHostDelegate::View
 {
 
     void init(SiteInstance *, int routingId);
@@ -183,8 +181,6 @@ protected:
 protected: /******* RenderViewHostDelegate *******/
 
     virtual RenderViewHostDelegate::View* GetViewDelegate();
-    virtual RenderViewHostDelegate::Resource* GetResourceDelegate();
-    virtual RenderViewHostDelegate::BrowserIntegration* GetBrowserIntegrationDelegate();
     virtual RendererPreferences GetRendererPrefs(Profile*) const;
     virtual WebPreferences GetWebkitPrefs();
 
@@ -192,7 +188,7 @@ protected: /******* RenderViewHostDelegate *******/
                                       bool is_during_unload);
     virtual void RendererResponsive(RenderViewHost* render_view_host);
     // crashed
-    virtual void RenderViewGone(RenderViewHost* render_view_host);
+    virtual void RenderViewGone(RenderViewHost* render_view_host, base::TerminationStatus status, int error_code);
     // "un-crashed"
     virtual void RenderViewReady(RenderViewHost* render_view_host);
 
@@ -227,71 +223,41 @@ protected: /******* RenderViewHostDelegate *******/
                                     bool* did_suppress_message);
   virtual void RunFileChooser(const ViewHostMsg_RunFileChooser_Params&params);
 
-
-
-  // Functions for managing switching of Renderers. For TabContents, this is
-  // implemented by the RenderViewHostManager
-//  virtual RendererManagement* GetRendererManagementDelegate();
-  // Functions that integrate with other browser services.
-//  virtual BrowserIntegration* GetBrowserIntegrationDelegate();
+  virtual bool OnMessageReceived(const IPC::Message& message);
 
     virtual int GetBrowserWindowID() const;
     ViewType::Type GetRenderViewType()const;
 
     virtual void UpdateInspectorSetting(const std::string&, const std::string&);
     virtual void ClearInspectorSettings();
+    virtual void OnUserGesture();
+    virtual void WorkerCrashed();
 
-protected: /******* RenderViewHostDelegate::Resource *******/
-
-    void GetContainerBounds(gfx::Rect* rc) const{
-        rc->SetRect(mRect.x(), mRect.y(), mRect.width(), mRect.height());
-    }
-    gfx::Size GetContainerSize()const {
-        gfx::Rect rc;
-        GetContainerBounds(&rc);
-        return gfx::Size(rc.width(),rc.height());
-    }
-
-    virtual RenderWidgetHostView* CreateViewForWidget(RenderWidgetHost*render_widget_host);
-    virtual void DidStartProvisionalLoadForFrame(
-        RenderViewHost* render_view_host,
-        long long frame_id,
+private: /******* Formerly RenderViewHostDelegate::Resource *******/
+    void OnDidStartProvisionalLoadForFrame(
+        int64 frame_id,
         bool is_main_frame,
         const GURL& url);
 
-    virtual void DidStartReceivingResourceResponse(
-        const ResourceRequestDetails& details);
-
-    virtual void DidRedirectProvisionalLoad(int32 page_id,
+    void OnDidRedirectProvisionalLoad(int32 page_id,
                                             const GURL& source_url,
                                             const GURL& target_url);
 
-    virtual void DidRedirectResource(const ResourceRedirectDetails& details);
+    void OnDidRedirectResource(const ResourceRedirectDetails& details);
 
-    virtual void OnContentBlocked(ContentSettingsType type);
-
-    virtual void OnGeolocationPermissionSet(const GURL& requesting_frame, bool allowed);
-
-    virtual void DidLoadResourceFromMemoryCache(
-        const GURL& url,
-        const std::string& frame_origin,
-        const std::string& main_frame_origin,
-        const std::string& security_info);
-
-    virtual void DidFailProvisionalLoadWithError(
-        RenderViewHost* render_view_host,
-        long long frame_id,
+    void OnDidFailProvisionalLoadWithError(
+        int64 frame_id,
         bool is_main_frame,
         int error_code,
         const GURL& url,
         bool showing_repost_interstitial);
 
-    virtual void DocumentLoadedInFrame();
+    void OnDocumentLoadedInFrame(int64 frame_id);
+    void OnDidFinishLoad(int64 frame_id);
 
 protected: /******* RenderViewHostDelegate::View *******/
     virtual void CreateNewWindow(int route_id,
-                                 WindowContainerType container_type,
-                                 const string16&frame_name);
+                                 const ViewHostMsg_CreateWindow_Params&params);
 
     virtual void CreateNewWidget(int route_id, WebKit::WebPopupType popup_type);
     virtual void ShowCreatedWindow(int route_id,
@@ -311,7 +277,7 @@ protected: /******* RenderViewHostDelegate::View *******/
     virtual void HandleKeyboardEvent(const NativeWebKeyboardEvent& event);
     virtual void HandleMouseEvent();
     virtual void HandleMouseLeave();
-    virtual void CreateNewFullscreenWidget(int route_id, WebKit::WebPopupType popup_type);
+    virtual void CreateNewFullscreenWidget(int route_id);
     virtual void ShowCreatedFullscreenWidget(int route_id);
     virtual void Activate();
     virtual void Deactivate();
@@ -326,34 +292,22 @@ protected: /******* RenderViewHostDelegate::View *******/
     virtual void HandleMouseUp();
     virtual void HandleMouseActivate();
 
-protected: /******* RenderViewHostDelegate::BrowserIntegration *******/
-    virtual void OnUserGesture();
-    virtual void OnFindReply(int request_id,
-                             int number_of_matches,
-                             const gfx::Rect& selection_rect,
-                             int active_match_ordinal,
-                             bool final_update);
-    virtual void GoToEntryAtOffset(int offset);
-    virtual void GetHistoryListCount(int* back_list_count,
+private: /******* Formerly RenderViewHostDelegate::BrowserIntegration *******/
+    void OnGoToEntryAtOffset(int offset);
+    void OnGetHistoryListCount(int* back_list_count,
                                      int* forward_list_count);
-    virtual void OnMissingPluginStatus(int status);
-    virtual void OnCrashedPlugin(const FilePath& plugin_path);
-    virtual void OnCrashedWorker();
-    virtual void OnDidGetApplicationInfo(
-        int32 page_id,
-        const webkit_glue::WebApplicationInfo& app_info);
-    virtual void OnPageContents(const GURL& url,
-                                int renderer_process_id,
+    void OnMissingPluginStatus(int status);
+    void OnCrashedPlugin(const FilePath& plugin_path);
+    void OnPageContents(const GURL& url,
                                 int32 page_id,
                                 const string16& contents,
                                 const std::string& language,
                                 bool page_translatable);
-    virtual void OnPageTranslated(int32 page_id,
+    void OnPageTranslated(int32 page_id,
                                   const std::string& original_lang,
                                   const std::string& translated_lang,
                                   TranslateErrors::Type error_type);
-    virtual void OnDisabledOutdatedPlugin(const string16&, const GURL&);
-    virtual void OnSetSuggestResult(int32, const std::string&);
+    void OnDisabledOutdatedPlugin(const string16&, const GURL&);
 
 private:
 

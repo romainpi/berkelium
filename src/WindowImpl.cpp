@@ -29,7 +29,6 @@
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
 #include "berkelium/Platform.hpp"
 #include "ContextImpl.hpp"
 #include "RenderWidget.hpp"
@@ -43,9 +42,9 @@
 #include "berkelium/ScriptVariant.hpp"
 #include "ScriptUtilImpl.hpp"
 
-#include "app/message_box_flags.h"
 #include "base/file_util.h"
 #include "base/file_version_info.h"
+#include "base/utf_string_conversions.h"
 #include "base/values.h"
 #include "net/base/net_util.h"
 #include "chrome/browser/in_process_webkit/dom_storage_context.h"
@@ -54,8 +53,6 @@
 #include "chrome/browser/renderer_host/site_instance.h"
 #include "chrome/browser/renderer_preferences_util.h"
 #include "chrome/browser/tab_contents/tab_contents.h"
-#include "chrome/browser/dom_ui/dom_ui.h"
-#include "chrome/browser/dom_ui/dom_ui_factory.h"
 #include "chrome/browser/renderer_host/render_widget_host_view.h"
 #include "chrome/browser/renderer_host/render_view_host_factory.h"
 #include "chrome/browser/browser_url_handler.h"
@@ -65,6 +62,7 @@
 #include "webkit/glue/context_menu.h"
 #include "chrome/common/render_messages.h"
 #include "chrome/common/render_messages_params.h"
+#include "ui/base/message_box_flags.h"
 #include <iostream>
 
 #if BERKELIUM_PLATFORM == PLATFORM_LINUX
@@ -177,8 +175,8 @@ void WindowImpl::bind(WideString lvalue, const Script::Variant &rvalue) {
     std::string jsonStr;
     if (host() && Berkelium::Script::toJSON(rvalue, &jsonStr)) {
         host()->ExecuteJavascriptInWebFrame(
-            std::wstring(), 
-            lvalue.get<std::wstring>() + L" = " + UTF8ToWide(jsonStr) + L";\n");
+            string16(), 
+            WideToUTF16(lvalue.get<std::wstring>() + L" = " + UTF8ToWide(jsonStr) + L";\n"));
     }
 }
 
@@ -240,7 +238,7 @@ void WindowImpl::evalInitialJavascript() {
     std::wstring wideScript = UTF8ToWide(berkeliumFunc);
     wideScript += mUniqueId + L"');}\n";
     wideScript += mBindingJavascript;
-    host()->ExecuteJavascriptInWebFrame(std::wstring(), wideScript);
+    host()->ExecuteJavascriptInWebFrame(string16(), WideToUTF16(wideScript));
 }
 
 bool WindowImpl::javascriptCall(IPC::Message* reply_msg, URLString url, const std::wstring &args) {
@@ -445,7 +443,7 @@ void WindowImpl::SetContainerBounds (const gfx::Rect &rc) {
     mRect = rc;
     RenderWidgetHostView* myview = view();
     if (myview) {
-        myview->SetSize(this->GetContainerSize());
+        myview->SetSize(gfx::Size(mRect.width(), mRect.height()));
     }
     RenderViewHost* myhost = host();
     if (myhost) {
@@ -456,7 +454,7 @@ void WindowImpl::SetContainerBounds (const gfx::Rect &rc) {
 void WindowImpl::executeJavascript(WideString javascript) {
     if (host() && !mIsReentrant) {
         mIsReentrant = true;
-        host()->ExecuteJavascriptInWebFrame(std::wstring(), javascript.get<std::wstring>());
+        host()->ExecuteJavascriptInWebFrame(string16(), WideToUTF16(javascript.get<std::wstring>()));
         mIsReentrant = false;
     }
 }
@@ -545,8 +543,8 @@ bool WindowImpl::CreateRenderViewForRenderManager(
     RenderViewHost* render_view_host,
     bool remote_view_exists) {
 
-  RenderWidget* rwh_view =
-      static_cast<RenderWidget*>(this->CreateViewForWidget(render_view_host));
+  RenderWidget *rwh_view = new RenderWidget(this, mId);
+  rwh_view->setHost(render_view_host);
 
   // If we're creating a renderview for a window that was opened by the
   //  renderer process remotely, calling CreateRenderView will crash the
@@ -557,7 +555,7 @@ bool WindowImpl::CreateRenderViewForRenderManager(
   }
 
   // Now that the RenderView has been created, we need to tell it its size.
-  rwh_view->SetSize(this->GetContainerSize());
+  rwh_view->SetSize(gfx::Size(mRect.width(), mRect.height()));
   render_view_host->set_view(rwh_view);
 
   appendWidget(rwh_view);
@@ -568,6 +566,35 @@ bool WindowImpl::CreateRenderViewForRenderManager(
 
 }
 
+bool WindowImpl::OnMessageReceived(const IPC::Message& message) {
+    bool handled = true;
+    bool message_is_ok = true;
+    IPC_BEGIN_MESSAGE_MAP_EX(TabContents, message, message_is_ok)
+      IPC_MESSAGE_HANDLER(ViewHostMsg_DidStartProvisionalLoadForFrame,
+                          OnDidStartProvisionalLoadForFrame)
+      IPC_MESSAGE_HANDLER(ViewHostMsg_DidRedirectProvisionalLoad,
+                          OnDidRedirectProvisionalLoad)
+      IPC_MESSAGE_HANDLER(ViewHostMsg_DidFailProvisionalLoadWithError,
+                          OnDidFailProvisionalLoadWithError)
+      IPC_MESSAGE_HANDLER(ViewHostMsg_DocumentLoadedInFrame,
+                          OnDocumentLoadedInFrame)
+      IPC_MESSAGE_HANDLER(ViewHostMsg_DidFinishLoad, OnDidFinishLoad)
+      IPC_MESSAGE_HANDLER(ViewHostMsg_GoToEntryAtOffset, OnGoToEntryAtOffset)
+      IPC_MESSAGE_HANDLER(ViewHostMsg_MissingPluginStatus, OnMissingPluginStatus)
+      IPC_MESSAGE_HANDLER(ViewHostMsg_CrashedPlugin, OnCrashedPlugin)
+//      IPC_MESSAGE_HANDLER(ViewHostMsg_BlockedOutdatedPlugin,
+//                          OnBlockedOutdatedPlugin)
+      IPC_MESSAGE_HANDLER(ViewHostMsg_PageContents, OnPageContents)
+      IPC_MESSAGE_HANDLER(ViewHostMsg_PageTranslated, OnPageTranslated)
+      IPC_MESSAGE_UNHANDLED(handled = false)
+    IPC_END_MESSAGE_MAP_EX()
+
+    if (!message_is_ok) {
+      process()->ReceivedBadMessage();
+    }
+
+    return handled;
+}
 
 void WindowImpl::DidStartLoading() {
     SetIsLoading(true);
@@ -606,9 +633,10 @@ void WindowImpl::UpdateCursor(const WebCursor& cursor) {
     HCURSOR cursorHandle = cursor_.GetCursor(0);
     Cursor new_cursor(cursorHandle);
 #elif BERKELIUM_PLATFORM == PLATFORM_LINUX
+    WebCursor cursorCopy = cursor;
     // Returns an int to avoid including Gdk headers--so we have to cast.
-    GdkCursorType cursorType = (GdkCursorType)cursor.GetCursorType();
-    GdkCursor* cursorPtr = cursorType == GDK_CURSOR_IS_PIXMAP ? cursor.GetCustomCursor() : NULL;
+    GdkCursorType cursorType = (GdkCursorType)cursorCopy.GetCursorType();
+    GdkCursor* cursorPtr = cursorType == GDK_CURSOR_IS_PIXMAP ? cursorCopy.GetCustomCursor() : NULL;
     Cursor new_cursor(cursorType, cursorPtr);
 #elif BERKELIUM_PLATFORM == PLATFORM_MAC
     Cursor new_cursor( cursor.GetCursor() );
@@ -621,12 +649,6 @@ void WindowImpl::UpdateCursor(const WebCursor& cursor) {
 /******* RenderViewHostDelegate *******/
 
 RenderViewHostDelegate::View* WindowImpl::GetViewDelegate() {
-    return this;
-}
-RenderViewHostDelegate::Resource* WindowImpl::GetResourceDelegate() {
-    return this;
-}
-RenderViewHostDelegate::BrowserIntegration* WindowImpl::GetBrowserIntegrationDelegate() {
     return this;
 }
 
@@ -812,7 +834,7 @@ void WindowImpl::RenderViewReady(RenderViewHost* rvh) {
       view()->Focus();
 }
 
-void WindowImpl::RenderViewGone(RenderViewHost* rvh) {
+void WindowImpl::RenderViewGone(RenderViewHost* rvh, base::TerminationStatus status, int error_code) {
   // Ask the print preview if this renderer was valuable.
   if (rvh != host()) {
     // The pending page's RenderViewHost is gone.
@@ -829,17 +851,11 @@ void WindowImpl::RenderViewGone(RenderViewHost* rvh) {
 
 void WindowImpl::OnUserGesture(){
 }
-void WindowImpl::OnFindReply(int request_id,
-                             int number_of_matches,
-                             const gfx::Rect& selection_rect,
-                             int active_match_ordinal,
-                             bool final_update){
-}
-void WindowImpl::GoToEntryAtOffset(int offset) {
+void WindowImpl::OnGoToEntryAtOffset(int offset) {
     std::cout << "GOING TO ENTRY AT OFFSET "<<offset<<std::endl;
     mController->GoToOffset(offset);
 }
-void WindowImpl::GetHistoryListCount(int* back_list_count,
+void WindowImpl::OnGetHistoryListCount(int* back_list_count,
                                      int* forward_list_count){
   int current_index = mController->last_committed_entry_index();
   *back_list_count = current_index;
@@ -872,19 +888,14 @@ void WindowImpl::OnCrashedPlugin(const FilePath& plugin_path) {
         mDelegate->onCrashedPlugin(this, WideString::point_to(plugin_name));
     }
 }
-void WindowImpl::OnCrashedWorker(){
+void WindowImpl::WorkerCrashed(){
     if (mDelegate) {
         mDelegate->onCrashedWorker(this);
     }
 }
-void WindowImpl::OnDidGetApplicationInfo(
-        int32 page_id,
-        const webkit_glue::WebApplicationInfo& app_info){
-}
 
 void WindowImpl::OnPageContents(
     const GURL& url,
-    int renderer_process_id,
     int32 page_id,
     const string16& contents,
     const std::string& language,
@@ -1118,7 +1129,7 @@ void WindowImpl::RunJavaScriptMessage(
     std::wstring promptstr;
 
     if (default_prompt == L"urn:uuid:" + mUniqueId
-            && flags == MessageBoxFlags::kIsJavascriptPrompt) {
+            && flags == ui::MessageBoxFlags::kIsJavascriptPrompt) {
         GURL origin = frame_url.GetOrigin();
         const std::string &urlspec = origin.spec();
         if (!javascriptCall(reply_msg, URLString::point_to(urlspec), message)) {
@@ -1132,10 +1143,10 @@ void WindowImpl::RunJavaScriptMessage(
         WideString prompt = WideString::empty();
 		int bkflags = 0;
 		switch (flags) {
-		case MessageBoxFlags::kIsJavascriptConfirm:
+        case ui::MessageBoxFlags::kIsJavascriptConfirm:
 			bkflags = JavascriptConfirm;
 			break;
-		case MessageBoxFlags::kIsJavascriptPrompt:
+        case ui::MessageBoxFlags::kIsJavascriptPrompt:
 			bkflags = JavascriptPrompt;
 			break;
 		default:
@@ -1156,24 +1167,17 @@ void WindowImpl::RunJavaScriptMessage(
     }
 }
 
+void WindowImpl::Close(RenderViewHost* rvh) {
+}
+
 
 /******* RenderViewHostDelegate::Resource *******/
 
-RenderWidgetHostView* WindowImpl::CreateViewForWidget(RenderWidgetHost * render_widget_host) {
-    RenderWidget *wid = new RenderWidget(this, mId);
-    wid->setHost(render_widget_host);
-    return wid;
-}
-
-void WindowImpl::DidStartProvisionalLoadForFrame(
-        RenderViewHost* render_view_host,
-        long long frame_id,
+void WindowImpl::OnDidStartProvisionalLoadForFrame(
+        int64 frame_id,
         bool is_main_frame,
         const GURL& url) {
     if (!is_main_frame) {
-        return;
-    }
-    if (render_view_host != static_cast<RenderViewHost*>(host())) {
         return;
     }
     if (mDelegate) {
@@ -1184,13 +1188,7 @@ void WindowImpl::DidStartProvisionalLoadForFrame(
     }
 }
 
-void WindowImpl::DidStartReceivingResourceResponse(
-        const ResourceRequestDetails& details) {
-    // See "chrome/browser/renderer_host/resource_request_details.h"
-    // for list of accessor functions.
-}
-
-void WindowImpl::DidRedirectProvisionalLoad(
+void WindowImpl::OnDidRedirectProvisionalLoad(
     int32 page_id,
     const GURL& source_url,
     const GURL& target_url)
@@ -1206,31 +1204,13 @@ void WindowImpl::DidRedirectProvisionalLoad(
     entry->set_url(target_url);
 }
 
-void WindowImpl::DidRedirectResource(const ResourceRedirectDetails& details) {
+void WindowImpl::OnDidRedirectResource(const ResourceRedirectDetails& details) {
     // Only accessor function:
     // details->new_url();
 }
 
-void WindowImpl::Close(RenderViewHost* rvh) {
-}
-
-void WindowImpl::OnContentBlocked(ContentSettingsType type) {
-}
-
-void WindowImpl::OnGeolocationPermissionSet(const GURL& requesting_frame, bool allowed) {
-}
-
-
-void WindowImpl::DidLoadResourceFromMemoryCache(
-        const GURL& url,
-        const std::string& frame_origin,
-        const std::string& main_frame_origin,
-        const std::string& security_info) {
-}
-
-void WindowImpl::DidFailProvisionalLoadWithError(
-        RenderViewHost* render_view_host,
-        long long frame_id,
+void WindowImpl::OnDidFailProvisionalLoadWithError(
+        int64 frame_id,
         bool is_main_frame,
         int error_code,
         const GURL& url,
@@ -1242,7 +1222,16 @@ void WindowImpl::DidFailProvisionalLoadWithError(
     }
 }
 
-void WindowImpl::DocumentLoadedInFrame() {
+void WindowImpl::OnDocumentLoadedInFrame(int64 frame_id) {
+/*
+    if (mDelegate) {
+        mDelegate->onLoad(this);
+    }
+*/
+}
+
+
+void WindowImpl::OnDidFinishLoad(int64 frame_id) {
     if (mDelegate) {
         mDelegate->onLoad(this);
     }
@@ -1251,7 +1240,7 @@ void WindowImpl::DocumentLoadedInFrame() {
 
 
 /******* RenderViewHostDelegate::View *******/
-void WindowImpl::CreateNewWindow(int route_id, WindowContainerType container_type, const string16&frame_name) {
+void WindowImpl::CreateNewWindow(int route_id, const ViewHostMsg_CreateWindow_Params&params) {
     // A window shown in popup or tab.
     //WINDOW_CONTAINER_TYPE_NORMAL = 0,
     // A window run as a hidden "background" page.
@@ -1355,7 +1344,8 @@ void WindowImpl::ShowContextMenu(const ContextMenuParams& params) {
     args.srcUrl = URLString::point_to(srcUrl);
     args.pageUrl = URLString::point_to(pageUrl);
     args.frameUrl = URLString::point_to(frameUrl);
-    args.selectedText = WideString::point_to(params.selection_text);
+    std::wstring selection_text_storage (UTF16ToWide(params.selection_text));
+    args.selectedText = WideString::point_to(selection_text_storage);
 
     args.mediaType = ContextMenuEventArgs::MediaTypeNone;
     switch (params.media_type) {
@@ -1427,9 +1417,6 @@ void WindowImpl::HandleMouseLeave() {
     // Useless: just calls this when we hand it an input event.
 }
 
-void WindowImpl::OnSetSuggestResult(int32, const std::string&) {
-}
-
 void WindowImpl::ShowPopupMenu(const gfx::Rect&, int, double, int, const std::vector<WebMenuItem>&, bool) {
     // FIXME(patrick): We need to expose this to the public API!
 }
@@ -1443,8 +1430,8 @@ void WindowImpl::HandleMouseUp() {
 void WindowImpl::HandleMouseActivate() {
 }
 
-void WindowImpl::CreateNewFullscreenWidget(int route_id, WebKit::WebPopupType popup_type) {
-    CreateNewWidget(route_id, popup_type);
+void WindowImpl::CreateNewFullscreenWidget(int route_id) {
+    CreateNewWidget(route_id, WebKit::WebPopupTypeNone);
 }
 void WindowImpl::ShowCreatedFullscreenWidget(int route_id) {
     ShowCreatedFullscreenWidget(route_id);

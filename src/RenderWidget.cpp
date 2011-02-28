@@ -32,9 +32,9 @@
 
 #include "chrome/browser/renderer_host/backing_store_manager.h"
 #if defined(OS_LINUX)
-#include "webkit/glue/plugins/webplugin.h"
-#include "webkit/glue/plugins/gtk_plugin_container_manager.h"
-#include "webkit/glue/plugins/gtk_plugin_container.h"
+#include "webkit/plugins/npapi/webplugin.h"
+#include "webkit/plugins/npapi/gtk_plugin_container_manager.h"
+#include "webkit/plugins/npapi/gtk_plugin_container.h"
 #include <gtk/gtk.h>
 #include <gtk/gtkwindow.h>
 #endif
@@ -181,7 +181,7 @@ void RenderWidget::DidUpdateBackingStore(
 }
 
   // Notifies the View that the renderer has ceased to exist.
-void RenderWidget::RenderViewGone(){
+void RenderWidget::RenderViewGone(base::TerminationStatus termination, int error_code){
 }
 
 // Notifies the View that the renderer will be delete soon.
@@ -223,14 +223,7 @@ BackingStore* RenderWidget::AllocBackingStore(const gfx::Size& size) {
     return mBacking;
 }
 
-// Allocate a video layer for this view.
-VideoLayer* RenderWidget::AllocVideoLayer(const gfx::Size& size) {
-    // FIXME: See VideoLayerX, etc. Also need to do something if gpu rendering?
-    NOTIMPLEMENTED();
-    return NULL;
-}
-
-void RenderWidget::InitAsFullscreen(RenderWidgetHostView*) {
+void RenderWidget::InitAsFullscreen() {
 }
 
 #if defined(OS_MACOSX)
@@ -327,7 +320,7 @@ void RenderWidget::CreatePluginContainer(gfx::PluginWindowHandle id){
     std::string pluginTitle = "[Plugin from "+current.spec()+"]";
     gtk_window_set_title (GTK_WINDOW(window), pluginTitle.c_str());
 
-    GtkWidget *widget = gtk_plugin_container_new();
+    GtkWidget *widget = webkit::npapi::gtk_plugin_container_new();
 
     // The Realize callback is responsible for adding the plug into the socket.
     // The reason is 2-fold:
@@ -361,11 +354,15 @@ void RenderWidget::DestroyPluginContainer(gfx::PluginWindowHandle id){
         activeWidgets.erase(iter);
     }
 }
+
+void RenderWidget::AcceleratedCompositingActivated(bool activated) {
+    // FIXME: Support for accelerated compositing.
+}
 #endif
 
   // Moves all plugin windows as described in the given list.
 void RenderWidget::MovePluginWindows(
-    const std::vector<webkit_glue::WebPluginGeometry>& moves)
+    const std::vector<webkit::npapi::WebPluginGeometry>& moves)
 {
 #ifdef OS_LINUX
     for (size_t i = 0; i < moves.size(); i++) {
@@ -386,7 +383,7 @@ void RenderWidget::MovePluginWindows(
 #endif
 }
 
-void RenderWidget::SetVisuallyDeemphasized(bool deemphasized) {
+void RenderWidget::SetVisuallyDeemphasized(const SkColor *color, bool deemphasized) {
 }
 
 // Returns true if the native view, |native_view|, is contained within in the

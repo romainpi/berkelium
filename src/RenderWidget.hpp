@@ -39,7 +39,7 @@
 #if defined(OS_MACOSX)
 #include "chrome/browser/renderer_host/accelerated_surface_container_manager_mac.h"#
 #endif
-#include "gfx/rect.h"
+#include "ui/gfx/rect.h"
 //see chrome/browser/renderer_host/test/test_render_view_host.h for a stub impl.
 
 namespace Berkelium {
@@ -96,7 +96,7 @@ public: /******* RenderWidgetHostView *******/
 
   // Moves all plugin windows as described in the given list.
   virtual void MovePluginWindows(
-      const std::vector<webkit_glue::WebPluginGeometry>& moves);
+      const std::vector<webkit::npapi::WebPluginGeometry>& moves);
 
   // Actually set/take focus to/from the associated View component.
   virtual void Focus();
@@ -150,7 +150,7 @@ public: /******* RenderWidgetHostView *******/
       const std::vector<gfx::Rect>& copy_rects);
 
   // Notifies the View that the renderer has ceased to exist.
-  virtual void RenderViewGone();
+    virtual void RenderViewGone(base::TerminationStatus termination, int error_code);
 
   // Notifies the View that the renderer will be delete soon.
   virtual void WillDestroyRenderWidget(RenderWidgetHost* rwh);
@@ -172,10 +172,7 @@ public: /******* RenderWidgetHostView *******/
   // Allocate a backing store for this view
   virtual BackingStore* AllocBackingStore(const gfx::Size& size);
 
-  // Allocate a video layer for this view.
-  virtual VideoLayer* AllocVideoLayer(const gfx::Size& size);
-
-  virtual void InitAsFullscreen(RenderWidgetHostView*);
+  virtual void InitAsFullscreen();
 
 #if defined(OS_MACOSX)
 
@@ -219,11 +216,12 @@ public: /******* RenderWidgetHostView *******/
 #if defined(OS_LINUX)
   virtual void CreatePluginContainer(gfx::PluginWindowHandle id);
   virtual void DestroyPluginContainer(gfx::PluginWindowHandle id);
+  virtual void AcceleratedCompositingActivated(bool activated);
 #endif
 
   // Toggles visual muting of the render view area. This is on when a
   // constrained window is showing.
-  virtual void SetVisuallyDeemphasized(bool deemphasized);
+  virtual void SetVisuallyDeemphasized(const SkColor *color, bool deemphasized);
 
   // Returns true if the native view, |native_view|, is contained within in the
   // widget associated with this RenderWidgetHostView.

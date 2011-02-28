@@ -1,4 +1,4 @@
-tested = win linux
-win = 8.0.552.237
-mac = 8.0.552.237
-linux = 8.0.552.237
+tested = linux
+win = 11.0.672.2
+mac = 11.0.672.2
+linux = 11.0.672.2

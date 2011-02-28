@@ -1,8 +1,8 @@
-Index: third_party/WebKit/WebCore/platform/graphics/chromium/FontChromiumWin.cpp
+Index: third_party/WebKit/Source/WebCore/platform/graphics/chromium/FontChromiumWin.cpp
 ===================================================================
---- third_party/WebKit/WebCore/platform/graphics/chromium/FontChromiumWin.cpp	(revision 70691)
-+++ third_party/WebKit/WebCore/platform/graphics/chromium/FontChromiumWin.cpp	(working copy)
-@@ -47,6 +47,167 @@
+--- third_party/WebKit/Source/WebCore/platform/graphics/chromium/FontChromiumWin.cpp	(revision 78450)
++++ third_party/WebKit/Source/WebCore/platform/graphics/chromium/FontChromiumWin.cpp	(working copy)
+@@ -48,6 +48,167 @@
  
  #include <windows.h>
  
@@ -170,7 +170,7 @@ Index: third_party/WebKit/WebCore/platform/graphics/chromium/FontChromiumWin.cpp
  namespace WebCore {
  
  namespace {
-@@ -69,7 +230,7 @@
+@@ -70,7 +231,7 @@
      // construction (it calls virtual functions).
      void init();
  
@@ -179,7 +179,7 @@ Index: third_party/WebKit/WebCore/platform/graphics/chromium/FontChromiumWin.cpp
  
      // Use the context from the transparency helper when drawing with GDI. It
      // may point to a temporary one.
-@@ -198,7 +359,7 @@
+@@ -199,7 +360,7 @@
      bool drawGlyphs(int numGlyphs, const WORD* glyphs, const int* advances, int startAdvance) const;
  
   private:
@@ -188,7 +188,7 @@ Index: third_party/WebKit/WebCore/platform/graphics/chromium/FontChromiumWin.cpp
  
      const SimpleFontData* m_font;
      const GlyphBuffer& m_glyphBuffer;
-@@ -239,7 +400,7 @@
+@@ -240,7 +401,7 @@
  // Estimates the bounding box of the given text. This is copied from
  // FontCGWin.cpp, it is possible, but a lot more work, to get the precide
  // bounds.
@@ -197,9 +197,9 @@ Index: third_party/WebKit/WebCore/platform/graphics/chromium/FontChromiumWin.cpp
  {
      int totalWidth = 0;
      for (int i = 0; i < m_numGlyphs; i++)
-@@ -271,25 +432,33 @@
+@@ -273,26 +434,34 @@
      int x = lroundf(m_point.x() + startAdvance);
-     int y = lroundf(m_point.y() - m_font->ascent());
+     int y = lroundf(m_point.y() - m_font->fontMetrics().ascent());
  
 +    COLORREF savedTextColor = GetTextColor(m_hdc);
 +
@@ -212,7 +212,8 @@ Index: third_party/WebKit/WebCore/platform/graphics/chromium/FontChromiumWin.cpp
      FloatSize shadowOffset;
      float shadowBlur;
      Color shadowColor;
-     if (m_graphicsContext->getShadow(shadowOffset, shadowBlur, shadowColor)) {
+     ColorSpace shadowColorSpace;
+     if (m_graphicsContext->getShadow(shadowOffset, shadowBlur, shadowColor, shadowColorSpace)) {
 +        boundsRect.right += shadowOffset.width();
 +        boundsRect.bottom += shadowOffset.height();
 +
@@ -234,7 +235,7 @@ Index: third_party/WebKit/WebCore/platform/graphics/chromium/FontChromiumWin.cpp
  }
  
  class TransparencyAwareUniscribePainter : public TransparencyAwareFontPainter {
-@@ -305,7 +474,7 @@
+@@ -308,7 +477,7 @@
      HDC hdc() const { return m_hdc; }
  
   private:
@@ -243,7 +244,7 @@ Index: third_party/WebKit/WebCore/platform/graphics/chromium/FontChromiumWin.cpp
  
      const Font* m_font;
      const TextRun& m_run;
-@@ -332,7 +501,7 @@
+@@ -335,7 +504,7 @@
  {
  }
  

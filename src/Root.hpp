@@ -30,11 +30,11 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "base/scoped_nsautorelease_pool.h"
+#include "base/mac/scoped_nsautorelease_pool.h"
 #include "berkelium/Platform.hpp"
 #include "berkelium/Berkelium.hpp"
 #include "berkelium/Singleton.hpp"
-#include "chrome/browser/profile.h"
+#include "chrome/browser/profiles/profile.h"
 #include "chrome/common/notification_service.h"
 #include "base/ref_counted.h"
 #include "base/message_loop.h"
@@ -44,7 +44,9 @@
 class BrowserRenderProcessHost;
 class ProcessSingleton;
 class URLRequestContext;
-class SystemMonitor;
+namespace ui {
+    class SystemMonitor;
+}
 class HighResolutionTimerManager;
 class HistogramSynchronizer;
 class ScopedTempDir;
@@ -60,7 +62,7 @@ class ErrorDelegate;
 //singleton class that contains chromium singletons. Not visible outside of Berkelium library core
 class Root : public AutoSingleton<Root> {
     Profile* mProf;
-    scoped_ptr<SystemMonitor> mSysMon;
+    scoped_ptr<ui::SystemMonitor> mSysMon;
     scoped_ptr<HighResolutionTimerManager> mTimerMgr;
     scoped_ptr<chrome_browser_net::PredictorInit> mDNSPrefetch;
     URLRequestContextGetter* mDefaultRequestContext;
@@ -69,7 +71,7 @@ class Root : public AutoSingleton<Root> {
     scoped_ptr<ProcessSingleton> mProcessSingleton;
     scoped_ptr<BrowserThread> mUIThread;
     scoped_ptr<MemoryRenderViewHostFactory> mRenderViewHostFactory;
-    base::ScopedNSAutoreleasePool mAutoreleasePool;
+    base::mac::ScopedNSAutoreleasePool mAutoreleasePool;
     scoped_refptr<HistogramSynchronizer> mHistogramSynchronizer;
 
     scoped_ptr<ScopedTempDir> mTempProfileDir; // Used only if non-null

@@ -72,12 +72,13 @@
 
 #include "app/app_paths.h"
 #include "app/app_switches.h"
-#include "app/resource_bundle.h"
+#include "ui/base/resource/resource_bundle.h"
 #include "base/at_exit.h"
 #include "base/command_line.h"
-#include "base/debug_util.h"
+#include "base/debug/debugger.h"
+#include "views/debug_utils.h"
 #include "base/i18n/icu_util.h"
-#include "base/scoped_nsautorelease_pool.h"
+#include "base/mac/scoped_nsautorelease_pool.h"
 #include "base/message_loop.h"
 #include "base/path_service.h"
 #include "base/process_util.h"
@@ -99,13 +100,16 @@
 #include "chrome/common/sandbox_init_wrapper.h"
 #include "chrome/common/url_constants.h"
 #include "ipc/ipc_switches.h"
+#include "ui/base/resource/resource_bundle.h"
+#include "ui/base/ui_base_paths.h"
+#include "ui/base/ui_base_switches.h"
 
 #if defined(USE_NSS)
 #include "base/nss_util.h"
 #endif
 
 #if defined(USE_X11)
-#include "app/x11_util.h"
+#include "ui/base/x/x11_util.h"
 #endif
 
 #if defined(OS_LINUX)
@@ -507,14 +511,14 @@ void forkedProcessHook(int argc, char **argv)
   // event loop, but we don't want to leave them hanging around until the
   // app quits. Each "main" needs to flush this pool right before it goes into
   // its main event loop to get rid of the cruft.
-  base::ScopedNSAutoreleasePool autorelease_pool;
+  base::mac::ScopedNSAutoreleasePool autorelease_pool;
 
 #if defined(OS_CHROMEOS)
   chromeos::BootTimesLoader::Get()->SaveChromeMainStats();
 #endif
 
 #if defined(OS_POSIX)
-  base::GlobalDescriptors* g_fds = Singleton<base::GlobalDescriptors>::get();
+  base::GlobalDescriptors* g_fds = base::GlobalDescriptors::GetInstance();
   g_fds->Set(kPrimaryIPCChannel,
              kPrimaryIPCChannel + base::GlobalDescriptors::kBaseDescriptor);
 #if defined(OS_LINUX)
@@ -611,7 +615,6 @@ void forkedProcessHook(int argc, char **argv)
   if (parsed_command_line.HasSwitch(switches::kEnableNaCl)) {
     // NaCl currently requires two flags to run
     CommandLine* singleton_command_line = CommandLine::ForCurrentProcess();
-    singleton_command_line->AppendSwitch(switches::kInternalNaCl);
     singleton_command_line->AppendSwitch(switches::kEnableGPUPlugin);
   }
 
@@ -654,7 +657,7 @@ void forkedProcessHook(int argc, char **argv)
     //
     // Note that we *can't* rely on BeingDebugged to catch this case because we
     // are the child process, which is not being debugged.
-    if (!DebugUtil::BeingDebugged())
+    if (!base::debug::BeingDebugged())
       signal(SIGINT, SIG_IGN);
 #endif
   }
@@ -663,6 +666,7 @@ void forkedProcessHook(int argc, char **argv)
   // Initialize the Chrome path provider.
   app::RegisterPathProvider();
   chrome::RegisterPathProvider();
+  ui::RegisterPathProvider();
 
   // Notice a user data directory override if any
   const FilePath user_data_dir =
@@ -950,9 +954,9 @@ void forkedProcessHook(int argc, char **argv)
       sandbox_cmd = sandbox_binary;
 
     // Tickle the sandbox host and zygote host so they fork now.
-    RenderSandboxHostLinux* shost = Singleton<RenderSandboxHostLinux>::get();
+    RenderSandboxHostLinux* shost = RenderSandboxHostLinux::GetInstance();
     shost->Init(sandbox_cmd);
-    ZygoteHost* zhost = Singleton<ZygoteHost>::get();
+    ZygoteHost* zhost = ZygoteHost::GetInstance();
     zhost->Init(sandbox_cmd);
 
 #if defined(USE_NSS)
@@ -975,7 +979,7 @@ void forkedProcessHook(int argc, char **argv)
     gtk_init(&argc, &argv);
     SetUpGLibLogHandler();
 
-    x11_util::SetDefaultX11ErrorHandlers();
+    ui::SetDefaultX11ErrorHandlers();
 #endif  // defined(OS_LINUX)
 
     rv = BrowserMain(main_params);

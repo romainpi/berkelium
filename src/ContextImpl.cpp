@@ -35,7 +35,7 @@
 #include "chrome/browser/renderer_host/site_instance.h"
 #include "Root.hpp"
 #include "ContextImpl.hpp"
-#include "chrome/browser/profile.h"
+#include "chrome/browser/profiles/profile.h"
 #include "chrome/browser/in_process_webkit/session_storage_namespace.h"
 #include "chrome/browser/in_process_webkit/webkit_context.h"
 

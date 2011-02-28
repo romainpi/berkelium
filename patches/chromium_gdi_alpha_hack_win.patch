@@ -104,11 +104,11 @@ Index: webkit/glue/webthemeengine_impl_win.cc
  }
  
  }  // namespace webkit_glue
-Index: gfx/native_theme_win.cc
+Index: ui/gfx/native_theme_win.cc
 ===================================================================
---- gfx/native_theme_win.cc	(revision 49003)
-+++ gfx/native_theme_win.cc	(working copy)
-@@ -586,11 +586,14 @@
+--- ui/gfx/native_theme_win.cc	(revision 49003)
++++ ui/gfx/native_theme_win.cc	(working copy)
+@@ -646,11 +646,14 @@
      }
  
      // TODO(maruel): Need to be fixed if get_theme_content_rect_ is NULL.

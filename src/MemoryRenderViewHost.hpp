@@ -88,7 +88,7 @@ public:
         RenderProcessHost* process,
         int routing_id);
     ~MemoryRenderWidgetHost();
-    virtual void OnMessageReceived(const IPC::Message& msg);
+    virtual bool OnMessageReceived(const IPC::Message& msg);
     virtual void Memory_OnMsgUpdateRect(const ViewHostMsg_UpdateRect_Params&params);
 
 };
@@ -106,7 +106,7 @@ public:
         const std::wstring& message,
         int32 line_no,
         const std::wstring& source_id);
-    virtual void OnMessageReceived(const IPC::Message& msg);
+    virtual bool OnMessageReceived(const IPC::Message& msg);
 };
 
 class MemoryRenderViewHostFactory : public RenderViewHostFactory {

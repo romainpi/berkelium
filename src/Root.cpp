@@ -39,7 +39,7 @@
 #include "base/message_loop.h"
 #include "base/at_exit.h"
 #include "base/path_service.h"
-#include "base/thread.h"
+#include "base/threading/thread.h"
 #include "base/command_line.h"
 #include "base/file_util.h"
 #include "base/scoped_temp_dir.h"
@@ -53,17 +53,17 @@
 #include "chrome/browser/prefs/browser_prefs.h"
 #include "chrome/browser/browser_process_impl.h"
 #include "chrome/browser/process_singleton.h"
-#include "chrome/browser/profile_manager.h"
+#include "chrome/browser/profiles/profile_manager.h"
 #include "chrome/browser/plugin_service.h"
 #include "chrome/browser/renderer_host/resource_dispatcher_host.h"
 #include "chrome/browser/renderer_host/browser_render_process_host.h"
 #include "chrome/browser/browser_thread.h"
 #include "chrome/browser/browser_url_handler.h"
 #include "chrome/browser/net/predictor_api.h"
-#include "app/hi_res_timer_manager.h"
-#include "app/resource_bundle.h"
-#include "app/app_paths.h"
-#include "app/system_monitor.h"
+#include "chrome/common/hi_res_timer_manager.h"
+#include "ui/base/resource/resource_bundle.h"
+#include "ui/base/ui_base_paths.h"
+#include "ui/base/system_monitor/system_monitor.h"
 #include "chrome/browser/prefs/pref_service.h"
 #include "chrome/common/pref_names.h"
 #include "chrome/common/logging_chrome.h"
@@ -251,7 +251,7 @@ bool Root::init(FileString homeDirectory) {
 #endif
 
     chrome::RegisterPathProvider();
-    app::RegisterPathProvider();
+    ui::RegisterPathProvider();
     FilePath homedirpath;
 
     if (homeDirectory.data() && homeDirectory.length()) {
@@ -259,7 +259,7 @@ bool Root::init(FileString homeDirectory) {
         PathService::Override(chrome::DIR_USER_DATA, homeDirectoryPath);
         PathService::Override(chrome::DIR_LOGS, homeDirectoryPath);
 #if defined(OS_POSIX)
-        PathService::Override(base::DIR_USER_CACHE, homeDirectoryPath);
+        PathService::Override(base::DIR_CACHE, homeDirectoryPath);
 #endif
     } else {
         mTempProfileDir.reset(new ScopedTempDir());
@@ -267,7 +267,7 @@ bool Root::init(FileString homeDirectory) {
             PathService::Override(chrome::DIR_USER_DATA, mTempProfileDir->path());
             PathService::Override(chrome::DIR_LOGS, mTempProfileDir->path());
 #if defined(OS_POSIX)
-            PathService::Override(base::DIR_USER_CACHE, mTempProfileDir->path());
+            PathService::Override(base::DIR_CACHE, mTempProfileDir->path());
 #endif
         }
     }
@@ -284,7 +284,7 @@ bool Root::init(FileString homeDirectory) {
         RenderProcessHost::set_run_renderer_in_process(true);
     }
     mMessageLoop.reset(new MessageLoop(MessageLoop::TYPE_UI));
-    mSysMon.reset(new SystemMonitor);
+    mSysMon.reset(new ui::SystemMonitor);
     mTimerMgr.reset(new HighResolutionTimerManager);
     mUIThread.reset(new BrowserThread(BrowserThread::UI, mMessageLoop.get()));
     mErrorHandler = 0;
@@ -318,14 +318,16 @@ bool Root::init(FileString homeDirectory) {
         L"chrome.log",
         logging::LOG_TO_BOTH_FILE_AND_SYSTEM_DEBUG_LOG,
         logging::DONT_LOCK_LOG_FILE,
-        logging::DELETE_OLD_LOG_FILE
+        logging::DELETE_OLD_LOG_FILE,
+        logging::DISABLE_DCHECK_FOR_NON_OFFICIAL_RELEASE_BUILDS
         );
 #else
     logging::InitLogging(
         "chrome.log",
         logging::LOG_ONLY_TO_SYSTEM_DEBUG_LOG,
         logging::DONT_LOCK_LOG_FILE,
-        logging::DELETE_OLD_LOG_FILE
+        logging::DELETE_OLD_LOG_FILE,
+        logging::DISABLE_DCHECK_FOR_NON_OFFICIAL_RELEASE_BUILDS
         );
 #endif
     logging::InitChromeLogging(
@@ -349,9 +351,9 @@ bool Root::init(FileString homeDirectory) {
       sandbox_cmd = sandbox_binary;
 
     // Tickle the sandbox host and zygote host so they fork now.
-    RenderSandboxHostLinux* shost = Singleton<RenderSandboxHostLinux>::get();
+    RenderSandboxHostLinux* shost = RenderSandboxHostLinux::GetInstance();
     shost->Init(sandbox_cmd);
-    ZygoteHost* zhost = Singleton<ZygoteHost>::get();
+    ZygoteHost* zhost = ZygoteHost::GetInstance();
     zhost->Init(sandbox_cmd);
 
     // We want to be sure to init NSPR on the main thread.
