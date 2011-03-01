@@ -118,14 +118,15 @@
 #endif
 
 #if defined(OS_MACOSX)
-#include "app/l10n_util_mac.h"
-#include "base/mac_util.h"
+#include "ui/base/l10n/l10n_util_mac.h"
+#include "base/mac/mac_util.h"
+#include "base/mac/os_crash_dumps.h"
 #include "base/mach_ipc_mac.h"
 #include "chrome/app/breakpad_mac.h"
 #include "chrome/browser/mach_broker_mac.h"
 #include "chrome/common/chrome_paths_internal.h"
 #include "grit/chromium_strings.h"
-#include "third_party/WebKit/WebKit/mac/WebCoreSupport/WebSystemInterface.h"
+#include "third_party/WebKit/Source/WebKit/mac/WebCoreSupport/WebSystemInterface.h"
 #endif
 
 #if defined(OS_POSIX)
@@ -438,7 +439,7 @@ void SetMacProcessName(const std::string& process_type) {
   }
   if (name_id) {
     NSString* app_name = l10n_util::GetNSString(name_id);
-    mac_util::SetProcessName(reinterpret_cast<CFStringRef>(app_name));
+    base::mac::SetProcessName(reinterpret_cast<CFStringRef>(app_name));
   }
 }
 
@@ -581,7 +582,7 @@ void forkedProcessHook(int argc, char **argv)
       parsed_command_line.GetSwitchValueASCII(switches::kProcessType);
 
 #if defined(OS_MACOSX)
-  mac_util::SetOverrideAppBundlePath(chrome::GetFrameworkBundlePath());
+  base::mac::SetOverrideAppBundlePath(chrome::GetFrameworkBundlePath());
 #endif  // OS_MACOSX
 
   // If we are in diagnostics mode this is the end of the line. After the
@@ -702,9 +703,9 @@ void forkedProcessHook(int argc, char **argv)
   //    Browser process in release mode.
   if (!parsed_command_line.HasSwitch(switches::kDisableBreakpad)) {
     bool disable_apple_crash_reporter = is_debug_build
-                                        || mac_util::IsBackgroundOnlyProcess();
+                                        || base::mac::IsBackgroundOnlyProcess();
     if (!IsCrashReporterEnabled() && disable_apple_crash_reporter) {
-      DebugUtil::DisableOSCrashDumps();
+      base::mac::DisableOSCrashDumps();
     }
   }
 

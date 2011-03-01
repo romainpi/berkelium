@@ -42,6 +42,8 @@
 #include "ui/gfx/rect.h"
 //see chrome/browser/renderer_host/test/test_render_view_host.h for a stub impl.
 
+class WebMenuItem;
+
 namespace Berkelium {
 class WindowImpl;
 
@@ -205,11 +207,18 @@ public: /******* RenderWidgetHostView *******/
                                               int32 width, int32 height, uint64_t io_surface_id);
   virtual void AcceleratedSurfaceSetTransportDIB(gfx::PluginWindowHandle window,
                                               int32 width, int32 height, base::SharedMemoryHandle transport_dib);
-  virtual void AcceleratedSurfaceBuffersSwapped(gfx::PluginWindowHandle window);
+  virtual void AcceleratedSurfaceBuffersSwapped(gfx::PluginWindowHandle window,
+      uint64 surface_id,
+      int renderer_id,
+      int32 route_id,
+      uint64 swap_buffers_count);
   virtual void SetTakesFocusOnlyOnMouseDown(bool);
   virtual void SetPluginImeEnabled(bool, int);
+  virtual void StartPluginIme();
   virtual bool PostProcessEventForPluginIme(const NativeWebKeyboardEvent&);
   virtual void GpuRenderingStateDidChange();
+  virtual void PluginFocusChanged(bool, int);
+  virtual gfx::Rect GetViewCocoaBounds() const;
 
  #endif
 

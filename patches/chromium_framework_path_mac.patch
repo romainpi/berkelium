@@ -18,7 +18,7 @@ Index: chrome/common/chrome_paths_mac.mm
 -  DCHECK_EQ(path.BaseName().value(), "Contents");
  
 -  if (base::mac::IsBackgroundOnlyProcess()) {
-+  if (false && mac_util::IsBackgroundOnlyProcess()) {
++  if (false && base::mac::IsBackgroundOnlyProcess()) {
      // path identifies the helper .app's Contents directory in the browser
      // .app's versioned directory.  Go up two steps to get to the browser
      // .app's versioned directory.

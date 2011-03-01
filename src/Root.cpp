@@ -71,10 +71,10 @@
 #include <signal.h>
 #include <sys/stat.h>
 #if defined(OS_MACOSX)
-#include "base/mac_util.h"
+#include "base/mac/mac_util.h"
 #include "chrome/common/chrome_paths_internal.h"
 #include "chrome/app/breakpad_mac.h"
-#include "third_party/WebKit/WebKit/mac/WebCoreSupport/WebSystemInterface.h"
+#include "third_party/WebKit/Source/WebKit/mac/WebCoreSupport/WebSystemInterface.h"
 #endif
 #include "chrome/common/sandbox_init_wrapper.h"
 #if defined(OS_WIN)
@@ -274,7 +274,7 @@ bool Root::init(FileString homeDirectory) {
     PathService::Get(chrome::DIR_USER_DATA,&homedirpath);
     bool SINGLE_PROCESS=false;
 #if defined(OS_MACOSX)
-    mac_util::SetOverrideAppBundlePath(chrome::GetFrameworkBundlePath());
+    base::mac::SetOverrideAppBundlePath(chrome::GetFrameworkBundlePath());
     if (SINGLE_PROCESS) {
         InitWebCoreSystemInterface();
         //CGColorSpaceCreateDeviceRGB();

@@ -878,9 +878,9 @@ void WindowImpl::OnCrashedPlugin(const FilePath& plugin_path) {
     scoped_ptr<FileVersionInfo> version_info(
         FileVersionInfo::CreateFileVersionInfo(plugin_path));
     if (version_info.get()) {
-        const std::wstring& product_name = version_info->product_name();
+        const string16& product_name = version_info->product_name();
         if (!product_name.empty()) {
-            plugin_name = product_name;
+            plugin_name = UTF16ToWide(product_name);
 #if defined(OS_MACOSX)
             // Many plugins on the Mac have .plugin in the actual name, which looks
             // terrible, so look for that and strip it off if present.

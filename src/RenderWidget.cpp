@@ -280,7 +280,12 @@ void RenderWidget::AcceleratedSurfaceSetTransportDIB(
                                                    height,
                                                    transport_dib);
 }
-void RenderWidget::AcceleratedSurfaceBuffersSwapped(gfx::PluginWindowHandle window) {
+void RenderWidget::AcceleratedSurfaceBuffersSwapped(
+      gfx::PluginWindowHandle window,
+      uint64 surface_id,
+      int renderer_id,
+      int32 route_id,
+      uint64 swap_buffers_count) {
   // FIXME: What do we do here.
   //[cocoa_view_ drawAcceleratedPluginLayer];
 }
@@ -289,10 +294,17 @@ void RenderWidget::SetTakesFocusOnlyOnMouseDown(bool) {
 }
 void RenderWidget::SetPluginImeEnabled(bool, int) {
 }
+void RenderWidget::StartPluginIme() {
+}
 bool RenderWidget::PostProcessEventForPluginIme(const NativeWebKeyboardEvent&) {
   return false;
 }
 void RenderWidget::GpuRenderingStateDidChange() {
+}
+void RenderWidget::PluginFocusChanged(bool, int) {
+}
+gfx::Rect RenderWidget::GetViewCocoaBounds() const {
+  return mRect;
 }
 
 #endif
