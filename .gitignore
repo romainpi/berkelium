@@ -5,6 +5,9 @@
 /glut_input*
 /liblibberkelium*.so*
 /ppmrender
+/tests
+
+cxxtest_*.cc
 
 # CMake files
 CMakeCache.txt

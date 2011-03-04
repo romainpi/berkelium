@@ -1,7 +1,7 @@
-/*  Berkelium - Embedded Chromium
- *  Berkelium.cpp
+/*  Berkelium Test Suite
+ *  Blank.hpp
  *
- *  Copyright (c) 2009, Patrick Reiter Horn
+ *  Copyright (c) 2011, Patrick Reiter Horn
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -29,36 +29,48 @@
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+#include <cxxtest/TestSuite.h>
+#include <berkelium/Berkelium.hpp>
+#include <berkelium/Context.hpp>
+#include <berkelium/Window.hpp>
+#include <berkelium/WindowDelegate.hpp>
 
-#include "berkelium/Berkelium.hpp"
-#include "Root.hpp"
+using namespace Berkelium;
 
-namespace Berkelium {
+class BlankTest : public CxxTest::TestSuite {
+  Window *mWin;
+  Context *mCtx;
+public:
+  BlankTest() {
+  }
 
-// See ForkedProcessHook.cpp for Berkelium::forkedProcessHook
+  void setUp( void ) {
+    mCtx = Context::create();
+    mWin = Window::create(mCtx);
+  }
+  void tearDown( void ) {
+    mWin->destroy();
+    mCtx->destroy();
+  }
 
-bool init (FileString homeDirectory) {
-    new Root();
-    if (!Root::getSingleton().init(homeDirectory)) {
-        Root::destroy();
-        return false;
-    }
-    return true;
-}
-void destroy () {
-    Root::destroy();
-}
-void update () {
-    Root::getSingleton().update();
-}
-void runUntilStopped() {
-    Root::getSingleton().runUntilStopped();
-}
-void stopRunning() {
-    Root::getSingleton().stopRunning();
-}
-void setErrorHandler (ErrorDelegate *errorHandler) {
-    Root::getSingleton().setErrorHandler(errorHandler);
-}
+  void testListenerCallAddRemove( void ) {
+    class Delegate: public WindowDelegate {
+      BlankTest *testRunner;
+    public:
+      Delegate(BlankTest *parent) : testRunner(parent) {}
+      void onLoad(Window *win) {
+        Berkelium::stopRunning();
+        TS_ASSERT_EQUALS(testRunner->mWin, win);
+      }
+    } delegate(this);
 
-}
+    mWin->setDelegate(&delegate);
+    mWin->resize(256, 256);
+    mWin->navigateTo(URLString::point_to("about:blank"));
+
+    Berkelium::runUntilStopped();
+
+    mWin->setDelegate(0);
+  }
+
+};

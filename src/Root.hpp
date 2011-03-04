@@ -88,8 +88,8 @@ public:
         return mProf ? true : false;
     }
 
-//    void runUntilStopped();
-//    void stopRunning();
+    void runUntilStopped();
+    void stopRunning();
     void update();
 
     void setErrorHandler(ErrorDelegate *errorHandler) {

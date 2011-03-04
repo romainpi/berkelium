@@ -91,6 +91,8 @@ void BERKELIUM_EXPORT setErrorHandler(ErrorDelegate * errorHandler);
  *  this call to update.
  */
 void BERKELIUM_EXPORT update();
+void BERKELIUM_EXPORT runUntilStopped();
+void BERKELIUM_EXPORT stopRunning();
 
 }
 

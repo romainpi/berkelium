@@ -456,15 +456,13 @@ bool Root::init(FileString homeDirectory) {
     return true;
 }
 
-/*
 void Root::runUntilStopped() {
-    MessageLoopForUI::current()->Run();
+    MessageLoopForUI::current()->MessageLoop::Run();
 }
 
 void Root::stopRunning() {
     MessageLoopForUI::current()->Quit();
 }
-*/
 
 void Root::update() {
     MessageLoopForUI::current()->RunAllPending();
