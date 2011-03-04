@@ -210,7 +210,8 @@ IF(CHROME_FOUND)
     ${TEST_BINARY}
     LIBRARYDIR ${CXXTESTRoot}
     TESTS ${TEST_FILES}
-    RUNNER ${BERKELIUM_TOP_LEVEL}/test/Test.cpp)
+    RUNNER ${BERKELIUM_TOP_LEVEL}/test/Test.cpp
+    DEPENDS berkelium libberkelium)
 
   TARGET_LINK_LIBRARIES(${TEST_BINARY} -llibberkelium)
   ADD_DEPENDENCIES(${TEST_BINARY} berkelium libberkelium)
