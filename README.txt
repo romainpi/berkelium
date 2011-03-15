@@ -38,6 +38,17 @@ util/mac-install.sh
 
 On Linux, just run "make" again, and copy the created executables. I recommend copying "libffmpegsumo.so" from chromium/src/out/Debug for video tag support, as well as any other plugins you may want to include.
 
+==== Support:
+
+Our new mailing list is at http://groups.google.com/group/berkelium
+
+Before asking a question, search on google with "berkelium", which will also
+find discussions in the old list archives as well.
+If you can't find the answer in the archives, feel free to ask a question to
+the mailing list.
+
+The authors below should be used only as a last resort, or for private matters.
+
 ==== About the authors:
 
 Main contributors:

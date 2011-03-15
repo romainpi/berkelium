@@ -35,4 +35,13 @@
  * <h3> Older Versions </h3>
  *  - See the <a href="/archive">archive directory</a> for older versions of this
  *    documentation.
+ *
+ * <h3> Mailing List and questions </h3>
+ *  - Subscribe to our new mailing list at
+ *    http://groups.google.com/group/berkelium
+ *  - Some questions can be answered with a quick google search (searches our
+ *    old mailing list, too) but if you're still stuck, feel free to ask.
+ *  - If you have private questions, you may contact one of the authors
+ *    included in the README.txt or the top of a source file, though we prefer
+ *    if you use the mailing list.
  */
