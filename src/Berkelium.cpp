@@ -31,19 +31,30 @@
  */
 
 #include "berkelium/Berkelium.hpp"
+#include "base/path_service.h"
+#include "base/file_util.h"
 #include "Root.hpp"
 
 namespace Berkelium {
 
 // See ForkedProcessHook.cpp for Berkelium::forkedProcessHook
 
-bool init (FileString homeDirectory) {
+bool initEx (FileString homeDirectory, char *berkeliumPath) {
+    if ( berkeliumPath != NULL ) {
+        FilePath subprocess = FilePath(berkeliumPath);
+        subprocess = subprocess.Append("berkelium");
+        PathService::Override(base::FILE_EXE, subprocess);
+    }
+
     new Root();
     if (!Root::getSingleton().init(homeDirectory)) {
         Root::destroy();
         return false;
     }
     return true;
+}
+bool init (FileString homeDirectory) {
+    return initEx(homeDirectory, NULL);
 }
 void destroy () {
     Root::destroy();
