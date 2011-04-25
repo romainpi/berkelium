@@ -68,7 +68,14 @@ void BERKELIUM_EXPORT forkedProcessHook(
 void BERKELIUM_EXPORT forkedProcessHook(int argc, char **argv);
 #endif
 
-/** Iniitialize berkelium's global object.
+/** Initialize berkelium's global object, extended mode
+ *  \param homeDirectory  Just like Chrome's --user-data-dir command line flag.
+ *    If homeDirectory is null or empty, creates a temporary data directory.
+ *  \param berkeliumPath  Specify a custom directory to search berkelium binary
+ */
+bool BERKELIUM_EXPORT initEx(FileString homeDirectory, char *berkeliumPath);
+
+/** Initialize berkelium's global object.
  *  \param homeDirectory  Just like Chrome's --user-data-dir command line flag.
  *    If homeDirectory is null or empty, creates a temporary data directory.
  */
