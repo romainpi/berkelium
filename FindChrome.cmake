@@ -18,6 +18,7 @@
 #    APP - the name of the app to link to, must be a file or existing target
 #    LINKS - additional binaries to link into the .app; this almost certainly
 #            includes the renderer binary
+#    COPY - additional files to copy into the .app
 #
 #  On Linux:
 #  ADD_CHROME_SYMLINK_TARGET - Adds a target which adds symlinks to the
@@ -153,7 +154,7 @@ ENDFOREACH()
 IF(CHROME_FOUND)
   IF(APPLE)
     MACRO(ADD_CHROME_APP)
-      PARSE_ARGUMENTS(CHROME_APP "APP;DEPENDS;LINKS" "" ${ARGN})
+      PARSE_ARGUMENTS(CHROME_APP "APP;DEPENDS;LINKS;COPY" "" ${ARGN})
 
       IF(NOT CHROME_APP_APP)
         MESSAGE(ERROR "No application name specified as parameter to ADD_CHROME_APP")
@@ -163,7 +164,8 @@ IF(CHROME_FOUND)
 
       SET(CHROMIUM_FRAMEWORK Chromium\ Framework.framework)
       SET(CHROME_LANG en)
-      SET(CHROMIUM_FRAMEWORK_PATH ${CHROME_ROOT}/src/xcodebuild/${CHROMIUMMODE}/${CHROMIUM_FRAMEWORK})
+      SET(CHROMIUM_BIN_BUILD_PATH ${CHROME_ROOT}/src/xcodebuild/${CHROMIUMMODE})
+      SET(CHROMIUM_FRAMEWORK_PATH ${CHROMIUM_BIN_BUILD_PATH}/${CHROMIUM_FRAMEWORK})
       SET(LOCAL_CHROMIUM_FRAMEWORK ${CHROME_APP_NAME}/Contents/lib/${CHROMIUM_FRAMEWORK})
       SET(CHROME_SYMLINKS_COMMAND
         mkdir -p ${CHROME_APP_NAME} &&
@@ -174,6 +176,7 @@ IF(CHROME_FOUND)
         mkdir -p ${LOCAL_CHROMIUM_FRAMEWORK}/Libraries &&
         mkdir -p ${LOCAL_CHROMIUM_FRAMEWORK}/Resources &&
         sh ${BERKELIUM_TOP_LEVEL}/util/make-info-plist.sh ${CHROME_ROOT} ${CHROME_APP_NAME} ${CHROME_APP_APP} org.berkelium.${CHROME_APP_APP} &&
+        ln -sf ${CHROMIUM_BIN_BUILD_PATH}/libplugin_carbon_interpose.dylib ${CHROME_APP_NAME}/Contents/MacOS/ &&
         ln -sf ${CHROMIUM_FRAMEWORK_PATH}/Libraries/libffmpegsumo.dylib ${LOCAL_CHROMIUM_FRAMEWORK}/Libraries/ &&
         ln -sf ${CHROMIUM_FRAMEWORK_PATH}/Resources/chrome.pak ${LOCAL_CHROMIUM_FRAMEWORK}/Resources/ &&
         ln -sf ${CHROMIUM_FRAMEWORK_PATH}/Resources/${CHROME_LANG}.lproj ${LOCAL_CHROMIUM_FRAMEWORK}/Resources/ &&
@@ -186,13 +189,18 @@ IF(CHROME_FOUND)
 
       SET(CHROME_SYMLINKS_COMMAND
         ${CHROME_SYMLINKS_COMMAND} &&
-        ln -sf ${CMAKE_CURRENT_BINARY_DIR}/${CHROME_APP_APP} ${CHROME_APP_NAME}/Contents/MacOS/ &&
-        ln -sf ${CMAKE_CURRENT_BINARY_DIR}/libplugin_carbon_interpose.dylib ${CHROME_APP_NAME}/Contents/MacOS/
+        ln -sf ${CMAKE_CURRENT_BINARY_DIR}/${CHROME_APP_APP} ${CHROME_APP_NAME}/Contents/MacOS/
         )
       FOREACH(CHROME_SYMLINK_BINARY ${CHROME_APP_LINKS})
         SET(CHROME_SYMLINKS_COMMAND
           ${CHROME_SYMLINKS_COMMAND} &&
-          cp -f ${CHROME_SYMLINK_BINARY} ${CHROME_APP_NAME}/Contents/MacOS/
+          ln -sf ${CHROME_SYMLINK_BINARY} ${CHROME_APP_NAME}/Contents/MacOS/
+          )
+      ENDFOREACH()
+      FOREACH(CHROME_COPY_BINARY ${CHROME_APP_COPY})
+        SET(CHROME_SYMLINKS_COMMAND
+          ${CHROME_SYMLINKS_COMMAND} &&
+          cp -f ${CHROME_COPY_BINARY} ${CHROME_APP_NAME}/Contents/MacOS/
           )
       ENDFOREACH()
 
