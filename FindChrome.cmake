@@ -200,7 +200,7 @@ IF(CHROME_FOUND)
       FOREACH(CHROME_COPY_BINARY ${CHROME_APP_COPY})
         SET(CHROME_SYMLINKS_COMMAND
           ${CHROME_SYMLINKS_COMMAND} &&
-          cp -f ${CHROME_COPY_BINARY} ${CHROME_APP_NAME}/Contents/MacOS/
+          (cp -f ${CHROME_COPY_BINARY} ${CHROME_APP_NAME}/Contents/MacOS/ || true)
           )
       ENDFOREACH()
 
