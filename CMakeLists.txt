@@ -35,6 +35,7 @@ IF(NOT CHROME_ROOT)
     ${BERKELIUM_CHROME_ROOT_SEARCH_PATHS} # User provided search paths go first
     # Followed by a few reasonable choices within this directory
     ${BERKELIUM_TOP_LEVEL}/chrome
+    ${BERKELIUM_TOP_LEVEL}/chromium/chromium
     ${BERKELIUM_TOP_LEVEL}/chromium
     ${BERKELIUM_TOP_LEVEL}/build/chromium
     ${BERKELIUM_TOP_LEVEL}/build/c
@@ -103,6 +104,11 @@ IF(CHROME_FOUND)
 
   # Useful values for setting up demo apps
   SET(BERKELIUM_LINK_LIBS -L. debug liblibberkelium_d${CHROMIUM_DYLIB_EXT} optimized liblibberkelium${CHROMIUM_DYLIB_EXT} )
+
+  # 
+  IF(APPLE)
+    ADD_EXECUTABLE(bin_replace ${BERKELIUM_TOP_LEVEL}/util/bin_replace.cpp)
+  ENDIF()
 
   # ppmrender -- demo app
   ADD_EXECUTABLE(ppmrender ${BERKELIUM_TOP_LEVEL}/demo/ppmrender/ppmmain.cpp)
