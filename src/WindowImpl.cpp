@@ -1187,8 +1187,32 @@ void WindowImpl::OnDidStartProvisionalLoadForFrame(
     if (!is_main_frame) {
         return;
     }
+
     if (mDelegate) {
-        this->mCurrentURL = url;
+		bool cancelDefault = false;
+        const std::string &urlstring = url.spec();
+        const std::string &referrerstring = this->mCurrentURL.spec();
+
+        // Note: cancelDefault is currently broken. Don't depend on this feature.
+        if (urlstring != referrerstring) {
+            mDelegate->onNavigationRequested(
+              this,
+              URLString::point_to(urlstring),
+              URLString::point_to(referrerstring),
+              false, cancelDefault
+            );
+        }
+        if (cancelDefault) {
+            // FIXME: Hack for browser_handles_top_level_requests disabled.
+            //mRenderViewHost->Stop();
+            //this->goBack();
+            //return;
+        }
+    }
+
+    this->mCurrentURL = url;
+
+    if (mDelegate) {
         const std::string&spec=url.spec();
         mDelegate->onStartLoading(this, URLString::point_to(spec));
         mDelegate->onAddressBarChanged(this, URLString::point_to(spec));
