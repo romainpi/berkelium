@@ -71,6 +71,13 @@ void BERKELIUM_EXPORT forkedProcessHook(int argc, char **argv);
 /** Iniitialize berkelium's global object.
  *  \param homeDirectory  Just like Chrome's --user-data-dir command line flag.
  *    If homeDirectory is null or empty, creates a temporary data directory.
+ *  \param subprocessDirectory  Path to berkelium.exe.
+ */
+bool BERKELIUM_EXPORT init(FileString homeDirectory, FileString subprocessDirectory);
+
+/** Iniitialize berkelium's global object.
+ *  \param homeDirectory  Just like Chrome's --user-data-dir command line flag.
+ *    If homeDirectory is null or empty, creates a temporary data directory.
  */
 bool BERKELIUM_EXPORT init(FileString homeDirectory);
 

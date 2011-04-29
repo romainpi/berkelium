@@ -37,9 +37,18 @@ namespace Berkelium {
 
 // See ForkedProcessHook.cpp for Berkelium::forkedProcessHook
 
+bool init (FileString homeDirectory, FileString subprocessDirectory) {
+    new Root();
+    if (!Root::getSingleton().init(homeDirectory, subprocessDirectory)) {
+        Root::destroy();
+        return false;
+    }
+    return true;
+}
+
 bool init (FileString homeDirectory) {
     new Root();
-    if (!Root::getSingleton().init(homeDirectory)) {
+    if (!Root::getSingleton().init(homeDirectory, FileString::empty())) {
         Root::destroy();
         return false;
     }

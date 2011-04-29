@@ -82,7 +82,7 @@ public:
     Root();
     ~Root();
 
-    bool init(FileString homeDirectory);
+    bool init(FileString homeDirectory, FileString subprocessDirectory);
 
     bool initialized() {
         return mProf ? true : false;

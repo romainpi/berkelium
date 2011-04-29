@@ -182,7 +182,7 @@ void Root::SetUpGLibLogHandler() {
 Root::Root () {
 }
 
-bool Root::init(FileString homeDirectory) {
+bool Root::init(FileString homeDirectory, FileString subprocessDirectory) {
 
     new base::AtExitManager();
 
@@ -199,7 +199,11 @@ bool Root::init(FileString homeDirectory) {
 // (InitFromArgv does not exist on OS_WIN!)
 #if defined(OS_WIN)
     FilePath module_dir;
-	PathService::Get(base::DIR_MODULE, &module_dir);
+    if (subprocessDirectory.size()) {
+        module_dir = FilePath(subprocessDirectory.get<FilePath::StringType>());
+    } else {
+        PathService::Get(base::DIR_MODULE, &module_dir);
+    }
 #ifdef _DEBUG
     subprocess = module_dir.Append(L"berkelium_d.exe");
 #else
@@ -215,7 +219,13 @@ bool Root::init(FileString homeDirectory) {
 #elif defined(OS_MACOSX)
     FilePath app_contents;
     PathService::Get(base::FILE_EXE, &app_contents);
-    subprocess = app_contents.DirName().Append("berkelium");
+    FilePath module_dir;
+    if (subprocessDirectory.size()) {
+        module_dir = FilePath(subprocessDirectory.get<FilePath::StringType>());
+    } else {
+        module_dir = app_contents.DirName();
+    }
+    subprocess = module_dir.Append("berkelium");
     std::string subprocess_str = "--browser-subprocess-path=";
     subprocess_str += subprocess.value();
     const char* argv[] = { "berkelium", subprocess_str.c_str(),
@@ -224,7 +234,13 @@ bool Root::init(FileString homeDirectory) {
 #elif defined(OS_POSIX)
     FilePath module_file;
     PathService::Get(base::FILE_EXE, &module_file);
-    subprocess = module_file.DirName().Append("berkelium");
+    FilePath module_dir
+    if (subprocessDirectory.size()) {
+        module_dir = FilePath(subprocessDirectory.get<FilePath::StringType>());
+    } else {
+        module_dir = app_contents.DirName();
+    }
+    subprocess = module_dir.Append("berkelium");
     std::string subprocess_str = "--browser-subprocess-path=";
     subprocess_str += subprocess.value();
     const char* argv[] = { "berkelium", subprocess_str.c_str(),
@@ -316,7 +332,7 @@ bool Root::init(FileString homeDirectory) {
 #ifdef OS_WIN
     logging::InitLogging(
         L"chrome.log",
-        logging::LOG_TO_BOTH_FILE_AND_SYSTEM_DEBUG_LOG,
+        logging::LOG_NONE,
         logging::DONT_LOCK_LOG_FILE,
         logging::DELETE_OLD_LOG_FILE,
         logging::DISABLE_DCHECK_FOR_NON_OFFICIAL_RELEASE_BUILDS
