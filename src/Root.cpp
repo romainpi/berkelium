@@ -54,10 +54,10 @@
 #include "chrome/browser/browser_process_impl.h"
 #include "chrome/browser/process_singleton.h"
 #include "chrome/browser/profiles/profile_manager.h"
-#include "chrome/browser/plugin_service.h"
-#include "chrome/browser/renderer_host/resource_dispatcher_host.h"
+#include "content/browser/plugin_service.h"
+#include "content/browser/renderer_host/resource_dispatcher_host.h"
 #include "chrome/browser/renderer_host/browser_render_process_host.h"
-#include "chrome/browser/browser_thread.h"
+#include "content/browser/browser_thread.h"
 #include "chrome/browser/browser_url_handler.h"
 #include "chrome/browser/net/predictor_api.h"
 #include "chrome/common/hi_res_timer_manager.h"
@@ -79,7 +79,7 @@
 #include "chrome/common/sandbox_init_wrapper.h"
 #if defined(OS_WIN)
 #include <direct.h>
-#include "base/win_util.h"
+#include "base/win/win_util.h"
 #include "tools/memory_watcher/memory_watcher.h"
 #include "sandbox/src/broker_services.h"
 #include "chrome/common/sandbox_policy.h"

@@ -33,7 +33,7 @@
 #ifndef _BERKELIUM_CONTEXTIMPL_HPP_
 #define _BERKELIUM_CONTEXTIMPL_HPP_
 #include "berkelium/Context.hpp"
-#include "chrome/browser/browsing_instance.h"
+#include "content/browser/browsing_instance.h"
 
 class SessionStorageNamespace;
 

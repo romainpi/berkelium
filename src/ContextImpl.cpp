@@ -32,12 +32,12 @@
 
 #include "berkelium/Platform.hpp"
 
-#include "chrome/browser/renderer_host/site_instance.h"
+#include "content/browser/site_instance.h"
 #include "Root.hpp"
 #include "ContextImpl.hpp"
 #include "chrome/browser/profiles/profile.h"
-#include "chrome/browser/in_process_webkit/session_storage_namespace.h"
-#include "chrome/browser/in_process_webkit/webkit_context.h"
+#include "content/browser/in_process_webkit/session_storage_namespace.h"
+#include "content/browser/in_process_webkit/webkit_context.h"
 
 
 namespace Berkelium {

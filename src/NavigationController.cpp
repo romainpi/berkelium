@@ -48,16 +48,16 @@
 #include "chrome/browser/browser_about_handler.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/browser_url_handler.h"
-#include "chrome/browser/in_process_webkit/session_storage_namespace.h"
-#include "chrome/browser/in_process_webkit/webkit_context.h"
+#include "content/browser/in_process_webkit/session_storage_namespace.h"
+#include "content/browser/in_process_webkit/webkit_context.h"
 #include "chrome/browser/prefs/pref_service.h"
 #include "chrome/browser/profiles/profile.h"
-#include "chrome/browser/renderer_host/site_instance.h"
+#include "content/browser/site_instance.h"
 #include "chrome/browser/sessions/session_types.h"
-#include "chrome/browser/tab_contents/interstitial_page.h"
-#include "chrome/browser/tab_contents/navigation_entry.h"
-#include "chrome/browser/tab_contents/tab_contents.h"
-#include "chrome/browser/tab_contents/tab_contents_delegate.h"
+#include "content/browser/tab_contents/interstitial_page.h"
+#include "content/browser/tab_contents/navigation_entry.h"
+#include "content/browser/tab_contents/tab_contents.h"
+#include "content/browser/tab_contents/tab_contents_delegate.h"
 #include "chrome/common/chrome_constants.h"
 #include "chrome/common/navigation_types.h"
 #include "chrome/common/notification_service.h"
@@ -548,6 +548,10 @@ bool NavigationController::RendererDidNavigate(
     case NavigationType::NAV_IGNORE:
       // There is nothing we can do with this navigation, so we just return to
       // the caller that nothing has happened.
+      if (pending_entry_) {
+        DiscardNonCommittedEntries();
+		extra_invalidate_flags |= ::TabContents::INVALIDATE_URL;
+      }
       return false;
     default:
       NOTREACHED();
@@ -555,7 +559,8 @@ bool NavigationController::RendererDidNavigate(
 
   // All committed entries should have nonempty content state so WebKit doesn't
   // get confused when we go back to them (see the function for details).
-  SetContentStateIfEmpty(GetActiveEntry());
+  NavigationEntry* active_entry = GetActiveEntry();
+  active_entry->set_content_state(params.content_state);
 
   // WebKit doesn't set the "auto" transition on meta refreshes properly (bug
   // 1051891) so we manually set it for redirects which we normally treat as
@@ -576,7 +581,6 @@ bool NavigationController::RendererDidNavigate(
   details->entry = GetActiveEntry();
   details->is_main_frame = PageTransition::IsMainFrame(params.transition);
   details->serialized_security_info = params.security_info;
-  details->is_content_filtered = params.is_content_filtered;
   details->http_status_code = params.http_status_code;
   NotifyNavigationEntryCommitted(details, extra_invalidate_flags);
 

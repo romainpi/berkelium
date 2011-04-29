@@ -34,15 +34,15 @@
 #define _BERKELIUM_RENDERWIDGET_HPP_
 
 #include "berkelium/Widget.hpp"
-#include "chrome/browser/renderer_host/render_widget_host.h"
-#include "chrome/browser/renderer_host/render_widget_host_view.h"
+#include "content/browser/renderer_host/render_widget_host.h"
+#include "content/browser/renderer_host/render_widget_host_view.h"
 #if defined(OS_MACOSX)
-#include "chrome/browser/renderer_host/accelerated_surface_container_manager_mac.h"#
+#include "content/browser/renderer_host/accelerated_surface_container_manager_mac.h"#
 #endif
 #include "ui/gfx/rect.h"
 //see chrome/browser/renderer_host/test/test_render_view_host.h for a stub impl.
 
-class WebMenuItem;
+struct WebMenuItem;
 
 namespace Berkelium {
 class WindowImpl;
@@ -176,6 +176,15 @@ public: /******* RenderWidgetHostView *******/
 
   virtual void InitAsFullscreen();
 
+#if defined(OS_WIN)
+  void CleanupCompositorWindow();
+  void WillWmDestroy();
+  void ShowCompositorHostWindow(bool);
+  gfx::PluginWindowHandle AcquireCompositingSurface();
+  void ReleaseCompositingSurface(gfx::PluginWindowHandle);
+
+#endif
+
 #if defined(OS_MACOSX)
 
   // Display a native control popup menu for WebKit.
@@ -251,6 +260,9 @@ private:
     WindowImpl* mWindow;
 
     gfx::Rect mRect;
+
+    // When we are doing accelerated compositing
+    HWND compositor_host_window_;
 
 #if defined(OS_MACOSX)
   // Helper class for managing instances of accelerated plug-ins.

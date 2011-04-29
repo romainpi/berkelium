@@ -39,7 +39,7 @@
 #include "base/ref_counted.h"
 #include "base/message_loop.h"
 #include "base/scoped_ptr.h"
-#include "chrome/browser/browser_thread.h"
+#include "content/browser/browser_thread.h"
 
 class BrowserRenderProcessHost;
 class ProcessSingleton;

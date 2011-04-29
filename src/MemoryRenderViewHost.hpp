@@ -33,8 +33,8 @@
 #ifndef _BERKELIUM_MEMORYRENDERVIEWHOST_HPP_
 #define _BERKELIUM_MEMORYRENDERVIEWHOST_HPP_
 
-#include "chrome/browser/renderer_host/render_view_host.h"
-#include "chrome/browser/renderer_host/render_view_host_factory.h"
+#include "content/browser/renderer_host/render_view_host.h"
+#include "content/browser/renderer_host/render_view_host_factory.h"
 
 class RenderWidgetHostView;
 namespace Berkelium {

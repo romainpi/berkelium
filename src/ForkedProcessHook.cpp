@@ -30,7 +30,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "chrome/browser/tab_contents/tab_contents.h"
+#include "content/browser/tab_contents/tab_contents.h"
 #include "berkelium/Berkelium.hpp"
 #include "Root.hpp"
 
@@ -87,7 +87,7 @@
 #include "base/utf_string_conversions.h"
 #include "chrome/browser/defaults.h"
 #include "chrome/browser/diagnostics/diagnostics_main.h"
-#include "chrome/browser/renderer_host/render_process_host.h"
+#include "content/browser/renderer_host/render_process_host.h"
 #include "chrome/browser/platform_util.h"
 #include "chrome/common/chrome_constants.h"
 #include "chrome/common/chrome_counters.h"
@@ -134,7 +134,8 @@
 #endif
 
 #if defined(OS_WIN)
-#include "base/win_util.h"
+#include "base/win/win_util.h"
+#include "base/win/windows_version.h"
 #include "sandbox/src/dep.h"
 #include "sandbox/src/sandbox.h"
 #include "tools/memory_watcher/memory_watcher.h"
@@ -361,17 +362,6 @@ void SetupCRT(const CommandLine& parsed_command_line) {
   }
 #endif
 
-  // Enable the low fragmentation heap for the CRT heap. The heap is not changed
-  // if the process is run under the debugger is enabled or if certain gflags
-  // are set.
-  if (parsed_command_line.HasSwitch(switches::kUseLowFragHeapCrt) &&
-      (parsed_command_line.GetSwitchValueASCII(switches::kUseLowFragHeapCrt)
-       != "false")) {
-    void* crt_heap = reinterpret_cast<void*>(_get_heap_handle());
-    ULONG enable_lfh = 2;
-    HeapSetInformation(crt_heap, HeapCompatibilityInformation,
-                       &enable_lfh, sizeof(enable_lfh));
-  }
 #endif
 }
 
@@ -742,8 +732,8 @@ void forkedProcessHook(int argc, char **argv)
   // its initialization.
   SandboxInitWrapper sandbox_wrapper;
 #if defined(OS_WIN)
-  win_util::WinVersion win_version = win_util::GetWinVersion();
-  if (win_version < win_util::WINVERSION_VISTA) {
+  base::win::Version win_version = base::win::GetVersion();
+  if (win_version <		base::win::VERSION_VISTA) {
     // On Vista, this is unnecessary since it is controlled through the
     // /NXCOMPAT linker flag.
     // Enforces strong DEP support.

@@ -37,9 +37,9 @@
 #include "NavigationController.hpp"
 #include "ui/gfx/rect.h"
 #include "ui/gfx/size.h"
-#include "chrome/browser/renderer_host/render_widget_host.h"
-#include "chrome/browser/renderer_host/render_view_host.h"
-#include "chrome/browser/renderer_host/render_view_host_delegate.h"
+#include "content/browser/renderer_host/render_widget_host.h"
+#include "content/browser/renderer_host/render_view_host.h"
+#include "content/browser/renderer_host/render_view_host_delegate.h"
 #include "chrome/browser/history/history.h"
 #include "chrome/common/render_messages.h"
 class RenderProcessHost;

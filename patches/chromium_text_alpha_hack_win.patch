@@ -204,7 +204,7 @@ Index: third_party/WebKit/Source/WebCore/platform/graphics/chromium/FontChromium
 +    COLORREF savedTextColor = GetTextColor(m_hdc);
 +
 +    IntRect estBounds = estimateTextBounds();
-+    RECT boundsRect = { estBounds.x(), estBounds.y(), estBounds.right(), estBounds.bottom() };
++    RECT boundsRect = { estBounds.x(), estBounds.y(), estBounds.maxX(), estBounds.maxY() };
 +    bool preserveAlpha = true;
 +
      // If there is a non-blur shadow and both the fill color and shadow color 
