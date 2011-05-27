@@ -467,7 +467,7 @@ void RenderWidget::mouseWheel(int scrollX, int scrollY) {
 	}
 }
 
-void RenderWidget::mouseButton(unsigned int mouseButton, bool down) {
+void RenderWidget::mouseButton(unsigned int mouseButton, bool down, int clickCount) {
     unsigned int buttonChangeMask=0;
     switch(mouseButton) {
       case 0:
@@ -499,7 +499,7 @@ void RenderWidget::mouseButton(unsigned int mouseButton, bool down) {
         break;
     }
     if (down){
-        event.clickCount=1;
+        event.clickCount=clickCount;
         this->mButton = event.button;
     } else {
         this->mButton = WebKit::WebMouseEvent::ButtonNone;

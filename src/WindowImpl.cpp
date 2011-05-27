@@ -88,7 +88,7 @@ void WindowImpl::init(SiteInstance*site, int routing_id) {
         }
         mUniqueId.push_back(letters[rand() % (sizeof(letters)-1)]);
     }
-	
+
     mRenderViewHost = RenderViewHostFactory::Create(
         site,
         this,
@@ -177,7 +177,7 @@ void WindowImpl::bind(WideString lvalue, const Script::Variant &rvalue) {
     std::string jsonStr;
     if (host() && Berkelium::Script::toJSON(rvalue, &jsonStr)) {
         host()->ExecuteJavascriptInWebFrame(
-            std::wstring(), 
+            std::wstring(),
             lvalue.get<std::wstring>() + L" = " + UTF8ToWide(jsonStr) + L";\n");
     }
 }
@@ -202,7 +202,7 @@ void WindowImpl::clearStartLoading() {
 }
 
 void WindowImpl::evalInitialJavascript() {
-    const char *berkeliumFunc = 
+    const char *berkeliumFunc =
         "if(!window.Berkelium){(function(bkID){"
         "  var bkCallbacks = {};"
         "  function syncAsyncCall(name, args, issync){"
@@ -354,10 +354,10 @@ void WindowImpl::mouseMoved(int xPos, int yPos) {
             break;
     }
 }
-void WindowImpl::mouseButton(unsigned int buttonID, bool down) {
+void WindowImpl::mouseButton(unsigned int buttonID, bool down, int clickCount) {
     Widget *wid = getWidgetAtPoint(mMouseX, mMouseY, true);
     if (wid) {
-        (wid)->mouseButton(buttonID, down);
+        (wid)->mouseButton(buttonID, down, clickCount);
     }
 }
 void WindowImpl::mouseWheel(int xScroll, int yScroll) {
@@ -1046,7 +1046,7 @@ void WindowImpl::RunFileChooser(const ViewHostMsg_RunFileChooser_Params&params) 
           mode = FileOpen;
           break;
       }
-      mDelegate->onRunFileChooser(this, mode, 
+      mDelegate->onRunFileChooser(this, mode,
                                   WideString::point_to(title),
                                   FileString::point_to(filepath));
   }

@@ -59,7 +59,7 @@ public:
     bool hasFocus() const;
 
     void mouseMoved(int xPos, int yPos);
-    void mouseButton(uint32 buttonID, bool down);
+    void mouseButton(uint32 buttonID, bool down, int clickCount = 1);
     void mouseWheel(int xScroll, int yScroll);
     void textEvent(const wchar_t * evt, size_t evtLength);
     void keyEvent(bool pressed, int mods, int vk_code, int scancode);
