@@ -11,6 +11,12 @@
  *  The parameter is the directory for user data, and defaults to a temporary
  *  directory if it is empty.
  *
+ *  To allow the pages to update, you need to periodically pass control the
+ *  Berkelium:
+ *  \code
+ *  Berkelium::update();
+ *  \endcode
+ *
  *  When the process is exiting, to ensure all resources are cleanly released,
  *  just call the cleanup function.
  *  \code
