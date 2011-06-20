@@ -161,7 +161,7 @@ public:
     virtual int getId() const = 0;
 
     /** Sets the transparency flag for this Window. Note that the buffer will
-     * be BGRA regardless of transparency, but if the window is not set as
+     * be ARGB regardless of transparency, but if the window is not set as
      * transparent, the alpha channel should always be 1.
      * Transparency defaults to false and must be enabled on each Window.
      * \param istrans  Whether to enable a transparent background.
