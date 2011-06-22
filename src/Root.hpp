@@ -35,10 +35,10 @@
 #include "berkelium/Berkelium.hpp"
 #include "berkelium/Singleton.hpp"
 #include "chrome/browser/profiles/profile.h"
-#include "chrome/common/notification_service.h"
-#include "base/ref_counted.h"
+#include "content/common/notification_service.h"
+#include "base/memory/ref_counted.h"
 #include "base/message_loop.h"
-#include "base/scoped_ptr.h"
+#include "base/memory/scoped_ptr.h"
 #include "content/browser/browser_thread.h"
 
 class BrowserRenderProcessHost;
@@ -46,6 +46,9 @@ class ProcessSingleton;
 class URLRequestContext;
 namespace ui {
     class SystemMonitor;
+}
+namespace net {
+class URLRequestContextGetter;
 }
 class HighResolutionTimerManager;
 class HistogramSynchronizer;
@@ -65,7 +68,7 @@ class Root : public AutoSingleton<Root> {
     scoped_ptr<ui::SystemMonitor> mSysMon;
     scoped_ptr<HighResolutionTimerManager> mTimerMgr;
     scoped_ptr<chrome_browser_net::PredictorInit> mDNSPrefetch;
-    URLRequestContextGetter* mDefaultRequestContext;
+    net::URLRequestContextGetter* mDefaultRequestContext;
     scoped_ptr<MessageLoop> mMessageLoop;
     scoped_ptr<NotificationService> mNotificationService;
     scoped_ptr<ProcessSingleton> mProcessSingleton;
@@ -109,7 +112,7 @@ public:
 
     static void SetUpGLibLogHandler();
 
-    URLRequestContextGetter *getDefaultRequestContext() {
+    net::URLRequestContextGetter *getDefaultRequestContext() {
         return mDefaultRequestContext;
     }
 };

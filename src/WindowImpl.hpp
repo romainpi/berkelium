@@ -45,6 +45,7 @@
 class RenderProcessHost;
 class Profile;
 class SelectFileDialog;
+struct ViewHostMsg_RunFileChooser_Params;
 
 namespace Berkelium {
 class WindowView;
@@ -152,6 +153,7 @@ public:
 
     // Called from MemoryRenderViewHost, since RenderViewHost does nothing here?!
     void OnAddMessageToConsole(
+        int32 log_level,
         const std::wstring& message,
         int32 line_no,
         const std::wstring& source_id);
@@ -300,9 +302,7 @@ private: /******* Formerly RenderViewHostDelegate::BrowserIntegration *******/
     void OnCrashedPlugin(const FilePath& plugin_path);
     void OnPageContents(const GURL& url,
                                 int32 page_id,
-                                const string16& contents,
-                                const std::string& language,
-                                bool page_translatable);
+                                const string16& contents);
     void OnPageTranslated(int32 page_id,
                                   const std::string& original_lang,
                                   const std::string& translated_lang,

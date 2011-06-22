@@ -237,6 +237,9 @@ public: /******* RenderWidgetHostView *******/
   virtual void AcceleratedCompositingActivated(bool activated);
 #endif
 
+  virtual void SetBounds(const gfx::Rect&);
+  virtual gfx::PluginWindowHandle GetCompositingSurface();
+
   // Toggles visual muting of the render view area. This is on when a
   // constrained window is showing.
   virtual void SetVisuallyDeemphasized(const SkColor *color, bool deemphasized);
@@ -262,7 +265,9 @@ private:
     gfx::Rect mRect;
 
     // When we are doing accelerated compositing
+#if defined(OS_WIN)
     HWND compositor_host_window_;
+#endif
 
 #if defined(OS_MACOSX)
   // Helper class for managing instances of accelerated plug-ins.

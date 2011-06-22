@@ -103,6 +103,7 @@ public:
     ~MemoryRenderViewHost();
 
     void Memory_OnAddMessageToConsole(
+        int32 log_level,
         const std::wstring& message,
         int32 line_no,
         const std::wstring& source_id);

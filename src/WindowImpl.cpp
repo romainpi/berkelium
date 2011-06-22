@@ -52,17 +52,22 @@
 #include "content/browser/renderer_host/render_view_host.h"
 #include "content/browser/site_instance.h"
 #include "chrome/browser/renderer_preferences_util.h"
+#include "chrome/browser/ui/shell_dialogs.h"
 #include "content/browser/tab_contents/tab_contents.h"
 #include "content/browser/renderer_host/render_widget_host_view.h"
 #include "content/browser/renderer_host/render_view_host_factory.h"
 #include "chrome/browser/browser_url_handler.h"
-#include "chrome/common/native_web_keyboard_event.h"
+#include "content/common/native_web_keyboard_event.h"
 #include "content/browser/renderer_host/render_process_host.h"
-#include "chrome/common/bindings_policy.h"
+#include "content/common/bindings_policy.h"
 #include "webkit/glue/context_menu.h"
-#include "chrome/common/render_messages.h"
-#include "chrome/common/render_messages_params.h"
+#include "content/common/view_messages.h"
 #include "ui/base/message_box_flags.h"
+#include "webkit/plugins/npapi/default_plugin_shared.h"
+#include "webkit/plugins/npapi/plugin_group.h"
+#include "webkit/plugins/npapi/plugin_list.h"
+#include "webkit/plugins/npapi/webplugininfo.h"
+
 #include <iostream>
 
 #if BERKELIUM_PLATFORM == PLATFORM_LINUX
@@ -614,10 +619,12 @@ void WindowImpl::DidStopLoading() {
 }
 
 void WindowImpl::OnAddMessageToConsole(
+        int32 log_level,
         const std::wstring& message,
         int32 line_no,
         const std::wstring& source_id)
 {
+    // FIXME: log_level useful?
     if (mDelegate) {
         mDelegate->onConsoleMessage(this, WideString::point_to(message),
                                     WideString::point_to(source_id), line_no);
@@ -683,23 +690,23 @@ void WindowImpl::UpdateHistoryForNavigation(
     return;
 }
 
-ViewMsg_Navigate_Params::NavigationType GetNavigationType(
+ViewMsg_Navigate_Type::Value GetNavigationType(
     Profile* profile, const NavigationEntry& entry,
     NavigationController::ReloadType reload_type) {
   switch (reload_type) {
     case NavigationController::RELOAD:
-      return ViewMsg_Navigate_Params::RELOAD;
+      return ViewMsg_Navigate_Type::RELOAD;
     case NavigationController::RELOAD_IGNORING_CACHE:
-      return ViewMsg_Navigate_Params::RELOAD_IGNORING_CACHE;
+      return ViewMsg_Navigate_Type::RELOAD_IGNORING_CACHE;
     case NavigationController::NO_RELOAD:
       break;  // Fall through to rest of function.
   }
 
   if (entry.restore_type() == NavigationEntry::RESTORE_LAST_SESSION &&
       profile->DidLastSessionExitCleanly())
-    return ViewMsg_Navigate_Params::RESTORE;
+    return ViewMsg_Navigate_Type::RESTORE;
 
-  return ViewMsg_Navigate_Params::NORMAL;
+  return ViewMsg_Navigate_Type::NORMAL;
 }
 
 
@@ -873,26 +880,16 @@ void WindowImpl::OnMissingPluginStatus(int status){
 void WindowImpl::OnCrashedPlugin(const FilePath& plugin_path) {
     DCHECK(!plugin_path.value().empty());
 
-    std::wstring plugin_name = plugin_path.ToWStringHack();
-#if defined(OS_WIN) || defined(OS_MACOSX)
-    scoped_ptr<FileVersionInfo> version_info(
-        FileVersionInfo::CreateFileVersionInfo(plugin_path));
-    if (version_info.get()) {
-        const string16& product_name = version_info->product_name();
-        if (!product_name.empty()) {
-            plugin_name = UTF16ToWide(product_name);
-#if defined(OS_MACOSX)
-            // Many plugins on the Mac have .plugin in the actual name, which looks
-            // terrible, so look for that and strip it off if present.
-            const std::wstring plugin_extension(L".plugin");
-            if (EndsWith(plugin_name, plugin_extension, true))
-                plugin_name.erase(plugin_name.length() - plugin_extension.length());
-#endif  // OS_MACOSX
-        }
+    string16 plugin_name = plugin_path.LossyDisplayName();
+    webkit::npapi::WebPluginInfo plugin_info;
+    if (webkit::npapi::PluginList::Singleton()->GetPluginInfoByPath(
+            plugin_path, &plugin_info) &&
+        !plugin_info.name.empty()) {
+        plugin_name = plugin_info.name;
     }
-#endif
     if (mDelegate) {
-        mDelegate->onCrashedPlugin(this, WideString::point_to(plugin_name));
+        std::wstring plugin_wide = UTF16ToWide(plugin_name);
+        mDelegate->onCrashedPlugin(this, WideString::point_to(plugin_wide));
     }
 }
 void WindowImpl::WorkerCrashed(){
@@ -904,9 +901,7 @@ void WindowImpl::WorkerCrashed(){
 void WindowImpl::OnPageContents(
     const GURL& url,
     int32 page_id,
-    const string16& contents,
-    const std::string& language,
-    bool page_translatable) {
+    const string16& contents) {
 }
 
 void WindowImpl::OnPageTranslated(
@@ -1041,16 +1036,16 @@ void WindowImpl::RunFileChooser(const ViewHostMsg_RunFileChooser_Params&params) 
       const FilePath::StringType &filepath = params.default_file_name.value();
       int mode;
       switch (params.mode) {
-        case ViewHostMsg_RunFileChooser_Params::OpenMultiple:
+        case ViewHostMsg_RunFileChooser_Mode::OpenMultiple:
           mode = FileOpenMultiple;
           break;
 // Not implemented until chromium7
 /*
-        case ViewHostMsg_RunFileChooser_Params::OpenFolder:
+        case ViewHostMsg_RunFileChooser_Mode::OpenFolder:
           mode = FileOpenFolder;
           break;
 */
-        case ViewHostMsg_RunFileChooser_Params::Save:
+        case ViewHostMsg_RunFileChooser_Mode::Save:
           mode = FileSaveAs;
           break;
         default:

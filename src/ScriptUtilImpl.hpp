@@ -37,7 +37,7 @@
 #include "berkelium/ScriptVariant.hpp"
 
 #include "base/values.h"
-#include "chrome/common/json_value_serializer.h"
+#include "content/common/json_value_serializer.h"
 
 namespace Berkelium {
 namespace Script {

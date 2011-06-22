@@ -42,7 +42,7 @@
 #include "base/threading/thread.h"
 #include "base/command_line.h"
 #include "base/file_util.h"
-#include "base/scoped_temp_dir.h"
+#include "base/memory/scoped_temp_dir.h"
 #include "base/i18n/icu_util.h"
 #include "net/base/cookie_monster.h"
 #include "chrome/common/chrome_constants.h"
@@ -56,11 +56,11 @@
 #include "chrome/browser/profiles/profile_manager.h"
 #include "content/browser/plugin_service.h"
 #include "content/browser/renderer_host/resource_dispatcher_host.h"
-#include "chrome/browser/renderer_host/browser_render_process_host.h"
+#include "content/browser/renderer_host/browser_render_process_host.h"
 #include "content/browser/browser_thread.h"
 #include "chrome/browser/browser_url_handler.h"
 #include "chrome/browser/net/predictor_api.h"
-#include "chrome/common/hi_res_timer_manager.h"
+#include "content/common/hi_res_timer_manager.h"
 #include "ui/base/resource/resource_bundle.h"
 #include "ui/base/ui_base_paths.h"
 #include "ui/base/system_monitor/system_monitor.h"
@@ -76,7 +76,7 @@
 #include "chrome/app/breakpad_mac.h"
 #include "third_party/WebKit/Source/WebKit/mac/WebCoreSupport/WebSystemInterface.h"
 #endif
-#include "chrome/common/sandbox_init_wrapper.h"
+#include "content/common/sandbox_init_wrapper.h"
 #if defined(OS_WIN)
 #include <direct.h>
 #include "base/win/win_util.h"
@@ -90,11 +90,11 @@
 #include <gtk/gtk.h>
 #include <stdlib.h>
 #include <string.h>
-#include "chrome/browser/renderer_host/render_sandbox_host_linux.h"
-#include "chrome/browser/zygote_host_linux.h"
+#include "content/browser/renderer_host/render_sandbox_host_linux.h"
+#include "content/browser/zygote_host_linux.h"
 #endif
 #if defined(USE_NSS)
-#include "base/nss_util.h"
+#include "crypto/nss_util.h"
 #endif
 #include <iostream>
 
@@ -234,11 +234,11 @@ bool Root::init(FileString homeDirectory, FileString subprocessDirectory) {
 #elif defined(OS_POSIX)
     FilePath module_file;
     PathService::Get(base::FILE_EXE, &module_file);
-    FilePath module_dir
+    FilePath module_dir;
     if (subprocessDirectory.size()) {
         module_dir = FilePath(subprocessDirectory.get<FilePath::StringType>());
     } else {
-        module_dir = app_contents.DirName();
+        module_dir = module_file.DirName();
     }
     subprocess = module_dir.Append("berkelium");
     std::string subprocess_str = "--browser-subprocess-path=";
@@ -373,7 +373,7 @@ bool Root::init(FileString homeDirectory, FileString subprocessDirectory) {
     zhost->Init(sandbox_cmd);
 
     // We want to be sure to init NSPR on the main thread.
-    base::EnsureNSPRInit();
+    crypto::EnsureNSPRInit();
 #endif  // defined(OS_LINUX)
 
   SandboxInitWrapper sandbox_wrapper;
@@ -415,6 +415,7 @@ bool Root::init(FileString homeDirectory, FileString subprocessDirectory) {
     browser_process->process_launcher_thread();
     browser_process->cache_thread();
     browser_process->io_thread();
+    browser_process->watchdog_thread();
 
     // Initialize histogram synchronizer system. This is a singleton and is used
     // for posting tasks via NewRunnableMethod. Its deleted when it goes out of
@@ -435,7 +436,7 @@ bool Root::init(FileString homeDirectory, FileString subprocessDirectory) {
         history_path = history_path.Append(chrome::kHistoryFilename);
         //std::cout << "  Profile exists: " << ProfileManager::IsProfile(homedirpath) << std::endl;
     }
-    mProf = profile_manager->GetProfile(homedirpath, false);
+    mProf = profile_manager->GetProfile(homedirpath);
     if (!mProf) {
         mProcessSingleton.reset();
         return false;
@@ -443,7 +444,7 @@ bool Root::init(FileString homeDirectory, FileString subprocessDirectory) {
     mProf->GetPrefs()->SetBoolean(prefs::kSafeBrowsingEnabled, false);
     mProf->GetPrefs()->RegisterStringPref(prefs::kSafeBrowsingClientKey, "");
     mProf->GetPrefs()->RegisterStringPref(prefs::kSafeBrowsingWrappedKey, "");
-    mProf->InitExtensions();
+    mProf->InitExtensions(false);
 
     PrefService* user_prefs = mProf->GetPrefs();
     DCHECK(user_prefs);
@@ -457,16 +458,6 @@ bool Root::init(FileString homeDirectory, FileString subprocessDirectory) {
       CommandLine::ForCurrentProcess()->HasSwitch(switches::kEnablePreconnect)));
 
     BrowserURLHandler::InitURLHandlers();
-
-    {
-        FilePath plugindata = homedirpath.AppendASCII("plugin_");
-        if (!file_util::CreateDirectory(plugindata)) {
-            return false;
-        }
-        PluginService::GetInstance()->SetChromePluginDataDir(plugindata);
-    }
-    PluginService::GetInstance()->LoadChromePlugins(
-        g_browser_process->resource_dispatcher_host());
 
     mDefaultRequestContext=mProf->GetRequestContext();
     return true;

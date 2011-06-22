@@ -39,9 +39,8 @@
 
 #include "content/browser/renderer_host/render_widget_host_view.h"
 #include "content/browser/renderer_host/render_process_host.h"
-#include "chrome/common/notification_service.h"
-#include "chrome/common/render_messages.h"
-#include "chrome/common/render_messages_params.h"
+#include "content/common/notification_service.h"
+#include "content/common/view_messages.h"
 
 namespace Berkelium {
 
@@ -79,10 +78,11 @@ bool MemoryRenderViewHost::OnMessageReceived(const IPC::Message& msg) {
   return handled;
 }
 
-void MemoryRenderViewHost::Memory_OnAddMessageToConsole(const std::wstring& message,
+void MemoryRenderViewHost::Memory_OnAddMessageToConsole(int32 log_level,
+                                           const std::wstring& message,
                                            int32 line_no,
                                            const std::wstring& source_id) {
-    mWindow->OnAddMessageToConsole(message, line_no, source_id);
+    mWindow->OnAddMessageToConsole(log_level, message, line_no, source_id);
 }
 
 

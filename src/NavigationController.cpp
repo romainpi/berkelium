@@ -59,16 +59,17 @@
 #include "content/browser/tab_contents/tab_contents.h"
 #include "content/browser/tab_contents/tab_contents_delegate.h"
 #include "chrome/common/chrome_constants.h"
-#include "chrome/common/navigation_types.h"
-#include "chrome/common/notification_service.h"
+#include "content/common/navigation_types.h"
+#include "content/common/notification_service.h"
 #include "chrome/common/pref_names.h"
-#include "chrome/common/page_type.h"
-#include "chrome/common/render_messages_params.h"
+#include "content/common/page_type.h"
+#include "content/common/view_messages.h"
 #include "chrome/common/url_constants.h"
 #include "net/base/escape.h"
 #include "net/base/net_util.h"
 #include "net/base/mime_util.h"
 #include "webkit/glue/webkit_glue.h"
+#include "content/common/content_constants.h"
 
 namespace {
 
@@ -144,7 +145,7 @@ namespace Berkelium {
 
 // static
 size_t NavigationController::max_entry_count_ =
-    chrome::kMaxSessionHistoryEntries;
+    content::kMaxSessionHistoryEntries;
 
 // static
 bool NavigationController::check_for_repost_ = true;
@@ -166,7 +167,7 @@ NavigationController::NavigationController(
       pending_reload_(NO_RELOAD) {
   DCHECK(profile_);
   if (!session_storage_namespace_)
-    session_storage_namespace_ = new SessionStorageNamespace(profile_);
+      session_storage_namespace_ = new SessionStorageNamespace(profile_->GetWebKitContext());
 }
 
 NavigationController::~NavigationController() {
@@ -271,17 +272,6 @@ NavigationEntry* NavigationController::CreateNavigationEntry(
   entry->set_virtual_url(url);
   entry->set_user_typed_url(url);
   entry->set_update_virtual_url_with_url(reverse_on_redirect);
-  if (url.SchemeIsFile()) {
-    // Use the filename as the title, not the full path.
-    // We need to call FormatUrl() to perform URL de-escaping;
-    // it's a bit ugly to grab the filename out of the resulting string.
-    std::string languages =
-        profile->GetPrefs()->GetString(prefs::kAcceptLanguages);
-    std::wstring formatted = UTF16ToWideHack(net::FormatUrl(url, languages));
-    std::wstring filename =
-        FilePath::FromWStringHack(formatted).BaseName().ToWStringHack();
-    entry->set_title(WideToUTF16Hack(filename));
-  }
   return entry;
 }
 

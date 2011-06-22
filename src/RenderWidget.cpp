@@ -561,6 +561,14 @@ void RenderWidget::MovePluginWindows(
 #endif
 }
 
+void RenderWidget::SetBounds(const gfx::Rect&rect) {
+    // This is called when webkit has sent us a Move message.
+}
+
+gfx::PluginWindowHandle RenderWidget::GetCompositingSurface() {
+    return gfx::kNullPluginWindow;
+}
+
 void RenderWidget::SetVisuallyDeemphasized(const SkColor *color, bool deemphasized) {
 }
 

@@ -50,7 +50,7 @@ ContextImpl::ContextImpl(Profile *prof, SiteInstance*si, SessionStorageNamespace
 ContextImpl::ContextImpl(Profile *prof) {
     init(prof,
          SiteInstance::CreateSiteInstance(prof),
-         new SessionStorageNamespace(prof));
+         new SessionStorageNamespace(prof->GetWebKitContext()));
 }
 
 void ContextImpl::init(Profile*prof, SiteInstance*si, SessionStorageNamespace *ssn) {

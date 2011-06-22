@@ -71,7 +71,7 @@
 #endif
 
 #include "app/app_paths.h"
-#include "app/app_switches.h"
+#include "chrome/common/chrome_switches.h"
 #include "ui/base/resource/resource_bundle.h"
 #include "base/at_exit.h"
 #include "base/command_line.h"
@@ -90,14 +90,14 @@
 #include "content/browser/renderer_host/render_process_host.h"
 #include "chrome/browser/platform_util.h"
 #include "chrome/common/chrome_constants.h"
-#include "chrome/common/chrome_counters.h"
-#include "chrome/common/chrome_descriptors.h"
+#include "content/common/content_counters.h"
+#include "content/common/chrome_descriptors.h"
 #include "chrome/common/chrome_paths.h"
 #include "chrome/common/chrome_switches.h"
 #include "chrome/common/chrome_version_info.h"
 #include "chrome/common/logging_chrome.h"
-#include "chrome/common/main_function_params.h"
-#include "chrome/common/sandbox_init_wrapper.h"
+#include "content/common/main_function_params.h"
+#include "content/common/sandbox_init_wrapper.h"
 #include "chrome/common/url_constants.h"
 #include "ipc/ipc_switches.h"
 #include "ui/base/resource/resource_bundle.h"
@@ -105,7 +105,7 @@
 #include "ui/base/ui_base_switches.h"
 
 #if defined(USE_NSS)
-#include "base/nss_util.h"
+#include "crypto/nss_util.h"
 #endif
 
 #if defined(USE_X11)
@@ -113,8 +113,8 @@
 #endif
 
 #if defined(OS_LINUX)
-#include "chrome/browser/renderer_host/render_sandbox_host_linux.h"
-#include "chrome/browser/zygote_host_linux.h"
+#include "content/browser/renderer_host/render_sandbox_host_linux.h"
+#include "content/browser/zygote_host_linux.h"
 #endif
 
 #if defined(OS_MACOSX)
@@ -952,7 +952,7 @@ void forkedProcessHook(int argc, char **argv)
 
 #if defined(USE_NSS)
     // We want to be sure to init NSPR on the main thread.
-    base::EnsureNSPRInit();
+    crypto::EnsureNSPRInit();
 #endif
 
     g_thread_init(NULL);
