@@ -180,10 +180,10 @@ public: /******* RenderWidgetHostView *******/
   void CleanupCompositorWindow();
   void WillWmDestroy();
   void ShowCompositorHostWindow(bool);
+#endif
+
   gfx::PluginWindowHandle AcquireCompositingSurface();
   void ReleaseCompositingSurface(gfx::PluginWindowHandle);
-
-#endif
 
 #if defined(OS_MACOSX)
 
@@ -261,8 +261,10 @@ private:
 
     gfx::Rect mRect;
 
+#if defined(OS_WIN)
     // When we are doing accelerated compositing
     HWND compositor_host_window_;
+#endif
 
 #if defined(OS_MACOSX)
   // Helper class for managing instances of accelerated plug-ins.

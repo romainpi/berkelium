@@ -90,8 +90,8 @@
 #include <gtk/gtk.h>
 #include <stdlib.h>
 #include <string.h>
-#include "chrome/browser/renderer_host/render_sandbox_host_linux.h"
-#include "chrome/browser/zygote_host_linux.h"
+#include "content/browser/renderer_host/render_sandbox_host_linux.h"
+#include "content/browser/zygote_host_linux.h"
 #endif
 #if defined(USE_NSS)
 #include "base/nss_util.h"
@@ -234,11 +234,11 @@ bool Root::init(FileString homeDirectory, FileString subprocessDirectory) {
 #elif defined(OS_POSIX)
     FilePath module_file;
     PathService::Get(base::FILE_EXE, &module_file);
-    FilePath module_dir
+    FilePath module_dir;
     if (subprocessDirectory.size()) {
         module_dir = FilePath(subprocessDirectory.get<FilePath::StringType>());
     } else {
-        module_dir = app_contents.DirName();
+        module_dir = module_file.DirName();
     }
     subprocess = module_dir.Append("berkelium");
     std::string subprocess_str = "--browser-subprocess-path=";

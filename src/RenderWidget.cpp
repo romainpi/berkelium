@@ -390,6 +390,16 @@ gfx::PluginWindowHandle RenderWidget::AcquireCompositingSurface() {
 void RenderWidget::ReleaseCompositingSurface(gfx::PluginWindowHandle) {
   ShowCompositorHostWindow(false);
 }
+
+#else
+
+gfx::PluginWindowHandle RenderWidget::AcquireCompositingSurface() {
+    return gfx::PluginWindowHandle();
+}
+
+void RenderWidget::ReleaseCompositingSurface(gfx::PluginWindowHandle) {
+}
+
 #endif
 
 #if defined(OS_MACOSX)
