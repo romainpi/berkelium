@@ -104,6 +104,7 @@ WindowImpl::WindowImpl(const Context*otherContext):
     mController = new NavigationController(this, profile(), otherContext->getImpl()->sessionStorageNamespace());
     mMouseX = 0;
     mMouseY = 0;
+    isLoading = false;
     mCurrentURL = GURL("about:blank");
     zIndex = 0;
     init(mContext->getImpl()->getSiteInstance(), MSG_ROUTING_NONE);
@@ -152,6 +153,7 @@ void WindowImpl::SetIsCrashed(bool state) {
 }
 
 void WindowImpl::SetIsLoading(bool is_loading) {
+    isLoading = is_loading;
     host()->SetIsLoading(is_loading);
 }
 int WindowImpl::GetBrowserWindowID() const {
@@ -570,8 +572,10 @@ bool WindowImpl::CreateRenderViewForRenderManager(
 
 
 void WindowImpl::DidStartLoading() {
+    if (isLoading)
+        return;
+    
     SetIsLoading(true);
-
     evalInitialJavascript();
 
     if (mDelegate) {

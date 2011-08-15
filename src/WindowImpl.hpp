@@ -363,7 +363,7 @@ private:
 
     int mMouseX;
     int mMouseY;
-
+    bool isLoading;
     gfx::Rect mRect;
 
     NavigationController *mController;
