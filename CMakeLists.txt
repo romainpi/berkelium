@@ -29,6 +29,11 @@ SET(CMAKE_MODULE_PATH
   ${BERKELIUM_TOP_LEVEL}/build/modules/
 )
 
+IF(NOT DEFINED BERKELIUM_BUILD_DEMOS)
+  SET(BERKELIUM_BUILD_DEMOS TRUE CACHE BOOL "If enabled, builds demos if their dependencies are available.")
+ELSE()
+  SET(BERKELIUM_BUILD_DEMOS BERKELIUM_BUILD_DEMOS CACHE BOOL "If enabled, builds demos if their dependencies are available.")
+ENDIF()
 
 IF(NOT CHROME_ROOT)
   SET(CHROME_ROOT_SEARCH_PATHS
@@ -111,17 +116,19 @@ IF(CHROME_FOUND)
   ENDIF()
 
   # ppmrender -- demo app
-  ADD_EXECUTABLE(ppmrender ${BERKELIUM_TOP_LEVEL}/demo/ppmrender/ppmmain.cpp)
-  TARGET_LINK_LIBRARIES(ppmrender ${BERKELIUM_LINK_LIBS})
-  SET_TARGET_PROPERTIES(ppmrender PROPERTIES LINK_FLAGS "${BERKELIUM_LDFLAGS}")
-  ADD_DEPENDENCIES(ppmrender libberkelium)
-  IF(APPLE)
-    ADD_CHROME_APP(
-      APP ppmrender
-      DEPENDS ppmrender plugin_carbon_interpose
-      COPY
-      ${CMAKE_CURRENT_BINARY_DIR}/berkelium
-      )
+  IF(BERKELIUM_BUILD_DEMOS)
+    ADD_EXECUTABLE(ppmrender ${BERKELIUM_TOP_LEVEL}/demo/ppmrender/ppmmain.cpp)
+    TARGET_LINK_LIBRARIES(ppmrender ${BERKELIUM_LINK_LIBS})
+    SET_TARGET_PROPERTIES(ppmrender PROPERTIES LINK_FLAGS "${BERKELIUM_LDFLAGS}")
+    ADD_DEPENDENCIES(ppmrender libberkelium)
+    IF(APPLE)
+      ADD_CHROME_APP(
+        APP ppmrender
+        DEPENDS ppmrender plugin_carbon_interpose
+        COPY
+        ${CMAKE_CURRENT_BINARY_DIR}/berkelium
+        )
+    ENDIF()
   ENDIF()
 
   # demo directory, so we can share some implementation between demos
@@ -136,7 +143,7 @@ IF(CHROME_FOUND)
   ENDIF()
 
   # glut_demo -- demo app
-  IF(OPENGL_FOUND AND GLUT_FOUND)
+  IF(BERKELIUM_BUILD_DEMOS AND OPENGL_FOUND AND GLUT_FOUND)
     ADD_EXECUTABLE(glut_demo ${BERKELIUM_TOP_LEVEL}/demo/glut_demo/glut_demo.cpp)
     TARGET_LINK_LIBRARIES(glut_demo ${BERKELIUM_LINK_LIBS})
     SET_TARGET_PROPERTIES(glut_demo PROPERTIES LINK_FLAGS "${BERKELIUM_LDFLAGS}")
@@ -153,7 +160,7 @@ IF(CHROME_FOUND)
   ENDIF()
 
   # glut_input -- glut demo app which also handles input
-  IF(OPENGL_FOUND AND GLUT_FOUND)
+  IF(BERKELIUM_BUILD_DEMOS AND OPENGL_FOUND AND GLUT_FOUND)
     ADD_EXECUTABLE(glut_input ${BERKELIUM_TOP_LEVEL}/demo/glut_input/glut_input.cpp)
     TARGET_LINK_LIBRARIES(glut_input ${BERKELIUM_LINK_LIBS})
     SET_TARGET_PROPERTIES(glut_input PROPERTIES LINK_FLAGS "${BERKELIUM_LDFLAGS}")
