@@ -39,9 +39,9 @@ namespace Berkelium {
 
 // See ForkedProcessHook.cpp for Berkelium::forkedProcessHook
 
-bool initEx (FileString homeDirectory, char *berkeliumPath) {
-    if ( berkeliumPath != NULL ) {
-        FilePath subprocess = FilePath(berkeliumPath);
+bool initEx (FileString homeDirectory, FileString berkeliumPath) {
+    if (berkeliumPath.size() > 0) {
+        FilePath subprocess(berkeliumPath.get<FilePath::StringType>());
         subprocess = subprocess.Append("berkelium");
         PathService::Override(base::FILE_EXE, subprocess);
     }
@@ -54,7 +54,7 @@ bool initEx (FileString homeDirectory, char *berkeliumPath) {
     return true;
 }
 bool init (FileString homeDirectory) {
-    return initEx(homeDirectory, NULL);
+    return initEx(homeDirectory, FileString::empty());
 }
 void destroy () {
     Root::destroy();
