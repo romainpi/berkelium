@@ -42,7 +42,7 @@ namespace Berkelium {
 bool initEx (FileString homeDirectory, FileString berkeliumPath) {
     if (berkeliumPath.size() > 0) {
         FilePath subprocess(berkeliumPath.get<FilePath::StringType>());
-        subprocess = subprocess.Append("berkelium");
+        subprocess = subprocess.AppendASCII("berkelium");
         PathService::Override(base::FILE_EXE, subprocess);
     }
 
