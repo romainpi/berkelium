@@ -115,7 +115,7 @@ public:
     virtual void focus();
     virtual void unfocus();
     virtual void mouseMoved(int xPos, int yPos);
-    virtual void mouseButton(unsigned int buttonID, bool down);
+    virtual void mouseButton(unsigned int buttonID, bool down, int clickCount);
     virtual void mouseWheel(int xScroll, int yScroll);
     virtual void textEvent(const wchar_t *evt, size_t evtLength);
     virtual void keyEvent(bool pressed, int mods, int vk_code, int scancode);
@@ -317,7 +317,7 @@ private:
 
     int mMouseX;
     int mMouseY;
-
+    bool isLoading;
     gfx::Rect mRect;
 
     NavigationController *mController;
