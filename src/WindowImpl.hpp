@@ -68,11 +68,18 @@ class WindowImpl :
 
     WindowImpl(const Context*otherContext, int routingId);
 
-    void UpdateHistoryForNavigation(
-        const GURL& virtual_url,
-        const NavigationController::LoadCommittedDetails& details,
-        const ViewHostMsg_FrameNavigate_Params& params);
+	// Updates history with the specified navigation. This is called by
+	// OnMsgNavigate to update history state.
+	void UpdateHistoryForNavigation(
+	  scoped_refptr<history::HistoryAddPageArgs> add_page_args);
     bool UpdateTitleForEntry(NavigationEntry* ent, const std::wstring&title);
+ 
+	// Returns the history::HistoryAddPageArgs to use for adding a page to
+	// history.
+	scoped_refptr<history::HistoryAddPageArgs> CreateHistoryAddPageArgs(
+		const GURL& virtual_url,
+		const NavigationController::LoadCommittedDetails& details,
+		const ViewHostMsg_FrameNavigate_Params& params);
 
 public:
 //    WindowImpl();
@@ -224,6 +231,7 @@ protected: /******* RenderViewHostDelegate *******/
   virtual void RunFileChooser(const ViewHostMsg_RunFileChooser_Params&params);
 
   virtual bool OnMessageReceived(const IPC::Message& message);
+	virtual const GURL& GetURL() const;
 
     virtual int GetBrowserWindowID() const;
     ViewType::Type GetRenderViewType()const;
