@@ -203,6 +203,8 @@ IF(CHROME_FOUND)
           DESTINATION bin
           LIBRARY
           DESTINATION lib)
+  INSTALL(DIRECTORY include/berkelium
+      DESTINATION include)
   IF(NOT APPLE)
     INSTALL(FILES
           ${CHROMIUM_DATADIR}/chrome.pak
