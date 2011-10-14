@@ -375,6 +375,7 @@ elif [ x"${platform}" = x"Linux" ]; then
                  export GYP_GENERATORS=make &&
                  export CHROMIUM_ROOT="'"$PWD"'" &&
                  export GYP_DEFINES='${GYP_DEFINES} disable_nacl=1 target_arch=${CHROME_PLATFORM}' &&
+                 export CXXFLAGS=\"-Wno-conversion-null -Wno-unused-but-set-variable -Wno-unused-result -Wno-int-to-pointer-cast\" &&
                  gclient runhooks --force &&
                  cd src &&
                  make $VERBOSE_FLAGS -r $NUM_PROCS $MAKEFLAGS chrome" && \
