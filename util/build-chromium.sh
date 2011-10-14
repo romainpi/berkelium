@@ -334,7 +334,6 @@ elif [ x"${platform}" = x"Linux" ]; then
         user_eval "cd ${CHROMIUM_BUILD_DIR} &&
                  svn co http://src.chromium.org/svn/trunk/tools/depot_tools/"
     fi
-
     # And now for the real chromium
     echo "Installing Chromium... DUN dunn dunnnnn"
     echo "Without debug, it takes about 3.5 gigabytes of disk space to install and build the source tree."
@@ -354,6 +353,16 @@ elif [ x"${platform}" = x"Linux" ]; then
         GYP_DEFINES="${GYP_DEFINES} linux_fpic=1"
     else
         CHROME_PLATFORM=ia32
+    fi
+
+    GCC_VERSION=`gcc --version | grep ^gcc | cut -d " " -f 4`
+    GCC_VERSION_MAJOR=`gcc --version | grep ^gcc | cut -d " " -f 4 | cut -d "." -f 1`
+    GCC_VERSION_MINOR=`gcc --version | grep ^gcc | cut -d " " -f 4 | cut -d "." -f 2`
+    GCC_VERSION_REV=`gcc --version | grep ^gcc | cut -d " " -f 4 | cut -d "." -f 3`
+    if [ "${GCC_VERSION_MAJOR}" -gt "4" -o "${GCC_VERSION_MAJOR}" -eq "4" -a "${GCC_VERSION_MINOR}" -ge "6" ]; then
+        GCC_46_FIX_CXXFLAGS="-Wno-conversion-null -Wno-unused-but-set-variable -Wno-unused-result -Wno-int-to-pointer-cast"
+    else
+        GCC_46_FIX_CXXFLAGS=""
     fi
     echo "${CHROMIUM_CHECKOUT_DIR}"
     mkdir -p ${CHROMIUM_CHECKOUT_DIR}
@@ -375,7 +384,7 @@ elif [ x"${platform}" = x"Linux" ]; then
                  export GYP_GENERATORS=make &&
                  export CHROMIUM_ROOT="'"$PWD"'" &&
                  export GYP_DEFINES='${GYP_DEFINES} disable_nacl=1 target_arch=${CHROME_PLATFORM}' &&
-                 export CXXFLAGS=\"-Wno-conversion-null -Wno-unused-but-set-variable -Wno-unused-result -Wno-int-to-pointer-cast\" &&
+                 export CXXFLAGS=\"${GCC_46_FIX_CXXFLAGS}\" &&
                  gclient runhooks --force &&
                  cd src &&
                  make $VERBOSE_FLAGS -r $NUM_PROCS $MAKEFLAGS chrome" && \
