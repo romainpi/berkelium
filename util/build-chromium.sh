@@ -24,8 +24,18 @@ USER_SHELL="/bin/bash"
 SAME_USER=true
 
 if [ x"${platform}" = x"Darwin" ]; then
+
+    if [ -e /Developer/SDKs/MacOSX10.5.sdk ] ; then
+        SDK_DIR="/Developer/SDKs/MacOSX10.5.sdk"
+        SDK_VER=10.5
+    else
+        SDK_DIR="/Developer/SDKs/MacOSX10.6.sdk"
+        SDK_VER=10.6
+    fi
+
     NUM_PROCS=-j2
-    echo "Building for Mac OS X"
+    echo "Building for Mac OS X with SDK ${SDK_VER}"
+    
 elif [ x"${platform}" = x"Linux" ]; then
     NUM_PROCS=-j`cat /proc/cpuinfo|grep processor|wc -l`
     echo "Building for Linux `uname -m`"
@@ -216,7 +226,7 @@ if [ x"${platform}" = x"Darwin" ]; then
         careful_patch "${CHROMIUM_CHECKOUT_DIR}/src" "${patch}"
     done
     cd src/chrome
-    xcodebuild -project chrome.xcodeproj -configuration Release -target chrome
+    xcodebuild -project chrome.xcodeproj -configuration Release -arch i386 -target chrome -sdk ${SDK_DIR}
 
 
     # "Install" process, symlinking libraries and data to the appropriate locations
