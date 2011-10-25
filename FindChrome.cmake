@@ -73,7 +73,7 @@ ELSE()
   IF(NOT LINUX_ENABLE_NACL)
     SET(CHROMIUM_PLAT_CFLAGS ${CHROMIUM_PLAT_CFLAGS} -DDISABLE_NACL)
   ENDIF()
-  SET(CHROMIUM_PLAT_LDFLAGS ${CHROMIUM_PLAT_LDFLAGS}  smime3 plds4 plc4 pthread gdk-x11-2.0 gdk_pixbuf-2.0 pangocairo-1.0 gio-2.0 pango-1.0 cairo gobject-2.0 gmodule-2.0 glib-2.0 fontconfig cups freetype rt gconf-2 glib-2.0 dbus-glib-1 X11 asound harfbuzz harfbuzz_interface sandbox)
+  SET(CHROMIUM_PLAT_LDFLAGS ${CHROMIUM_PLAT_LDFLAGS}  -Wl,--no-as-needed nss3 nssutil3 smime3 plds4 plc4 pthread gdk-x11-2.0 gdk_pixbuf-2.0 pangocairo-1.0 gio-2.0 pango-1.0 cairo gobject-2.0 gmodule-2.0 glib-2.0 fontconfig cups freetype rt gconf-2 glib-2.0 dbus-glib-1 X11 asound harfbuzz harfbuzz_interface sandbox)
   SET(CHROMIUM_START_GROUP -Wl,--start-group)
   SET(CHROMIUM_END_GROUP -Wl,--end-group)
   SET(CHROMIUM_DLLEXT so)
@@ -130,7 +130,7 @@ SET(CHROME_INCLUDE_DIRS ${GENINCLUDES} ${CHROMIUMDIR}/src/ ${CHROMIUMDIR}/src/th
 SET(CHROME_CFLAGS ${CHROMIUM_DEBUGFLAGS} ${CHROMIUM_CLIBFLAGS} ${CHROMIUM_PLAT_CFLAGS} -Wall -Wno-non-virtual-dtor -DNVALGRIND -D_REENTRANT -D__STDC_FORMAT_MACROS -DCHROMIUM_BUILD -DU_STATIC_IMPLEMENTATION -g )
 
 SET(CHROME_LIBRARIES ${CHROMIUM_START_GROUP} ${CHROMIUM_PLAT_LDFLAGS} ${CHROMIUMLIBS} ${CHROMIUM_END_GROUP})
-SET(CHROME_LDFLAGS -g -shared ${CHROMIUM_CLIBFLAGS})
+SET(CHROME_LDFLAGS -Wl,--no-as-needed -g -shared ${CHROMIUM_CLIBFLAGS})
 #OBJDIR=$(CHROMIUMMODE)
 #EXEDIR=$(CHROMIUMMODE)
 
