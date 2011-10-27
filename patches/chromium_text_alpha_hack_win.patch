@@ -197,19 +197,19 @@ Index: third_party/WebKit/Source/WebCore/platform/graphics/chromium/FontChromium
  {
      int totalWidth = 0;
      for (int i = 0; i < m_numGlyphs; i++)
-@@ -273,6 +434,12 @@
+@@ -272,6 +433,12 @@
+     // to subtract off the font ascent to get it.
      int x = lroundf(m_point.x() + startAdvance);
      int y = lroundf(m_point.y() - m_font->fontMetrics().ascent());
- 
++	
 +    COLORREF savedTextColor = GetTextColor(m_hdc);
 +
 +    IntRect estBounds = estimateTextBounds();
 +    RECT boundsRect = { estBounds.x(), estBounds.y(), estBounds.maxX(), estBounds.maxY() };
 +    bool preserveAlpha = true;
-+
+ 
      // If there is a non-blur shadow and both the fill color and shadow color 
      // are opaque, handle without skia. 
-     FloatSize shadowOffset;
 @@ -280,19 +447,21 @@
      Color shadowColor;
      ColorSpace shadowColorSpace;
