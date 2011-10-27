@@ -53,6 +53,7 @@ private:
 	union {
 		WideString mStrPointer;
 		double mDoubleValue;
+		bool mBoolValue;
 	};
 
 	Type mType;
@@ -98,25 +99,41 @@ public:
 	Variant& operator=(const Variant& other);
 
 	bool toBoolean() const {
-		if (mType == JSDOUBLE || mType == JSBOOLEAN) {
-			return mDoubleValue != 0;
-		} else if (mType == JSSTRING) {
+		switch(mType)
+		{
+		case JSDOUBLE:
+			return mDoubleValue != 0.0;
+			break;
+		case JSBOOLEAN:
+			return mBoolValue;
+			break;
+		case JSSTRING:
 			return mStrPointer.length() ? true : false;
-		} else {
+			break;
+		default:
 			return false;
+			break;
 		}
 	}
 	int toInteger() const {
-		if (mType == JSDOUBLE || mType == JSBOOLEAN) {
+		if (mType == JSDOUBLE) {
 			return (int)mDoubleValue;
-		} else {
+		}
+		else if(mType == JSBOOLEAN) {
+			return mBoolValue ? 1:0;
+		}
+		else {
 			return 0;
 		}
 	}
 	double toDouble() const {
-		if (mType == JSDOUBLE || mType == JSBOOLEAN) {
+		if (mType == JSDOUBLE) {
 			return mDoubleValue;
-		} else {
+		}
+		else if(mType == JSBOOLEAN) {
+			return mBoolValue ? 1:0;
+		}
+		else {
 			return 0;
 		}
 	}

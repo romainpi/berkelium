@@ -63,11 +63,11 @@ namespace Script {
 	}
 	void Variant::initbool(bool boolval) {
 		mType = JSBOOLEAN;
-		mDoubleValue = boolval ? 0 : 1;
+		mBoolValue = boolval;
 	}
 	void Variant::initnull(Type typ) {
 		mType = typ;
-		mDoubleValue = 0;
+		mDoubleValue = 0.0;
 	}
 	Variant Variant::emptyArray() {
 		return Variant(JSEMPTYARRAY);
@@ -86,7 +86,7 @@ namespace Script {
 			initdbl(other.mDoubleValue);
 			break;
 		case JSBOOLEAN:
-			initbool(!!other.mDoubleValue);
+			initbool(other.mBoolValue);
 			break;
 		default:
 			break;
