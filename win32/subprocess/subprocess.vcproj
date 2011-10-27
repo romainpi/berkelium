@@ -18,7 +18,7 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
+			OutputDirectory="..\..\bin"
 			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="1"
 			CharacterSet="1"
@@ -48,6 +48,7 @@
 				RuntimeLibrary="1"
 				BufferSecurityCheck="false"
 				UsePrecompiledHeader="0"
+				ObjectFile="Bin\"
 				WarningLevel="3"
 				DebugInformationFormat="3"
 			/>
@@ -63,8 +64,8 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="wininet.lib version.lib msimg32.lib ws2_32.lib usp10.lib psapi.lib dbghelp.lib urlmon.lib berkelium_d.lib sandbox.lib base.lib"
-				OutputFile="..\berkelium_d.exe"
+				AdditionalDependencies="wininet.lib version.lib msimg32.lib ws2_32.lib usp10.lib psapi.lib dbghelp.lib urlmon.lib ..\..\bin\berkelium_d.lib sandbox.lib base.lib"
+				OutputFile="..\..\bin\berkelium_d.exe"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="..;..\..\..\chromium\chromium\src\chrome\Debug\lib;..\..\..\..\dependencies\ch\c\src\chrome\Debug\lib"
 				IgnoreDefaultLibraryNames=""
@@ -146,9 +147,9 @@
 				Name="VCLinkerTool"
 				LinkLibraryDependencies="false"
 				AdditionalDependencies="wininet.lib version.lib msimg32.lib ws2_32.lib usp10.lib psapi.lib dbghelp.lib urlmon.lib berkelium.lib sandbox.lib base.lib"
-				OutputFile="..\berkelium.exe"
+				OutputFile="..\..\bin\berkelium.exe"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="..;..\..\..\chromium\chromium\src\chrome\Release\lib;..\..\..\..\dependencies\ch\c\src\chrome\Release\lib"
+				AdditionalLibraryDirectories="..;..\..\..\chromium\chromium\src\chrome\Release\lib;..\..\..\..\dependencies\ch\c\src\chrome\Release\lib;..\..\bin\"
 				IgnoreDefaultLibraryNames=""
 				DelayLoadDLLs=""
 				GenerateDebugInformation="true"
