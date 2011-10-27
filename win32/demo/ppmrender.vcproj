@@ -60,7 +60,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="berkelium_d.lib"
+				AdditionalDependencies="../../bin/berkelium_d.lib"
 				OutputFile="..\$(ProjectName)_d.exe"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="..;..\subprocess"
@@ -136,7 +136,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="berkelium.lib"
+				AdditionalDependencies="../../bin/berkelium.lib"
 				OutputFile="..\$(ProjectName).exe"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="..;..\subprocess"
