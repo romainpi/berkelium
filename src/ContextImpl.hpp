@@ -34,10 +34,15 @@
 #define _BERKELIUM_CONTEXTIMPL_HPP_
 #include "berkelium/Context.hpp"
 #include "content/browser/browsing_instance.h"
+#include <string>
+#include <map>
 
 class SessionStorageNamespace;
 
 namespace Berkelium {
+
+typedef std::map<std::string, Protocol *> SchemeTable;
+
 class ContextImpl :public Context{
 public:
     ContextImpl(const ContextImpl&other);
@@ -60,6 +65,12 @@ public:
     }
 
     Context*clone()const;
+
+    void registerProtocol (const char * scheme, size_t schemeLen, Protocol * handler);
+    void unregisterProtocol (const char * scheme, size_t schemeLen);
+
+    static SchemeTable schemes;
+
 private:
 
     void init(Profile*prof, SiteInstance*si, SessionStorageNamespace *ssn);
