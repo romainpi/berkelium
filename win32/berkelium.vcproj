@@ -276,6 +276,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\Singleton.hpp"
+				>
+			</File>
+			<File
 				RelativePath="..\src\WindowImpl.hpp"
 				>
 			</File>
@@ -350,22 +354,19 @@
 				>
 			</File>
 			<File
+				RelativePath="..\include\berkelium\Protocol.hpp"
+				>
+			</File>
+			<File
 				RelativePath="..\include\berkelium\Rect.hpp"
 				>
 			</File>
 			<File
 				RelativePath="..\include\berkelium\ScriptUtil.hpp"
 				>
-			<File
-				RelativePath="..\include\berkelium\Protocol.hpp"
-				>
 			</File>
 			<File
 				RelativePath="..\include\berkelium\ScriptVariant.hpp"
-				>
-			</File>
-			<File
-				RelativePath="..\include\berkelium\Singleton.hpp"
 				>
 			</File>
 			<File
