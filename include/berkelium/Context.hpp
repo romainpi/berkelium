@@ -38,6 +38,7 @@ class BrowsingInstance;
 
 namespace Berkelium {
 class ContextImpl;
+class Protocol;
 
 /** A context holds onto a reference counted profile object.
  *  The Window class calls clone() on a context, so you can safely
@@ -72,6 +73,18 @@ public:
 
     virtual ContextImpl* getImpl() = 0;
     virtual const ContextImpl* getImpl() const = 0;
+
+    /** Register a custom protocol handler for a given scheme.
+     *  \param scheme the uri scheme to handle (omit the trailing colon).
+     *  \param schemeLen the number of characters in the uri scheme name.
+     *  \param handler a pointer to the protocol handler. This handler must remain alive until you unregister it.
+     */
+    virtual void registerProtocol (const char * scheme, size_t schemeLen, Protocol * handler) = 0;
+    /** Unregisters the previously registered custom protocol handler for a given scheme.
+     *  \param scheme the uri scheme to handle (omit the trailing colon).
+     *  \param schemeLen the number of characters in the uri scheme name.
+     */
+    virtual void unregisterProtocol (const char * scheme, size_t schemeLen) = 0;
 };
 
 }
