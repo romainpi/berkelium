@@ -11,7 +11,7 @@ build\
                 win32\
 
 I would recommend having a copy of cygwin so that you can use it if necessary.
-If you use Cygwin, it may reset your permissions whenever you do anything, so watch out
+If you use Cygwin, it may reset your permissions whenever you do anything, so watch out.
 
 Download depot_tools:
 http://www.chromium.org/developers/how-tos/install-depot-tools
@@ -57,7 +57,8 @@ You only need to build the "chrome" target, not the whole solution.
 Last step, assuming that Chromium built successfully is to build Berkelium's project files.
 If all went well, berkelium should find the chrome files and link to them.
 
-Finally, after Berkelium built, you will need to copy some files from your chrome checkout:
+There is an automatic build action that will copy some needed runtime DLLs to the output folder, so don't forget to put one copy into your binary package, since you need to ship these with your executable.
+If the build action does not work you may copy them manually from your chrome checkout:
 chromium\src\chrome\Release\ or chromium\src\chrome\Debug\
 
 Currently, the files you need to copy are:
@@ -73,6 +74,4 @@ Currently, the files you need to copy are:
         wow_helper.exe
 
 Put one copy into your binary package, since you need to ship these with your executable.
-
-I recommend making an extra copy directly into berkelium/win32 so you can debug the berkelium library and related programs directly from Visual Studio
 

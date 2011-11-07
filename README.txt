@@ -1,4 +1,4 @@
-Berkelium copyright (C) 2009-2010 The Sirikata team.
+Berkelium copyright (C) 2009-2011 The Sirikata team.
 
 Berkelium is a BSD licensed library that provides off-screen browser rendering
 via Google's open source Chromium web browser. See http://berkelium.org for a
@@ -56,8 +56,9 @@ The authors below should be used only as a last resort, or for private matters.
 Main contributors:
 Patrick Reiter Horn <patrick.horn@gmail.com>
 Ewen Cheslack-Postava <ewencp@cs.stanford.edu>
-kevin Gadd <kevin.gadd@gmail.com>
+Kevin Gadd <kevin.gadd@gmail.com>
 Daniel Reiter Horn <danielrh@users.sourceforge.net>
+Romain Pironneau <romainpi@gmail.com>
 (feel free to commit your own name/organization here)
 Some code borrowed from the Chromium project at http://chromium.org
 
