@@ -33,6 +33,13 @@ if [ x"${platform}" = x"Darwin" ]; then
         SDK_VER=10.6
     fi
 
+    XCODE_VERSION_LINE=`xcodebuild -version | grep "Xcode 3"`
+    if [ \! x"${XCODE_VERSION_LINE}" = x"" ]; then
+	XCODE_VERSION="3"
+    else
+	XCODE_VERSION="4"
+    fi
+
     NUM_PROCS=-j2
     echo "Building for Mac OS X with SDK ${SDK_VER}"
     
@@ -226,7 +233,11 @@ if [ x"${platform}" = x"Darwin" ]; then
         careful_patch "${CHROMIUM_CHECKOUT_DIR}/src" "${patch}"
     done
     cd src/chrome
-    xcodebuild -project chrome.xcodeproj -configuration Release -arch i386 -target chrome -sdk ${SDK_DIR}
+    if [ x"${XCODE_VERSION}" = x"3" ]; then
+	xcodebuild -project chrome.xcodeproj -configuration Release -target chrome -sdk ${SDK_DIR}
+    else
+	xcodebuild -project chrome.xcodeproj -configuration Release -arch i386 -target chrome -sdk ${SDK_DIR}
+    fi
 
 
     # "Install" process, symlinking libraries and data to the appropriate locations
