@@ -5,7 +5,7 @@
  *  Berkelium has some global initialization and destruction code that needs to
  *  be run once inside the process instantiating new windows (or web pages).
  *  \code
- *  if (!Berkelium::init(FileString::empty()))
+ *  if (!Berkelium::init(Berkelium::FileString::empty()))
  *    std::cout << "Couldn't initialize Berkelium." << std::endl;
  *  \endcode
  *  The parameter is the directory for user data, and defaults to a temporary
@@ -38,10 +38,9 @@
  *    Berkelium::Context* context = Berkelium::Context::create();
  *    Berkelium::Window* window = Berkelium::Window::create(context);
  *    delete context;
- *    Berkelium::Window* window = Berkelium::Window::create();
  *    window->resize(512, 512);
  *    std::string url = "http://berkelium.org";
- *    window->navigateTo(url.data(), url.length());
+ *    window->navigateTo(Berkelium::URLString::point_to(url.data(), url.length()));
  *  \endcode
  *  This creates a web browser instance and loads the specified page, but
  *  doesn't do anything to display it -- that's your responsibility.  In order
@@ -71,7 +70,9 @@
  *  and attach an instance to the Berkelium window created earlier (before
  *  calling navigateTo):
  *  \code
- *    window->setDelegate( new MyDelegate() );
+ *    class MyDelegate : public Berkelium::WindowDelegate { ... }
+ *    MyDelegate delegate = new MyDelegate();
+ *    window->setDelegate(delegate);
  *  \endcode
  *  which adds a delegate to handle drawing.  The delegate would be invoked as
  *  necessary, passing the new display information into your application.
