@@ -82,7 +82,7 @@ public:
     Root();
     ~Root();
 
-    bool init(FileString homeDirectory, FileString subprocessDirectory);
+    bool init(FileString homeDirectory, FileString subprocessDirectory, unsigned int extra_argc = 0, const char* extra_argv[] = NULL );
 
     bool initialized() {
         return mProf ? true : false;

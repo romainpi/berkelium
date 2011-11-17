@@ -182,11 +182,25 @@ void Root::SetUpGLibLogHandler() {
 Root::Root () {
 }
 
-bool Root::init(FileString homeDirectory, FileString subprocessDirectory) {
+bool Root::init(FileString homeDirectory, FileString subprocessDirectory, unsigned int extra_argc, const char* extra_argv[] ) {
 
     new base::AtExitManager();
 
     FilePath subprocess;
+    
+    // convert extra arguments in a more useful form
+    std::vector< std::string > extra_args;
+    if( extra_argc > 0 )
+    {
+        for( unsigned int arg_idx = 0; arg_idx < extra_argc; ++arg_idx )
+        {
+            const char* raw_arg = extra_argv[ arg_idx ];
+            assert( raw_arg );
+            extra_args.push_back( raw_arg );        
+        }
+    }
+    
+    
     {
 // From <base/command_line.h>:
   // Initialize the current process CommandLine singleton.  On Windows,
@@ -214,6 +228,21 @@ bool Root::init(FileString homeDirectory, FileString subprocessDirectory) {
 	subprocess_str += L"\"";
 	subprocess_str += subprocess.value();
 	subprocess_str += L"\"";
+    
+    // add extra arguments if any
+    if( !extra_args.empty() )
+    {
+        for( unsigned int arg_idx = 0, arg_count = extra_args.size(); arg_idx < arg_count; ++arg_idx )
+        {
+            const std::string& str_arg = extra_args[ arg_idx ];
+            std::wstring wstr_arg( str_arg.begin(), str_arg.end() );
+            
+            subprocess_str += L" " + wstr_arg;
+        }
+    }
+    
+    //std::wcout << "Berkelium subprocess_str : " << subprocess_str;
+    
     CommandLine::Init(0, NULL);
     CommandLine::ForCurrentProcess()->ParseFromString(subprocess_str);
 #elif defined(OS_MACOSX)
@@ -228,9 +257,21 @@ bool Root::init(FileString homeDirectory, FileString subprocessDirectory) {
     subprocess = module_dir.Append("berkelium");
     std::string subprocess_str = "--browser-subprocess-path=";
     subprocess_str += subprocess.value();
-    const char* argv[] = { "berkelium", subprocess_str.c_str(),
-        "--enable-webgl" };
-    CommandLine::Init(arraysize(argv), argv);
+    
+    std::vector<const char*> argv;
+    argv.push_back( "berkelium" );
+    argv.push_back( subprocess_str.c_str() );
+    argv.push_back( "--enable-webgl" );
+    
+    for( std::vector<std::string>::iterator it = extra_args.begin(); it != extra_args.end(); ++it )
+    {
+        argv.push_back( it->c_str() );
+    }
+    
+    //for( std::vector<const char*>::iterator it = argv.begin(); it != argv.end(); ++it )
+    //    std::cout << "Berkelium arg : " << *it;
+    
+    CommandLine::Init( argv.size(), &argv[0] );
 #elif defined(OS_POSIX)
     FilePath module_file;
     PathService::Get(base::FILE_EXE, &module_file);
@@ -243,9 +284,19 @@ bool Root::init(FileString homeDirectory, FileString subprocessDirectory) {
     subprocess = module_dir.Append("berkelium");
     std::string subprocess_str = "--browser-subprocess-path=";
     subprocess_str += subprocess.value();
-    const char* argv[] = { "berkelium", subprocess_str.c_str(),
-        "--enable-webgl" };
-    CommandLine::Init(arraysize(argv), argv);
+    std::vector<const char*> argv;
+    argv.push_back( "berkelium" );
+    argv.push_back( subprocess_str.c_str() );
+    argv.push_back( "--enable-webgl" );
+    
+    for( std::vector<std::string>::iterator it = extra_args.begin(); it != extra_args.end(); ++it )
+    {
+        argv.push_back( it->c_str() );
+    }
+    //for( std::vector<const char*>::iterator it = argv.begin(); it != argv.end(); ++it )
+    //    std::cout << "Berkelium arg : " << *it;
+        
+    CommandLine::Init( argv.size(), &argv[0]) ;
 #endif
     }
 
