@@ -67,7 +67,9 @@ SET(CXXTESTRoot ${BERKELIUM_TOP_LEVEL}/externals/cxxtest)
 IF(CHROME_FOUND)
   INCLUDE_DIRECTORIES(${BERKELIUM_TOP_LEVEL}/include ${CHROME_INCLUDE_DIRS} ${CXXTESTRoot})
 
-  LINK_DIRECTORIES(${CHROME_LIBRARY_DIRS} ../lib .)
+  GET_FILENAME_COMPONENT(RELATIVE_LIB_LINK_DIR ../lib ABSOLUTE)
+  GET_FILENAME_COMPONENT(RELATIVE_CURRENT_LINK_DIR . ABSOLUTE)
+  LINK_DIRECTORIES(${CHROME_LIBRARY_DIRS} ${RELATIVE_LIB_LINK_DIR} ${RELATIVE_CURRENT_LINK_DIR})
   SET(BERKELIUM_SOURCE_NAMES src/Berkelium src/Context src/Cursor src/ContextImpl src/ForkedProcessHook src/NavigationController src/RenderWidget src/MemoryRenderViewHost src/Root src/ScriptUtilImpl src/ScriptVariant src/StringUtil src/Window src/WindowImpl)
 
 
