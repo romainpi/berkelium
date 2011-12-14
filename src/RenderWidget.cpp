@@ -461,6 +461,7 @@ void RenderWidget::AcceleratedSurfaceBuffersSwapped(
       uint64 surface_id,
       int renderer_id,
       int32 route_id,
+      int gpu_host_id,
       uint64 swap_buffers_count) {
   // FIXME: What do we do here.
   //[cocoa_view_ drawAcceleratedPluginLayer];
