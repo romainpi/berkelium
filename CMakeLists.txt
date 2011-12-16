@@ -2,11 +2,14 @@
 #
 # Parameters:
 #  BERKELIUM_CHROME_ROOT_SEARCH_PATHS - list of paths to search for berkelium in.  Should be absolute paths.
+#  BERKELIUM_WITH_TESTS - if true, build tests. True by default.
 #
 # Outputs:
 #  BERKELIUM_CHROME_FOUND - TRUE if Chrome is found and berkelium will be built.
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.4)
+
+SET(BERKELIUM_WITH_TESTS TRUE CACHE BOOL "If true, build test targets")
 
 IF(APPLE)
     IF(IS_DIRECTORY /Developer/SDKs/MacOSX10.5.sdk)
@@ -41,7 +44,9 @@ SET(CMAKE_MODULE_PATH
 )
 
 INCLUDE(ListUtil)
-INCLUDE(CXXTest)
+IF(BERKELIUM_WITH_TESTS)
+  INCLUDE(CXXTest)
+ENDIF()
 FIND_PACKAGE(PythonInterp)
 
 IF(NOT DEFINED BERKELIUM_BUILD_DEMOS)
@@ -229,25 +234,27 @@ IF(CHROME_FOUND)
         DESTINATION bin)
   ENDIF()
 
-  SET(TEST_BINARY tests)
+  IF(BERKELIUM_WITH_TESTS)
+    SET(TEST_BINARY tests)
+    
+    #test source files
+    SET(TEST_FILES
+      ${BERKELIUM_TOP_LEVEL}/test/BlankTest.hpp
+      )
+    ADD_CXXTEST_CPP_TARGET(
+      ${TEST_BINARY}
+      LIBRARYDIR ${CXXTESTRoot}
+      TESTS ${TEST_FILES}
+      RUNNER ${BERKELIUM_TOP_LEVEL}/test/Test.cpp
+      DEPENDS berkelium libberkelium)
+    
+    TARGET_LINK_LIBRARIES(${TEST_BINARY} -llibberkelium)
+    ADD_DEPENDENCIES(${TEST_BINARY} berkelium libberkelium)
 
-  #test source files
-  SET(TEST_FILES
-    ${BERKELIUM_TOP_LEVEL}/test/BlankTest.hpp
-  )
-  ADD_CXXTEST_CPP_TARGET(
-    ${TEST_BINARY}
-    LIBRARYDIR ${CXXTESTRoot}
-    TESTS ${TEST_FILES}
-    RUNNER ${BERKELIUM_TOP_LEVEL}/test/Test.cpp
-    DEPENDS berkelium libberkelium)
-
-  TARGET_LINK_LIBRARIES(${TEST_BINARY} -llibberkelium)
-  ADD_DEPENDENCIES(${TEST_BINARY} berkelium libberkelium)
-
-  ADD_CUSTOM_TARGET(test
-    DEPENDS ${TEST_BINARY}
-    COMMAND ${TEST_BINARY} $ENV{SINGLE_SUITE})
+    ADD_CUSTOM_TARGET(test
+      DEPENDS ${TEST_BINARY}
+      COMMAND ${TEST_BINARY} $ENV{SINGLE_SUITE})
+  ENDIF()
 ENDIF(CHROME_FOUND)
 
 FIND_PACKAGE(Doxygen)
