@@ -44,6 +44,7 @@
 #include "base/file_util.h"
 #include "base/scoped_temp_dir.h"
 #include "base/i18n/icu_util.h"
+#include "base/string_number_conversions.h"
 #include "net/base/cookie_monster.h"
 #include "chrome/common/chrome_constants.h"
 #include "chrome/common/chrome_paths.h"
@@ -189,7 +190,7 @@ bool Root::init(FileString homeDirectory, FileString subprocessDirectory, unsign
     new base::AtExitManager();
 
     FilePath subprocess;
-    
+
     // convert extra arguments in a more useful form
     std::vector< std::string > extra_args;
     if( extra_argc > 0 )
@@ -198,11 +199,11 @@ bool Root::init(FileString homeDirectory, FileString subprocessDirectory, unsign
         {
             const char* raw_arg = extra_argv[ arg_idx ];
             assert( raw_arg );
-            extra_args.push_back( raw_arg );        
+            extra_args.push_back( raw_arg );
         }
     }
-    
-    
+
+
     {
 // From <base/command_line.h>:
   // Initialize the current process CommandLine singleton.  On Windows,
@@ -230,7 +231,7 @@ bool Root::init(FileString homeDirectory, FileString subprocessDirectory, unsign
 	subprocess_str += L"\"";
 	subprocess_str += subprocess.value();
 	subprocess_str += L"\"";
-    
+
     // add extra arguments if any
     if( !extra_args.empty() )
     {
@@ -238,13 +239,13 @@ bool Root::init(FileString homeDirectory, FileString subprocessDirectory, unsign
         {
             const std::string& str_arg = extra_args[ arg_idx ];
             std::wstring wstr_arg( str_arg.begin(), str_arg.end() );
-            
+
             subprocess_str += L" " + wstr_arg;
         }
     }
-    
+
     //std::wcout << "Berkelium subprocess_str : " << subprocess_str;
-    
+
     CommandLine::Init(0, NULL);
     CommandLine::ForCurrentProcess()->ParseFromString(subprocess_str);
 #elif defined(OS_MACOSX)
@@ -259,20 +260,20 @@ bool Root::init(FileString homeDirectory, FileString subprocessDirectory, unsign
     subprocess = module_dir.Append("berkelium");
     std::string subprocess_str = "--browser-subprocess-path=";
     subprocess_str += subprocess.value();
-    
+
     std::vector<const char*> argv;
     argv.push_back( "berkelium" );
     argv.push_back( subprocess_str.c_str() );
     argv.push_back( "--enable-webgl" );
-    
+
     for( std::vector<std::string>::iterator it = extra_args.begin(); it != extra_args.end(); ++it )
     {
         argv.push_back( it->c_str() );
     }
-    
+
     //for( std::vector<const char*>::iterator it = argv.begin(); it != argv.end(); ++it )
     //    std::cout << "Berkelium arg : " << *it;
-    
+
     CommandLine::Init( argv.size(), &argv[0] );
 #elif defined(OS_POSIX)
     FilePath module_file;
@@ -290,14 +291,14 @@ bool Root::init(FileString homeDirectory, FileString subprocessDirectory, unsign
     argv.push_back( "berkelium" );
     argv.push_back( subprocess_str.c_str() );
     argv.push_back( "--enable-webgl" );
-    
+
     for( std::vector<std::string>::iterator it = extra_args.begin(); it != extra_args.end(); ++it )
     {
         argv.push_back( it->c_str() );
     }
     //for( std::vector<const char*>::iterator it = argv.begin(); it != argv.end(); ++it )
     //    std::cout << "Berkelium arg : " << *it;
-        
+
     CommandLine::Init( argv.size(), &argv[0]) ;
 #endif
     }
@@ -535,13 +536,20 @@ bool Root::init(FileString homeDirectory, FileString subprocessDirectory, unsign
 
     mDefaultRequestContext=mProf->GetRequestContext();
 
-    devtools_http_handler_ =
-        Berkelium::DevToolsHttpProtocolHandler::Start(
-            "127.0.0.1",
-            (int)9222,
-            ""
-        );
-
+    if (CommandLine::ForCurrentProcess()->HasSwitch(switches::kRemoteDebuggingPort)) {
+        std::string debugging_port_str =
+            CommandLine::ForCurrentProcess()->GetSwitchValueASCII(switches::kRemoteDebuggingPort);
+        int64 debugging_port = -1;
+        bool has_debugging_port = base::StringToInt64(debugging_port_str, &debugging_port);
+        if (has_debugging_port && debugging_port > 0 && debugging_port < 65535) {
+            devtools_http_handler_ =
+                Berkelium::DevToolsHttpProtocolHandler::Start(
+                    "127.0.0.1",
+                    static_cast<int>(debugging_port),
+                    ""
+                );
+        }
+    }
 
     return true;
 }
