@@ -98,6 +98,8 @@
 #endif
 #include <iostream>
 
+#include "chrome/browser/ui/webui/chrome_url_data_manager_backend.h"
+
 #if !defined(OS_WIN)
 extern "C"
 void handleINT(int sig) {
@@ -509,6 +511,18 @@ bool Root::init(FileString homeDirectory, FileString subprocessDirectory, unsign
 
     BrowserURLHandler::InitURLHandlers();
 
+    // From chrome/browser/browser_main.cc
+  // Register our global network handler for chrome:// and
+  // chrome-extension:// URLs.
+  ChromeURLDataManagerBackend::Register();
+/*
+  RegisterExtensionProtocols();
+  RegisterMetadataURLRequestHandler();
+  RegisterBlobURLRequestJobFactory();
+  RegisterFileSystemURLRequestJobFactory();
+*/
+
+
     {
         FilePath plugindata = homedirpath.AppendASCII("plugin_");
         if (!file_util::CreateDirectory(plugindata)) {
@@ -520,6 +534,15 @@ bool Root::init(FileString homeDirectory, FileString subprocessDirectory, unsign
         g_browser_process->resource_dispatcher_host());
 
     mDefaultRequestContext=mProf->GetRequestContext();
+
+    devtools_http_handler_ =
+        Berkelium::DevToolsHttpProtocolHandler::Start(
+            "127.0.0.1",
+            (int)9222,
+            ""
+        );
+
+
     return true;
 }
 
@@ -535,7 +558,30 @@ void Root::update() {
     MessageLoopForUI::current()->RunAllPending();
 }
 
+void Root::addWindow(WindowImpl* w) {
+    mWindows.push_back(w);
+}
+
+void Root::removeWindow(WindowImpl* w) {
+    for(WindowList::iterator it = mWindows.begin(); it != mWindows.end(); it++) {
+        if (*it == w) {
+            mWindows.erase(it);
+            break;
+        }
+    }
+}
+
+Root::WindowList Root::getWindows() {
+    return mWindows;
+}
+
 Root::~Root(){
+    // Debugger must be cleaned up before IO thread and NotificationService.
+    if (devtools_http_handler_.get()) {
+        devtools_http_handler_->Stop();
+        devtools_http_handler_ = NULL;
+    }
+
     // FIXME: RemoveProfile gone--do we leak profiles?
     //g_browser_process->profile_manager()->RemoveProfile(mProf);
 

@@ -81,8 +81,7 @@ IF(CHROME_FOUND)
   GET_FILENAME_COMPONENT(RELATIVE_LIB_LINK_DIR ../lib ABSOLUTE)
   GET_FILENAME_COMPONENT(RELATIVE_CURRENT_LINK_DIR . ABSOLUTE)
   LINK_DIRECTORIES(${CHROME_LIBRARY_DIRS} ${RELATIVE_LIB_LINK_DIR} ${RELATIVE_CURRENT_LINK_DIR})
-  SET(BERKELIUM_SOURCE_NAMES src/Berkelium src/Context src/Cursor src/ContextImpl src/ForkedProcessHook src/NavigationController src/RenderWidget src/MemoryRenderViewHost src/Root src/ScriptUtilImpl src/ScriptVariant src/StringUtil src/Window src/WindowImpl)
-
+  SET(BERKELIUM_SOURCE_NAMES src/Berkelium src/Context src/Cursor src/ContextImpl src/ForkedProcessHook src/NavigationController src/RenderWidget src/MemoryRenderViewHost src/Root src/ScriptUtilImpl src/ScriptVariant src/StringUtil src/Window src/WindowImpl src/DevToolsHttpProtocolHandler)
 
   SET(BERKELIUM_SOURCES)
   FOREACH(BERKELIUM_SOURCE_FILE ${BERKELIUM_SOURCE_NAMES})
