@@ -2,6 +2,8 @@
 #
 # Parameters:
 #  BERKELIUM_CHROME_ROOT_SEARCH_PATHS - list of paths to search for berkelium in.  Should be absolute paths.
+#  BERKELIUM_INSTALL_BINARY_PATH - offset for installing binaries, e.g. bin
+#  BERKELIUM_INSTALL_LIBRARY_PATH - offset for installing libraries, e.g. lib
 #
 # Outputs:
 #  BERKELIUM_CHROME_FOUND - TRUE if Chrome is found and berkelium will be built.
@@ -197,22 +199,24 @@ IF(CHROME_FOUND)
 
   ENDIF()
 
+  SET(BERKELIUM_INSTALL_BINARY_PATH bin CACHE STRING "Offset from install prefix to install binaries to")
+  SET(BERKELIUM_INSTALL_LIBRARY_PATH lib CACHE STRING "Offset from install prefix to install libraries to")
   INSTALL(TARGETS
           libberkelium
           berkelium
           RUNTIME
-          DESTINATION bin
+          DESTINATION ${BERKELIUM_INSTALL_BINARY_PATH}
           LIBRARY
-          DESTINATION lib)
+          DESTINATION ${BERKELIUM_INSTALL_LIBRARY_PATH})
   IF(NOT APPLE)
     INSTALL(FILES
           ${CHROMIUM_DATADIR}/chrome.pak
           ${CHROMIUM_DATADIR}/resources.pak
-            DESTINATION bin)
+            DESTINATION ${BERKELIUM_INSTALL_BINARY_PATH})
     INSTALL(DIRECTORY ${CHROMIUM_DATADIR}/locales
-        DESTINATION bin)
+        DESTINATION ${BERKELIUM_INSTALL_BINARY_PATH})
     INSTALL(DIRECTORY ${CHROMIUM_DATADIR}/resources
-        DESTINATION bin)
+        DESTINATION ${BERKELIUM_INSTALL_BINARY_PATH})
   ENDIF()
 ENDIF(CHROME_FOUND)
 
