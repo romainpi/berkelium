@@ -210,6 +210,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\DevToolsHttpProtocolHandler.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\src\ForkedProcessHook.cpp"
 				>
 			</File>
@@ -257,6 +261,10 @@
 			>
 			<File
 				RelativePath="..\src\ContextImpl.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\DevToolsHttpProtocolHandler.hpp"
 				>
 			</File>
 			<File
