@@ -40,6 +40,7 @@
 #include "base/message_loop.h"
 #include "base/scoped_ptr.h"
 #include "content/browser/browser_thread.h"
+#include "DevToolsHttpProtocolHandler.hpp"
 
 class BrowserRenderProcessHost;
 class ProcessSingleton;
@@ -58,9 +59,13 @@ namespace Berkelium {
 
 class MemoryRenderViewHostFactory;
 class ErrorDelegate;
+class WindowImpl;
 
 //singleton class that contains chromium singletons. Not visible outside of Berkelium library core
 class Root : public Singleton<Root> {
+public:
+    typedef std::vector<WindowImpl*> WindowList;
+private:
     Profile* mProf;
     scoped_ptr<ui::SystemMonitor> mSysMon;
     scoped_ptr<HighResolutionTimerManager> mTimerMgr;
@@ -78,11 +83,13 @@ class Root : public Singleton<Root> {
 
     ErrorDelegate* mErrorHandler;
 
+    WindowList mWindows;
+    scoped_refptr<Berkelium::DevToolsHttpProtocolHandler> devtools_http_handler_;
 public:
     Root();
     ~Root();
 
-    bool init(FileString homeDirectory, FileString subprocessDirectory);
+    bool init(FileString homeDirectory, FileString subprocessDirectory, unsigned int extra_argc = 0, const char* extra_argv[] = NULL );
 
     bool initialized() {
         return mProf ? true : false;
@@ -112,6 +119,10 @@ public:
     URLRequestContextGetter *getDefaultRequestContext() {
         return mDefaultRequestContext;
     }
+
+    void addWindow(WindowImpl* w);
+    void removeWindow(WindowImpl* w);
+    WindowList getWindows();
 };
 
 }

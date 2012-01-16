@@ -24,8 +24,25 @@ USER_SHELL="/bin/bash"
 SAME_USER=true
 
 if [ x"${platform}" = x"Darwin" ]; then
+
+    if [ -e /Developer/SDKs/MacOSX10.5.sdk ] ; then
+        SDK_DIR="/Developer/SDKs/MacOSX10.5.sdk"
+        SDK_VER=10.5
+    else
+        SDK_DIR="/Developer/SDKs/MacOSX10.6.sdk"
+        SDK_VER=10.6
+    fi
+
+    XCODE_VERSION_LINE=`xcodebuild -version | grep "Xcode 3"`
+    if [ \! x"${XCODE_VERSION_LINE}" = x"" ]; then
+	XCODE_VERSION="3"
+    else
+	XCODE_VERSION="4"
+    fi
+
     NUM_PROCS=-j2
-    echo "Building for Mac OS X"
+    echo "Building for Mac OS X with SDK ${SDK_VER}"
+    
 elif [ x"${platform}" = x"Linux" ]; then
     NUM_PROCS=-j`cat /proc/cpuinfo|grep processor|wc -l`
     echo "Building for Linux `uname -m`"
@@ -91,6 +108,8 @@ function clean_dir {
 
 # Usage: careful_patch directory patchfile
 function careful_patch {
+    echo
+    echo "Applying patch $2"
     user_eval "cd $1 && (patch --batch -R -p0 -N --dry-run < $2 2>/dev/null || patch --batch -p0 -N < $2)"
     RET=$?
     if [[ $RET -ne 0 ]]; then
@@ -216,7 +235,11 @@ if [ x"${platform}" = x"Darwin" ]; then
         careful_patch "${CHROMIUM_CHECKOUT_DIR}/src" "${patch}"
     done
     cd src/chrome
-    xcodebuild -project chrome.xcodeproj -configuration Release -target chrome
+    if [ x"${XCODE_VERSION}" = x"3" ]; then
+	xcodebuild -project chrome.xcodeproj -configuration Release -target chrome -sdk ${SDK_DIR}
+    else
+	xcodebuild -project chrome.xcodeproj -configuration Release -arch i386 -target chrome -sdk ${SDK_DIR}
+    fi
 
 
     # "Install" process, symlinking libraries and data to the appropriate locations
@@ -334,7 +357,6 @@ elif [ x"${platform}" = x"Linux" ]; then
         user_eval "cd ${CHROMIUM_BUILD_DIR} &&
                  svn co http://src.chromium.org/svn/trunk/tools/depot_tools/"
     fi
-
     # And now for the real chromium
     echo "Installing Chromium... DUN dunn dunnnnn"
     echo "Without debug, it takes about 3.5 gigabytes of disk space to install and build the source tree."
@@ -354,6 +376,16 @@ elif [ x"${platform}" = x"Linux" ]; then
         GYP_DEFINES="${GYP_DEFINES} linux_fpic=1"
     else
         CHROME_PLATFORM=ia32
+    fi
+
+    GCC_VERSION=`gcc --version | grep ^gcc | cut -d " " -f 4`
+    GCC_VERSION_MAJOR=`gcc --version | grep ^gcc | cut -d " " -f 4 | cut -d "." -f 1`
+    GCC_VERSION_MINOR=`gcc --version | grep ^gcc | cut -d " " -f 4 | cut -d "." -f 2`
+    GCC_VERSION_REV=`gcc --version | grep ^gcc | cut -d " " -f 4 | cut -d "." -f 3`
+    if [ "${GCC_VERSION_MAJOR}" -gt "4" -o "${GCC_VERSION_MAJOR}" -eq "4" -a "${GCC_VERSION_MINOR}" -ge "6" ]; then
+        GCC_46_FIX_CXXFLAGS="-Wno-conversion-null -Wno-unused-but-set-variable -Wno-unused-result -Wno-int-to-pointer-cast"
+    else
+        GCC_46_FIX_CXXFLAGS=""
     fi
     echo "${CHROMIUM_CHECKOUT_DIR}"
     mkdir -p ${CHROMIUM_CHECKOUT_DIR}
@@ -375,6 +407,7 @@ elif [ x"${platform}" = x"Linux" ]; then
                  export GYP_GENERATORS=make &&
                  export CHROMIUM_ROOT="'"$PWD"'" &&
                  export GYP_DEFINES='${GYP_DEFINES} disable_nacl=1 target_arch=${CHROME_PLATFORM}' &&
+                 export CXXFLAGS=\"${GCC_46_FIX_CXXFLAGS}\" &&
                  gclient runhooks --force &&
                  cd src &&
                  make $VERBOSE_FLAGS -r $NUM_PROCS $MAKEFLAGS chrome" && \

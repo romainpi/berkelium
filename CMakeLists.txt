@@ -2,15 +2,29 @@
 #
 # Parameters:
 #  BERKELIUM_CHROME_ROOT_SEARCH_PATHS - list of paths to search for berkelium in.  Should be absolute paths.
+#  BERKELIUM_WITH_TESTS - if true, build tests. True by default.
 #
 # Outputs:
 #  BERKELIUM_CHROME_FOUND - TRUE if Chrome is found and berkelium will be built.
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.4)
 
+SET(BERKELIUM_WITH_TESTS TRUE CACHE BOOL "If true, build test targets")
+
 IF(APPLE)
-  SET(CMAKE_CXX_COMPILER g++-4.0)
-  SET(CMAKE_C_COMPILER gcc-4.0)
+    IF(IS_DIRECTORY /Developer/SDKs/MacOSX10.5.sdk)
+        SET(MAC_SDK_DIR /Developer/SDKs/MacOSX10.5.sdk)
+        SET(MAC_MIN_VER 10.5)
+        SET(MAC_EXTRA_FLAGS)
+        SET(CMAKE_CXX_COMPILER g++-4.0)
+        SET(CMAKE_C_COMPILER gcc-4.0)
+    ELSE()
+        SET(MAC_SDK_DIR /Developer/SDKs/MacOSX10.6.sdk)
+        SET(MAC_MIN_VER 10.6)
+        SET(MAC_EXTRA_FLAGS -m32)
+        SET(CMAKE_CXX_COMPILER g++-4.2)
+        SET(CMAKE_C_COMPILER gcc-4.2)
+    ENDIF()
 ENDIF()
 
 SET(CMAKE_VERBOSE_MAKEFILE OFF)
@@ -30,7 +44,9 @@ SET(CMAKE_MODULE_PATH
 )
 
 INCLUDE(ListUtil)
-INCLUDE(CXXTest)
+IF(BERKELIUM_WITH_TESTS)
+  INCLUDE(CXXTest)
+ENDIF()
 FIND_PACKAGE(PythonInterp)
 
 IF(NOT DEFINED BERKELIUM_BUILD_DEMOS)
@@ -67,9 +83,10 @@ SET(CXXTESTRoot ${BERKELIUM_TOP_LEVEL}/externals/cxxtest)
 IF(CHROME_FOUND)
   INCLUDE_DIRECTORIES(${BERKELIUM_TOP_LEVEL}/include ${CHROME_INCLUDE_DIRS} ${CXXTESTRoot})
 
-  LINK_DIRECTORIES(${CHROME_LIBRARY_DIRS} ../lib .)
-  SET(BERKELIUM_SOURCE_NAMES src/Berkelium src/Context src/Cursor src/ContextImpl src/ForkedProcessHook src/NavigationController src/RenderWidget src/MemoryRenderViewHost src/Root src/ScriptUtilImpl src/ScriptVariant src/StringUtil src/Window src/WindowImpl)
-
+  GET_FILENAME_COMPONENT(RELATIVE_LIB_LINK_DIR ../lib ABSOLUTE)
+  GET_FILENAME_COMPONENT(RELATIVE_CURRENT_LINK_DIR . ABSOLUTE)
+  LINK_DIRECTORIES(${CHROME_LIBRARY_DIRS} ${RELATIVE_LIB_LINK_DIR} ${RELATIVE_CURRENT_LINK_DIR})
+  SET(BERKELIUM_SOURCE_NAMES src/Berkelium src/Context src/Cursor src/ContextImpl src/ForkedProcessHook src/NavigationController src/RenderWidget src/MemoryRenderViewHost src/Root src/ScriptUtilImpl src/ScriptVariant src/StringUtil src/Window src/WindowImpl src/DevToolsHttpProtocolHandler)
 
   SET(BERKELIUM_SOURCES)
   FOREACH(BERKELIUM_SOURCE_FILE ${BERKELIUM_SOURCE_NAMES})
@@ -85,8 +102,8 @@ IF(CHROME_FOUND)
   ENDFOREACH()
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Woverloaded-virtual")
   IF(APPLE)
-    ADD_DEFINITIONS(-isysroot /Developer/SDKs/MacOSX10.5.sdk -arch i386 -mmacosx-version-min=10.5 )
-    SET(BERKELIUM_LDFLAGS "-Wl,-syslibroot -Wl,/Developer/SDKs/MacOSX10.5.sdk/")
+    ADD_DEFINITIONS(-isysroot ${MAC_SDK_DIR} -arch i386 ${MAC_EXTRA_FLAGS} -mmacosx-version-min=${MAC_MIN_VER} )
+    SET(BERKELIUM_LDFLAGS "-Wl,-syslibroot -Wl,${MAC_SDK} ${MAC_EXTRA_FLAGS}")
   ENDIF()
 
   IF (NOT APPLE)
@@ -120,6 +137,7 @@ IF(CHROME_FOUND)
 
   IF(APPLE)
     ADD_EXECUTABLE(bin_replace ${BERKELIUM_TOP_LEVEL}/util/bin_replace.cpp)
+    SET_TARGET_PROPERTIES(bin_replace PROPERTIES LINK_FLAGS "${BERKELIUM_LDFLAGS}")
   ENDIF()
 
   # ppmrender -- demo app
@@ -216,25 +234,27 @@ IF(CHROME_FOUND)
         DESTINATION bin)
   ENDIF()
 
-  SET(TEST_BINARY tests)
+  IF(BERKELIUM_WITH_TESTS)
+    SET(TEST_BINARY tests)
+    
+    #test source files
+    SET(TEST_FILES
+      ${BERKELIUM_TOP_LEVEL}/test/BlankTest.hpp
+      )
+    ADD_CXXTEST_CPP_TARGET(
+      ${TEST_BINARY}
+      LIBRARYDIR ${CXXTESTRoot}
+      TESTS ${TEST_FILES}
+      RUNNER ${BERKELIUM_TOP_LEVEL}/test/Test.cpp
+      DEPENDS berkelium libberkelium)
+    
+    TARGET_LINK_LIBRARIES(${TEST_BINARY} -llibberkelium)
+    ADD_DEPENDENCIES(${TEST_BINARY} berkelium libberkelium)
 
-  #test source files
-  SET(TEST_FILES
-    ${BERKELIUM_TOP_LEVEL}/test/BlankTest.hpp
-  )
-  ADD_CXXTEST_CPP_TARGET(
-    ${TEST_BINARY}
-    LIBRARYDIR ${CXXTESTRoot}
-    TESTS ${TEST_FILES}
-    RUNNER ${BERKELIUM_TOP_LEVEL}/test/Test.cpp
-    DEPENDS berkelium libberkelium)
-
-  TARGET_LINK_LIBRARIES(${TEST_BINARY} -llibberkelium)
-  ADD_DEPENDENCIES(${TEST_BINARY} berkelium libberkelium)
-
-  ADD_CUSTOM_TARGET(test
-    DEPENDS ${TEST_BINARY}
-    COMMAND ${TEST_BINARY} $ENV{SINGLE_SUITE})
+    ADD_CUSTOM_TARGET(test
+      DEPENDS ${TEST_BINARY}
+      COMMAND ${TEST_BINARY} $ENV{SINGLE_SUITE})
+  ENDIF()
 ENDIF(CHROME_FOUND)
 
 FIND_PACKAGE(Doxygen)

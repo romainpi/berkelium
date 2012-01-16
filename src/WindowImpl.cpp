@@ -94,6 +94,9 @@ void WindowImpl::init(SiteInstance*site, int routing_id) {
         mController->session_storage_namespace_);
     host()->AllowBindings(
         BindingsPolicy::EXTERNAL_HOST);
+
+    // For remote debugging
+    Root::getSingleton().addWindow(this);
 }
 
 WindowImpl::WindowImpl(const Context*otherContext):
@@ -120,6 +123,9 @@ WindowImpl::WindowImpl(const Context*otherContext, int routing_id):
     CreateRenderViewForRenderManager(host(), true);
 }
 WindowImpl::~WindowImpl() {
+    // For remote debugging
+    Root::getSingleton().removeWindow(this);
+
     RenderViewHost* render_view_host = mRenderViewHost;
     mRenderViewHost = NULL;
     render_view_host->Shutdown();

@@ -73,7 +73,7 @@ class WindowImpl :
 	void UpdateHistoryForNavigation(
 	  scoped_refptr<history::HistoryAddPageArgs> add_page_args);
     bool UpdateTitleForEntry(NavigationEntry* ent, const std::wstring&title);
- 
+
 	// Returns the history::HistoryAddPageArgs to use for adding a page to
 	// history.
 	scoped_refptr<history::HistoryAddPageArgs> CreateHistoryAddPageArgs(
@@ -89,6 +89,11 @@ public:
     const GURL &getCurrentURL() {
         return mCurrentURL;
     }
+
+    NavigationController* navigationController() {
+        return mController;
+    }
+
     SiteInstance *GetSiteInstance();
     bool is_crashed() const { return is_crashed_; }
     void SetIsCrashed(bool state);

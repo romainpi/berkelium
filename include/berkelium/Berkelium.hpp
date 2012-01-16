@@ -72,25 +72,18 @@ void BERKELIUM_EXPORT forkedProcessHook(
 void BERKELIUM_EXPORT forkedProcessHook(int argc, char **argv);
 #endif
 
-/** Initialize berkelium's global object, extended mode
- *  \param homeDirectory  Just like Chrome's --user-data-dir command line flag.
- *    If homeDirectory is null or empty, creates a temporary data directory.
- *  \param berkeliumPath  Specify a custom directory to search berkelium binary
- */
-bool BERKELIUM_EXPORT initEx(FileString homeDirectory, FileString berkeliumPath);
-
 /** Initialize berkelium's global object.
  *  \param homeDirectory  Just like Chrome's --user-data-dir command line flag.
  *    If homeDirectory is null or empty, creates a temporary data directory.
  *  \param subprocessDirectory  Path to berkelium.exe.
  */
-bool BERKELIUM_EXPORT init(FileString homeDirectory, FileString subprocessDirectory);
+bool BERKELIUM_EXPORT init(FileString homeDirectory, FileString subprocessDirectory, unsigned int extra_argc = 0, const char* extra_argv[] = NULL);
 
 /** Iniitialize berkelium's global object.
  *  \param homeDirectory  Just like Chrome's --user-data-dir command line flag.
  *    If homeDirectory is null or empty, creates a temporary data directory.
  */
-bool BERKELIUM_EXPORT init(FileString homeDirectory);
+bool BERKELIUM_EXPORT init(FileString homeDirectory, unsigned int extra_argc = 0, const char* extra_argv[] = NULL);
 
 /** Destroys Berkelium and attempts to free as much memory as possible.
  *  Note: You must destroy all Window and Context objects before calling
