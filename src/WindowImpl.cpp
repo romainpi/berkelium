@@ -604,7 +604,6 @@ bool WindowImpl::OnMessageReceived(const IPC::Message& message) {
     return handled;
 }
 
-
 const GURL& WindowImpl::GetURL() const {
 	return mCurrentURL;
 }
@@ -615,12 +614,18 @@ void WindowImpl::DidStartLoading() {
         return;
 
     SetIsLoading(true);
-    evalInitialJavascript();
 
     if (mDelegate) {
         mDelegate->onLoadingStateChanged(this, true);
     }
 }
+
+void WindowImpl::DocumentAvailableInMainFrame( RenderViewHost *pRVH )
+{
+	evalInitialJavascript();
+	RenderViewHostDelegate::DocumentAvailableInMainFrame( pRVH );
+}
+
 void WindowImpl::DidStopLoading() {
     SetIsLoading(false);
 
