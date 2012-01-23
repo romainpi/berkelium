@@ -215,6 +215,7 @@ protected: /******* RenderViewHostDelegate *******/
 
     virtual void DidNavigate(RenderViewHost* render_view_host,
                              const ViewHostMsg_FrameNavigate_Params& params);
+    virtual void DocumentAvailableInMainFrame(RenderViewHost* render_view_host);
     virtual void UpdateState(RenderViewHost* render_view_host,
                              int32 page_id,
                              const std::string& state);
