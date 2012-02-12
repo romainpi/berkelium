@@ -109,9 +109,19 @@ public:
         FILE *outfile;
         {
             std::ostringstream os;
-            os << "/tmp/chromium_render_" << time(NULL) << "_" << (call_count++) << ".ppm";
+			os <<
+#ifdef _WIN32
+				getenv("TEMP") << "\\"
+#else
+				"/tmp/"
+#endif
+				<< "chromium_render_" << time(NULL) << "_" << (call_count++) << ".ppm";
             std::string str (os.str());
             outfile = fopen(str.c_str(), "wb");
+			if(outfile == NULL) {
+				std::cout << "*** cant open file "<<str<<std::endl;
+				return;
+			}
         }
         const int width = bitmap_rect.width();
         const int height = bitmap_rect.height();
