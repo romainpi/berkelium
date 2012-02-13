@@ -113,7 +113,7 @@ public:
 #ifdef _WIN32
 				getenv("TEMP") << "\\"
 #else
-				"/tmp"
+				"/tmp/"
 #endif
 				<< "chromium_render_" << time(NULL) << "_" << (call_count++) << ".ppm";
             std::string str (os.str());
