@@ -205,6 +205,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\DevToolsHttpProtocolHandler.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\src\ForkedProcessHook.cpp"
 				>
 			</File>
@@ -255,6 +259,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\DevToolsHttpProtocolHandler.hpp"
+				>
+			</File>
+			<File
 				RelativePath="..\src\MemoryRenderViewHost.hpp"
 				>
 			</File>
@@ -272,6 +280,10 @@
 			</File>
 			<File
 				RelativePath="..\src\ScriptUtilImpl.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\Singleton.hpp"
 				>
 			</File>
 			<File
