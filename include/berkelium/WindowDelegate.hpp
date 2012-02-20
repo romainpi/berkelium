@@ -428,6 +428,26 @@ public:
         win->filesSelected(NULL);
     }
 
+    /**
+     * Resize of this Window was requested.
+     *
+     * This corresponds to the window.resizeTo() and window.moveTo() APIs, and
+     * the browser may ignore this message.
+     *
+     * \param win  Window which should be resized.
+     * \param x  Requested x position
+     * \param y  Requested y position
+     * \param newWidth  Requested width
+     * \param newHeight  Requested height
+     */
+    virtual void onResizeRequested(
+        Window *win,
+        int x,
+        int y,
+        int newWidth,
+        int newHeight) {
+    }
+
 /**************************
    Might want messages for:
 - StartDragging(const WebDropData& drop_data,

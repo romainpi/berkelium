@@ -594,6 +594,7 @@ bool WindowImpl::OnMessageReceived(const IPC::Message& message) {
 //                          OnBlockedOutdatedPlugin)
       IPC_MESSAGE_HANDLER(ViewHostMsg_PageContents, OnPageContents)
       IPC_MESSAGE_HANDLER(ViewHostMsg_PageTranslated, OnPageTranslated)
+      IPC_MESSAGE_HANDLER(ViewHostMsg_RequestMove, onResizeRequested)
       IPC_MESSAGE_UNHANDLED(handled = false)
     IPC_END_MESSAGE_MAP_EX()
 
@@ -923,6 +924,12 @@ void WindowImpl::OnCrashedPlugin(const FilePath& plugin_path) {
 void WindowImpl::WorkerCrashed(){
     if (mDelegate) {
         mDelegate->onCrashedWorker(this);
+    }
+}
+
+void WindowImpl::onResizeRequested(gfx::Rect rect) {
+    if (mDelegate) {
+        mDelegate->onResizeRequested(this, rect.x(), rect.y(), rect.width(), rect.height());
     }
 }
 
