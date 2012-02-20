@@ -246,6 +246,7 @@ protected: /******* RenderViewHostDelegate *******/
     virtual void ClearInspectorSettings();
     virtual void OnUserGesture();
     virtual void WorkerCrashed();
+    virtual void onResizeRequested(gfx::Rect rect);
 
 private: /******* Formerly RenderViewHostDelegate::Resource *******/
     void OnDidStartProvisionalLoadForFrame(
