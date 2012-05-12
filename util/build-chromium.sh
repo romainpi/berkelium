@@ -415,6 +415,18 @@ elif [ x"${platform}" = x"Linux" ]; then
 	        GCC_46_FIX_CXXFLAGS=""
 	    fi
 	    if [ -e ${CHROMIUM_CHECKOUT_DIR} ]; then
+
+                # Some patches need to selectively applied. They have
+                # special extensions so the majority can just always
+                # be applied
+                VOLATILE_MALLOC=`grep volatile /usr/include/malloc.h`
+	        if [ x"$VOLATILE_MALLOC" != x ]; then
+	            for patch in "${CHROMIUM_PATCHES_DIR}"/*.patch.volatile-malloc; do
+	                careful_patch "${CHROMIUM_CHECKOUT_DIR}/src" "${patch}"
+	            done
+                fi
+
+                # The rest always get applied
 	        for patch in "${CHROMIUM_PATCHES_DIR}"/*.patch; do
 	            careful_patch "${CHROMIUM_CHECKOUT_DIR}/src" "${patch}"
 	        done &&
