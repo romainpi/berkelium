@@ -1,6 +1,30 @@
---- chromium/third_party/WebKit/Source/WebCore/platform/image-decoders/png/PNGImageDecoder.cpp	2010-08-24 17:47:39.000000000 -0700
-+++ chromium/third_party/WebKit/Source/WebCore/platform/image-decoders/png/PNGImageDecoder.cpp	2010-08-24 18:11:55.000000000 -0700
-@@ -224,11 +224,11 @@
+Index: third_party/WebKit/Source/WebCore/platform/image-encoders/skia/PNGImageEncoder.cpp
+===================================================================
+--- third_party/WebKit/Source/WebCore/platform/image-encoders/skia/PNGImageEncoder.cpp	(revision 86868)
++++ third_party/WebKit/Source/WebCore/platform/image-encoders/skia/PNGImageEncoder.cpp	(working copy)
+@@ -43,7 +43,7 @@
+ 
+ static void writeOutput(png_structp png, png_bytep data, png_size_t size)
+ {
+-    static_cast<Vector<unsigned char>*>(png->io_ptr)->append(data, size);
++    static_cast<Vector<unsigned char>*>(png_get_io_ptr(png))->append(data, size);
+ }
+ 
+ static void preMultipliedBGRAtoRGBA(const SkPMColor* input, int pixels, unsigned char* output)
+Index: third_party/WebKit/Source/WebCore/platform/image-decoders/png/PNGImageDecoder.cpp
+===================================================================
+--- third_party/WebKit/Source/WebCore/platform/image-decoders/png/PNGImageDecoder.cpp	(revision 86868)
++++ third_party/WebKit/Source/WebCore/platform/image-decoders/png/PNGImageDecoder.cpp	(working copy)
+@@ -228,7 +228,7 @@
+     int compressionType;
+     char* profile;
+     png_uint_32 profileLength;
+-    if (png_get_iCCP(png, info, &profileName, &compressionType, &profile, &profileLength)) {
++    if (png_get_iCCP(png, info, &profileName, &compressionType, (png_byte **)&profile, &profileLength)) {
+         ColorProfile colorProfile;
+         colorProfile.append(profile, profileLength);
+         return colorProfile;
+@@ -241,11 +241,11 @@
  {
      png_structp png = m_reader->pngPtr();
      png_infop info = m_reader->infoPtr();
@@ -15,7 +39,7 @@
          longjmp(JMPBUF(png), 1);
          return;
      }
-@@ -292,8 +292,7 @@
+@@ -319,8 +319,7 @@
  
      if (m_reader->decodingSizeOnly()) {
          // If we only needed the size, halt the reader.     
@@ -25,13 +49,13 @@
      }
  }
  
-@@ -315,7 +314,8 @@
+@@ -343,7 +342,8 @@
          // For PNGs, the frame always fills the entire image.
-         buffer.setRect(IntRect(IntPoint(), size()));
+         buffer.setOriginalFrameRect(IntRect(IntPoint(), size()));
  
 -        if (m_reader->pngPtr()->interlaced)
 +        if (png_get_interlace_type(m_reader->pngPtr(), m_reader->infoPtr())
 +		!= PNG_INTERLACE_NONE)
              m_reader->createInterlaceBuffer((m_reader->hasAlpha() ? 4 : 3) * size().width() * size().height());
      }
- 
+
