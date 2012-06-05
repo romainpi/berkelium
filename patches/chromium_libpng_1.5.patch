@@ -11,20 +11,23 @@ Index: third_party/WebKit/Source/WebCore/platform/image-encoders/skia/PNGImageEn
  }
  
  static void preMultipliedBGRAtoRGBA(const SkPMColor* input, int pixels, unsigned char* output)
-Index: third_party/WebKit/Source/WebCore/platform/image-decoders/png/PNGImageDecoder.cpp
+Index: /home/matt/src/berkelium/build/chromium/src/third_party/WebKit/Source/WebCore/platform/image-decoders/png/PNGImageDecoder.cpp
 ===================================================================
---- third_party/WebKit/Source/WebCore/platform/image-decoders/png/PNGImageDecoder.cpp	(revision 86868)
-+++ third_party/WebKit/Source/WebCore/platform/image-decoders/png/PNGImageDecoder.cpp	(working copy)
-@@ -228,7 +228,7 @@
+--- /home/matt/src/berkelium/build/chromium/src/third_party/WebKit/Source/WebCore/platform/image-decoders/png/PNGImageDecoder.cpp	(revision 86868)
++++ /home/matt/src/berkelium/build/chromium/src/third_party/WebKit/Source/WebCore/platform/image-decoders/png/PNGImageDecoder.cpp	(working copy)
+@@ -228,7 +228,11 @@
      int compressionType;
      char* profile;
      png_uint_32 profileLength;
--    if (png_get_iCCP(png, info, &profileName, &compressionType, &profile, &profileLength)) {
++#if PNG_LIBPNG_VER_MAJOR >= 1 && PNG_LIBPNG_VER_MINOR >= 5
 +    if (png_get_iCCP(png, info, &profileName, &compressionType, (png_byte **)&profile, &profileLength)) {
++#else
+     if (png_get_iCCP(png, info, &profileName, &compressionType, &profile, &profileLength)) {
++#endif
          ColorProfile colorProfile;
          colorProfile.append(profile, profileLength);
          return colorProfile;
-@@ -241,11 +241,11 @@
+@@ -241,11 +245,11 @@
  {
      png_structp png = m_reader->pngPtr();
      png_infop info = m_reader->infoPtr();
@@ -39,17 +42,20 @@ Index: third_party/WebKit/Source/WebCore/platform/image-decoders/png/PNGImageDec
          longjmp(JMPBUF(png), 1);
          return;
      }
-@@ -319,8 +319,7 @@
+@@ -319,8 +323,12 @@
  
      if (m_reader->decodingSizeOnly()) {
          // If we only needed the size, halt the reader.     
--        m_reader->setReadOffset(m_reader->currentBufferSize() - png->buffer_size);
--        png->buffer_size = 0;
++#if PNG_LIBPNG_VER_MAJOR >= 1 && PNG_LIBPNG_VER_MINOR >= 5
 +        m_reader->setReadOffset(m_reader->currentBufferSize() - png_process_data_pause(png, 0/*do not save the data*/));
++#else
+         m_reader->setReadOffset(m_reader->currentBufferSize() - png->buffer_size);
+         png->buffer_size = 0;
++#endif
      }
  }
  
-@@ -343,7 +342,8 @@
+@@ -343,7 +351,8 @@
          // For PNGs, the frame always fills the entire image.
          buffer.setOriginalFrameRect(IntRect(IntPoint(), size()));
  
