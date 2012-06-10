@@ -595,6 +595,7 @@ bool WindowImpl::OnMessageReceived(const IPC::Message& message) {
       IPC_MESSAGE_HANDLER(ViewHostMsg_PageContents, OnPageContents)
       IPC_MESSAGE_HANDLER(ViewHostMsg_PageTranslated, OnPageTranslated)
       IPC_MESSAGE_HANDLER(ViewHostMsg_RequestMove, onResizeRequested)
+      IPC_MESSAGE_HANDLER(ViewHostMsg_RunFileChooser, RunFileChooser)
       IPC_MESSAGE_UNHANDLED(handled = false)
     IPC_END_MESSAGE_MAP_EX()
 
@@ -1105,16 +1106,13 @@ void WindowImpl::RunFileChooser(const ViewHostMsg_RunFileChooser_Params&params) 
         case ViewHostMsg_RunFileChooser_Params::OpenMultiple:
           mode = FileOpenMultiple;
           break;
-// Not implemented until chromium7
-/*
         case ViewHostMsg_RunFileChooser_Params::OpenFolder:
           mode = FileOpenFolder;
           break;
-*/
         case ViewHostMsg_RunFileChooser_Params::Save:
           mode = FileSaveAs;
           break;
-        default:
+        default: //case ViewHostMsg_RunFileChooser_Params::Open or unknown
           mode = FileOpen;
           break;
       }
