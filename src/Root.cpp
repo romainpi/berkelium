@@ -100,6 +100,8 @@
 #include <iostream>
 
 #include "chrome/browser/ui/webui/chrome_url_data_manager_backend.h"
+#include "chrome/common/net/url_request_context_getter.h"	
+#include "base/utf_string_conversions.h"
 
 #if !defined(OS_WIN)
 extern "C"
@@ -613,5 +615,10 @@ Root::~Root(){
     mTempProfileDir.reset(); // Delete the profile if necessary.
 }
 
+void Root::setCookie (URLString url, WideString cookieString) {
+     if (getDefaultRequestContext() )
+         if (net::CookieStore * cs = getDefaultRequestContext () -> GetCookieStore ())
+             cs -> SetCookie (GURL(url.get<std::string>()), WideToUTF8(cookieString.get<std::wstring>()));
+}
 
 }

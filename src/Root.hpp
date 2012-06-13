@@ -123,6 +123,8 @@ public:
     void addWindow(WindowImpl* w);
     void removeWindow(WindowImpl* w);
     WindowList getWindows();
+
+    void setCookie (URLString url, WideString cookieString);
 };
 
 }
