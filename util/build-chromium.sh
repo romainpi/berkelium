@@ -22,6 +22,8 @@ USE_ROOT=true
 USER=`whoami`
 USER_SHELL="/bin/bash"
 SAME_USER=true
+DO_INSTALL=true
+DO_DOWNLOAD=true
 
 if [ x"${platform}" = x"Darwin" ]; then
 
@@ -153,6 +155,14 @@ do
             CHROMIUM_VERSION="$1"
             SET_CHROMIUM_VERSION=true
             ;;
+        --download-only )
+            DO_DOWNLOAD=true
+            DO_INSTALL=false
+            ;;
+        --install-only )
+            DO_DOWNLOAD=false
+            DO_INSTALL=true
+            ;;
         --verbose )
             VERBOSE_FLAGS="V=1"
             ;;
@@ -282,7 +292,7 @@ elif [ x"${platform}" = x"Linux" ]; then
                     sudo apt-get install msttcorefonts libgconf2-dev libcairo2-dev libdbus-1-dev
                     sudo apt-get install liborbit2-dev libpopt-dev orbit2 libjpeg-dev libbz2-dev
                     sudo apt-get install libnss3-dev libgnome-keyring-dev libdbus-glib-1-dev
-                    sudo apt-get install libcups2-dev libxss-dev
+                    sudo apt-get install libcups2-dev libxss-dev libxtst-dev libpam0g-dev
                     ;;
                 fedora )
                     sudo yum install subversion pkgconfig python perl ruby gcc-c++ bison \
@@ -353,43 +363,15 @@ elif [ x"${platform}" = x"Linux" ]; then
     fi
 
     # Depot tools
-    if [ \! -e ${CHROMIUM_DEPOTTOOLS_DIR} ]; then
+    if [ \! -e ${CHROMIUM_DEPOTTOOLS_DIR} ] && $DO_DOWNLOAD; then
+        echo "Downloading chromium..."
         user_eval "cd ${CHROMIUM_BUILD_DIR} &&
                  svn co http://src.chromium.org/svn/trunk/tools/depot_tools/"
     fi
-    # And now for the real chromium
-    echo "Installing Chromium... DUN dunn dunnnnn"
-    echo "Without debug, it takes about 3.5 gigabytes of disk space to install and build the source tree."
-    echo "Hit Ctrl-C if you are going to run out of space, so you don't end up with truncated objects."
-    clean_dir ${CHROMIUM_INSTALL_DIR}
-    if [ x"${CHROMIUM_DEBUG}" = xtrue ]; then
-        echo "*** Building Chromium in Debug mode"
-        MAKEFLAGS=" BUILDTYPE=Debug"
-        OUTDIR=Debug
-    else
-        echo "Building Chromium in Release. export CHROMIUM_DEBUG=true for debug mode."
-        MAKEFLAGS=" BUILDTYPE=Release"
-        OUTDIR=Release
-    fi
-    if [ x"$proctype" = x"x86_64" ]; then
-        CHROME_PLATFORM=x64
-        GYP_DEFINES="${GYP_DEFINES} linux_fpic=1"
-    else
-        CHROME_PLATFORM=ia32
-    fi
-
-    GCC_VERSION=`gcc --version | grep ^gcc | cut -d " " -f 4`
-    GCC_VERSION_MAJOR=`gcc --version | grep ^gcc | cut -d " " -f 4 | cut -d "." -f 1`
-    GCC_VERSION_MINOR=`gcc --version | grep ^gcc | cut -d " " -f 4 | cut -d "." -f 2`
-    GCC_VERSION_REV=`gcc --version | grep ^gcc | cut -d " " -f 4 | cut -d "." -f 3`
-    if [ "${GCC_VERSION_MAJOR}" -gt "4" -o "${GCC_VERSION_MAJOR}" -eq "4" -a "${GCC_VERSION_MINOR}" -ge "6" ]; then
-        GCC_46_FIX_CXXFLAGS="-Wno-conversion-null -Wno-unused-but-set-variable -Wno-unused-result -Wno-int-to-pointer-cast"
-    else
-        GCC_46_FIX_CXXFLAGS=""
-    fi
-    echo "${CHROMIUM_CHECKOUT_DIR}"
-    mkdir -p ${CHROMIUM_CHECKOUT_DIR}
-    if [ -e ${CHROMIUM_CHECKOUT_DIR} ]; then
+    
+    if $DO_DOWNLOAD; then
+        echo "${CHROMIUM_CHECKOUT_DIR}"
+        mkdir -p ${CHROMIUM_CHECKOUT_DIR}
         user_eval "
                  mkdir -p ${CHROMIUM_CHECKOUT_DIR} &&
                  cd ${CHROMIUM_CHECKOUT_DIR} &&
@@ -397,43 +379,91 @@ elif [ x"${platform}" = x"Linux" ]; then
                  rm -f .gclient && gclient config ${CHROMIUM_REPO} &&
                  python -c '"'execfile(".gclient");solutions[0]["custom_deps"]={"src/third_party/WebKit/LayoutTests":None,"src/webkit/data/layout_tests":None,};open(".gclient","w").write("solutions="+repr(solutions));'"' &&
                  export GYP_GENERATORS=make &&
-                 gclient sync $GCLIENT_FORCE ${CHROMIUM_REV}" &&
-        for patch in "${CHROMIUM_PATCHES_DIR}"/*.patch; do
-            careful_patch "${CHROMIUM_CHECKOUT_DIR}/src" "${patch}"
-        done &&
-        user_eval "
-                 cd ${CHROMIUM_CHECKOUT_DIR} &&
-                 export PATH=\"${CHROMIUM_DEPOTTOOLS_DIR}:${PATH}\" &&
-                 export GYP_GENERATORS=make &&
-                 export CHROMIUM_ROOT="'"$PWD"'" &&
-                 export GYP_DEFINES='${GYP_DEFINES} disable_nacl=1 target_arch=${CHROME_PLATFORM}' &&
-                 export CXXFLAGS=\"${GCC_46_FIX_CXXFLAGS}\" &&
-                 gclient runhooks --force &&
-                 cd src &&
-                 make $VERBOSE_FLAGS -r $NUM_PROCS $MAKEFLAGS chrome" && \
+                 gclient sync $GCLIENT_FORCE ${CHROMIUM_REV}" ||
+            export FAILED="$FAILED chromium"
+    fi
+    
+    if $DO_INSTALL; then
+	    # And now for the real chromium
+	    echo "Installing Chromium... "
+	    echo "Without debug, it takes about 3.5 gigabytes of disk space to install and build the source tree."
+	    echo "Hit Ctrl-C if you are going to run out of space, so you don't end up with truncated objects."
+	    clean_dir ${CHROMIUM_INSTALL_DIR}
+	    if [ x"${CHROMIUM_DEBUG}" = xtrue ]; then
+	        echo "*** Building Chromium in Debug mode"
+	        MAKEFLAGS=" BUILDTYPE=Debug"
+	        OUTDIR=Debug
+	    else
+	        echo "Building Chromium in Release. export CHROMIUM_DEBUG=true for debug mode."
+	        MAKEFLAGS=" BUILDTYPE=Release"
+	        OUTDIR=Release
+	    fi
+	    if [ x"$proctype" = x"x86_64" ]; then
+	        CHROME_PLATFORM=x64
+	        GYP_DEFINES="${GYP_DEFINES} linux_fpic=1"
+	    else
+	        CHROME_PLATFORM=ia32
+	    fi
+	
+	    GCC_VERSION=`gcc --version | grep ^gcc | cut -d " " -f 4`
+	    GCC_VERSION_MAJOR=`gcc --version | grep ^gcc | cut -d " " -f 4 | cut -d "." -f 1`
+	    GCC_VERSION_MINOR=`gcc --version | grep ^gcc | cut -d " " -f 4 | cut -d "." -f 2`
+	    GCC_VERSION_REV=`gcc --version | grep ^gcc | cut -d " " -f 4 | cut -d "." -f 3`
+	    if [ "${GCC_VERSION_MAJOR}" -gt "4" -o "${GCC_VERSION_MAJOR}" -eq "4" -a "${GCC_VERSION_MINOR}" -ge "6" ]; then
+	        GCC_46_FIX_CXXFLAGS="-Wno-conversion-null -Wno-unused-but-set-variable -Wno-unused-result -Wno-int-to-pointer-cast"
+	    else
+	        GCC_46_FIX_CXXFLAGS=""
+	    fi
+	    if [ -e ${CHROMIUM_CHECKOUT_DIR} ]; then
+
+                # Some patches need to selectively applied. They have
+                # special extensions so the majority can just always
+                # be applied
+                VOLATILE_MALLOC=`grep volatile /usr/include/malloc.h`
+	        if [ x"$VOLATILE_MALLOC" != x ]; then
+	            for patch in "${CHROMIUM_PATCHES_DIR}"/*.patch.volatile-malloc; do
+	                careful_patch "${CHROMIUM_CHECKOUT_DIR}/src" "${patch}"
+	            done
+                fi
+
+                # The rest always get applied
+	        for patch in "${CHROMIUM_PATCHES_DIR}"/*.patch; do
+	            careful_patch "${CHROMIUM_CHECKOUT_DIR}/src" "${patch}"
+	        done &&
+	        user_eval "
+	                 cd ${CHROMIUM_CHECKOUT_DIR} &&
+	                 export PATH=\"${CHROMIUM_DEPOTTOOLS_DIR}:${PATH}\" &&
+	                 export GYP_GENERATORS=make &&
+	                 export CHROMIUM_ROOT="'"$PWD"'" &&
+	                 export GYP_DEFINES='${GYP_DEFINES} disable_nacl=1 target_arch=${CHROME_PLATFORM}' &&
+	                 export CXXFLAGS=\"${GCC_46_FIX_CXXFLAGS}\" &&
+	                 gclient runhooks --force &&
+	                 cd src &&
+	                 make $VERBOSE_FLAGS -r $NUM_PROCS $MAKEFLAGS chrome" && \
                      make_symlink ${CHROMIUM_CHECKOUT_DIR}/src/out/$OUTDIR ${CHROMIUM_INSTALL_DIR} && \
                      echo ${OUTDIR} > ${CHROMIUM_BUILD_DIR}/compilemode.txt || \
                      export FAILED="$FAILED chromium"
-
-
-
-        # "Install" process, symlinking libraries and data to the appropriate locations
-        if [ x"${CHROMIUM_APP_DIR}" != x ]; then
-            # Make sure the top level build dir is there
-            if [ \! -e ${CHROMIUM_APP_DIR} ]; then
-                user_eval "mkdir -p ${CHROMIUM_APP_DIR}" || true
-            fi
-
-            user_eval "ln -sf ${CHROMIUM_DATADIR}/chrome.pak ${CHROMIUM_APP_DIR}/chrome.pak
-                       ln -sf ${CHROMIUM_DATADIR}/libffmpegsumo.so ${CHROMIUM_APP_DIR}/libffmpegsumo.so
-                       ln -sf ${CHROMIUM_DATADIR}/locales ${CHROMIUM_APP_DIR}/locales
-                       ln -sf ${CHROMIUM_DATADIR}/resources ${CHROMIUM_APP_DIR}/resources" || \
+	
+	
+	
+	        # "Install" process, symlinking libraries and data to the appropriate locations
+	        if [ x"${CHROMIUM_APP_DIR}" != x ]; then
+	            # Make sure the top level build dir is there
+	            if [ \! -e ${CHROMIUM_APP_DIR} ]; then
+	                user_eval "mkdir -p ${CHROMIUM_APP_DIR}" || true
+	            fi
+	
+	            user_eval "ln -sf ${CHROMIUM_DATADIR}/chrome.pak ${CHROMIUM_APP_DIR}/chrome.pak
+	                       ln -sf ${CHROMIUM_DATADIR}/libffmpegsumo.so ${CHROMIUM_APP_DIR}/libffmpegsumo.so
+	                       ln -sf ${CHROMIUM_DATADIR}/locales ${CHROMIUM_APP_DIR}/locales
+	                       ln -sf ${CHROMIUM_DATADIR}/resources ${CHROMIUM_APP_DIR}/resources" || \
                            export FAILED="$FAILED chromium"
-
-        fi
-    else
-        export FAILED="$FAILED chromium"
-    fi
+	
+	        fi
+	    else
+	        export FAILED="$FAILED chromium"
+	    fi
+	fi
 fi
 
 if [ x"${FAILED}" != x ]; then

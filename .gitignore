@@ -44,3 +44,6 @@ berkelium_docs
 # eclipse files
 .project
 .cproject
+
+
+install_manifest.txt

@@ -72,5 +72,7 @@ void stopRunning() {
 void setErrorHandler (ErrorDelegate *errorHandler) {
     Root::getSingleton().setErrorHandler(errorHandler);
 }
-
+void setCookie (URLString url, WideString cookieString) {
+    Root::getSingleton().setCookie(url, cookieString);
+}
 }

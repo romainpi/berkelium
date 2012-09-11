@@ -3,6 +3,8 @@
 # Parameters:
 #  BERKELIUM_CHROME_ROOT_SEARCH_PATHS - list of paths to search for berkelium in.  Should be absolute paths.
 #  BERKELIUM_WITH_TESTS - if true, build tests. True by default.
+#  BERKELIUM_INSTALL_BINARY_PATH - offset for installing binaries, e.g. bin
+#  BERKELIUM_INSTALL_LIBRARY_PATH - offset for installing libraries, e.g. lib
 #
 # Outputs:
 #  BERKELIUM_CHROME_FOUND - TRUE if Chrome is found and berkelium will be built.
@@ -144,7 +146,7 @@ IF(CHROME_FOUND)
   IF(BERKELIUM_BUILD_DEMOS)
     ADD_EXECUTABLE(ppmrender ${BERKELIUM_TOP_LEVEL}/demo/ppmrender/ppmmain.cpp)
     TARGET_LINK_LIBRARIES(ppmrender ${BERKELIUM_LINK_LIBS})
-    SET_TARGET_PROPERTIES(ppmrender PROPERTIES LINK_FLAGS "${BERKELIUM_LDFLAGS}")
+    SET_TARGET_PROPERTIES(ppmrender PROPERTIES LINK_FLAGS "${BERKELIUM_LDFLAGS} -Wl,-rpath,${CMAKE_CURRENT_BINARY_DIR}")
     SET_TARGET_PROPERTIES(ppmrender PROPERTIES SKIP_BUILD_RPATH ON)
     ADD_DEPENDENCIES(ppmrender libberkelium)
     IF(APPLE)
@@ -214,24 +216,26 @@ IF(CHROME_FOUND)
 
   ENDIF()
 
+  SET(BERKELIUM_INSTALL_BINARY_PATH bin CACHE STRING "Offset from install prefix to install binaries to")
+  SET(BERKELIUM_INSTALL_LIBRARY_PATH lib CACHE STRING "Offset from install prefix to install libraries to")
   INSTALL(TARGETS
           libberkelium
           berkelium
           RUNTIME
-          DESTINATION bin
+          DESTINATION ${BERKELIUM_INSTALL_BINARY_PATH}
           LIBRARY
-          DESTINATION lib)
+          DESTINATION ${BERKELIUM_INSTALL_LIBRARY_PATH})
   INSTALL(DIRECTORY include/berkelium
       DESTINATION include)
   IF(NOT APPLE)
     INSTALL(FILES
           ${CHROMIUM_DATADIR}/chrome.pak
           ${CHROMIUM_DATADIR}/resources.pak
-            DESTINATION bin)
+            DESTINATION ${BERKELIUM_INSTALL_BINARY_PATH})
     INSTALL(DIRECTORY ${CHROMIUM_DATADIR}/locales
-        DESTINATION bin)
+        DESTINATION ${BERKELIUM_INSTALL_BINARY_PATH})
     INSTALL(DIRECTORY ${CHROMIUM_DATADIR}/resources
-        DESTINATION bin)
+        DESTINATION ${BERKELIUM_INSTALL_BINARY_PATH})
   ENDIF()
 
   IF(BERKELIUM_WITH_TESTS)
@@ -247,8 +251,10 @@ IF(CHROME_FOUND)
       TESTS ${TEST_FILES}
       RUNNER ${BERKELIUM_TOP_LEVEL}/test/Test.cpp
       DEPENDS berkelium libberkelium)
-    
-    TARGET_LINK_LIBRARIES(${TEST_BINARY} -llibberkelium)
+
+    TARGET_LINK_LIBRARIES(${TEST_BINARY} ${BERKELIUM_LINK_LIBS})
+    SET_TARGET_PROPERTIES(${TEST_BINARY} PROPERTIES LINK_FLAGS "${BERKELIUM_LDFLAGS} -Wl,-rpath,${CMAKE_CURRENT_BINARY_DIR}")
+    SET_TARGET_PROPERTIES(${TEST_BINARY} PROPERTIES SKIP_BUILD_RPATH ON)
     ADD_DEPENDENCIES(${TEST_BINARY} berkelium libberkelium)
 
     ADD_CUSTOM_TARGET(test

@@ -100,6 +100,8 @@
 #include <iostream>
 
 #include "chrome/browser/ui/webui/chrome_url_data_manager_backend.h"
+#include "chrome/common/net/url_request_context_getter.h"	
+#include "base/utf_string_conversions.h"
 
 #if !defined(OS_WIN)
 extern "C"
@@ -360,19 +362,22 @@ bool Root::init(FileString homeDirectory, FileString subprocessDirectory, unsign
     mErrorHandler = 0;
 
 #if defined(OS_LINUX)
-    g_thread_init(NULL);
-    // Glib type system initialization. Needed at least for gconf,
-    // used in net/proxy/proxy_config_service_linux.cc. Most likely
-    // this is superfluous as gtk_init() ought to do this. It's
-    // definitely harmless, so retained as a reminder of this
-    // requirement for gconf.
-    g_type_init();
-    // gtk_init() can change |argc| and |argv|.
-    char argv0data[] = "[Berkelium]";
-    char *argv0 = argv0data;
-    char **argv = &argv0;
-    int argc = 1;
-    gtk_init(&argc, &argv);
+    if (!g_thread_supported ()) // the client application might have already setup glib
+	{
+		g_thread_init(NULL);
+		// Glib type system initialization. Needed at least for gconf,
+		// used in net/proxy/proxy_config_service_linux.cc. Most likely
+		// this is superfluous as gtk_init() ought to do this. It's
+		// definitely harmless, so retained as a reminder of this
+		// requirement for gconf.
+		g_type_init();
+		// gtk_init() can change |argc| and |argv|.
+		char argv0data[] = "[Berkelium]";
+		char *argv0 = argv0data;
+		char **argv = &argv0;
+		int argc = 1;
+		gtk_init(&argc, &argv);
+    }
     SetUpGLibLogHandler();
 #endif
 
@@ -610,5 +615,10 @@ Root::~Root(){
     mTempProfileDir.reset(); // Delete the profile if necessary.
 }
 
+void Root::setCookie (URLString url, WideString cookieString) {
+     if (getDefaultRequestContext() )
+         if (net::CookieStore * cs = getDefaultRequestContext () -> GetCookieStore ())
+             cs -> SetCookie (GURL(url.get<std::string>()), WideToUTF8(cookieString.get<std::wstring>()));
+}
 
 }

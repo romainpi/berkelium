@@ -105,6 +105,11 @@ void BERKELIUM_EXPORT update();
 void BERKELIUM_EXPORT runUntilStopped();
 void BERKELIUM_EXPORT stopRunning();
 
+/** Sets a cookie for a given URL. 
+ *  \param url The URL to set the cookie on.
+ *  \param cookieString	The cookie string.
+ */
+void BERKELIUM_EXPORT setCookie (URLString url, WideString cookieString);
 }
 
 #endif
