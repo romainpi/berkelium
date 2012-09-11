@@ -36,6 +36,7 @@ chrome_debug.log
 chrome.log
 First Run
 /win32/resources
+/win32/subprocess/Bin/subprocess.obj
 installed-chromium
 
 # generated documentation
