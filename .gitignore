@@ -45,5 +45,7 @@ berkelium_docs
 .project
 .cproject
 
+# resharper files
+_ReSharper*
 
 install_manifest.txt
