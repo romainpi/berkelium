@@ -78,6 +78,7 @@ protected:
     gfx::Size current_size_;
     bool mResizeAckPending;
     gfx::Size mInFlightSize;
+	unsigned char* mpPaintBuffer;
 };
 
 class MemoryRenderWidgetHost : public MemoryRenderHostImpl<RenderWidgetHost> {

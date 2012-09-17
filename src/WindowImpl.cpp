@@ -513,25 +513,16 @@ ContextImpl *WindowImpl::getContextImpl() const {
     return static_cast<ContextImpl*>(getContext());
 }
 
-void WindowImpl::onPaint(Widget *wid,
-                         const unsigned char *sourceBuffer,
-                         const Rect &sourceBufferRect,
-                         size_t numCopyRects,
-                         const Rect *copyRects,
-                         int dx, int dy, const Rect &scrollRect) {
-    if (mDelegate) {
+  void WindowImpl::onPaint(Widget *wid,
+    const unsigned char *sourceBuffer, const Rect &rect,
+    int dx, int dy, const Rect &scrollRect) {
+      if (mDelegate) {
         if (wid) {
-            mDelegate->onWidgetPaint(
-                this, wid,
-                sourceBuffer, sourceBufferRect,
-                numCopyRects, copyRects,
-                dx, dy, scrollRect);
+          mDelegate->onWidgetPaint(
+            this, wid, sourceBuffer, rect, dx, dy, scrollRect);
         } else {
-            mDelegate->onPaint(
-                this,
-                sourceBuffer, sourceBufferRect,
-                numCopyRects, copyRects,
-                dx, dy, scrollRect);
+          mDelegate->onPaint(
+            this, sourceBuffer, rect, dx, dy, scrollRect);
         }
     }
 }
@@ -621,13 +612,11 @@ void WindowImpl::DidStartLoading() {
         mDelegate->onLoadingStateChanged(this, true);
     }
 }
-
 void WindowImpl::DocumentAvailableInMainFrame( RenderViewHost *pRVH )
 {
 	evalInitialJavascript();
 	RenderViewHostDelegate::DocumentAvailableInMainFrame( pRVH );
 }
-
 void WindowImpl::DidStopLoading() {
     SetIsLoading(false);
 
@@ -1112,7 +1101,7 @@ void WindowImpl::RunFileChooser(const ViewHostMsg_RunFileChooser_Params&params) 
         case ViewHostMsg_RunFileChooser_Params::Save:
           mode = FileSaveAs;
           break;
-        default: //case ViewHostMsg_RunFileChooser_Params::Open or unknown
+        default:
           mode = FileOpen;
           break;
       }

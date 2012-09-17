@@ -59,6 +59,11 @@ MemoryRenderViewHost::MemoryRenderViewHost(
 }
 
 MemoryRenderViewHost::~MemoryRenderViewHost() {
+	if(mpPaintBuffer != NULL)
+	{
+		delete[] mpPaintBuffer;
+		mpPaintBuffer = NULL;
+	}
 }
 
 bool MemoryRenderViewHost::OnMessageReceived(const IPC::Message& msg) {
@@ -164,7 +169,7 @@ template <class T> void MemoryRenderHostImpl<T>::Memory_WasResized() {
 template <class T> void MemoryRenderHostImpl<T>::Memory_OnMsgUpdateRect(
     const ViewHostMsg_UpdateRect_Params&params)
 {
-  current_size_ = params.view_size;
+	current_size_ = params.view_size;
 
     DCHECK(!params.bitmap_rect.IsEmpty());
     DCHECK(!params.view_size.IsEmpty());
@@ -240,53 +245,74 @@ template <class T> void MemoryRenderHostImpl<T>::Memory_PaintBackingStoreRect(
     int dx, int dy,
     const gfx::Rect& clip_rect)
 {
-    Rect updateRect;
-    updateRect.setFromRect(bitmap_rect);
+	const int kBytesPerPixel = 4;
 
+	// Copy rectangle properties
     Rect clipRect;
     clipRect.setFromRect(clip_rect);
+
+	Rect updateRect;
+    updateRect.setFromRect(bitmap_rect);
+
+	unsigned int updateRectWidth = updateRect.width();
+	unsigned int updateRectHeight = updateRect.height();
+	unsigned int updateRectTop = updateRect.top();
+	unsigned int updateRectLeft = updateRect.left();
+
+	unsigned int updateRectStrideLength = updateRectWidth * kBytesPerPixel;
 
     size_t numCopyRects = copy_rects.size();
     Rect * copyRects = new Rect [numCopyRects];
 
-    for (size_t i = 0; i < numCopyRects; ++i) {
+    for (size_t i = 0; i < numCopyRects; ++i)
+	{
         copyRects[i].setFromRect(copy_rects[i]);
     }
 
-    mWindow->onPaint(
-        mWidget,
-        static_cast<const unsigned char *>(bitmap->memory()),
-        updateRect,
-        numCopyRects,
-        copyRects,
-        dx,
-        dy,
-        clipRect);
+	unsigned int dest_texture_width = view_size.width();
+	unsigned int dest_texture_height = view_size.height();
+	unsigned int viewStrideLength = dest_texture_width*kBytesPerPixel;
 
+	if(mpPaintBuffer == NULL)
+	{
+		// Initialize mpPaintBuffer to size of view
+		int sizeOfPaintBuffer = viewStrideLength*dest_texture_height;
+		mpPaintBuffer = new unsigned char[sizeOfPaintBuffer];
+		memset(mpPaintBuffer, 0, sizeOfPaintBuffer);
+	}
+
+	const unsigned char * pSourceBitmapBuffer = static_cast<const unsigned char *>(bitmap->memory());
+
+	for (size_t i = 0; i < numCopyRects; i++)
+	{
+        unsigned int copyRectWidth = copyRects[i].width();
+        unsigned int copyRectHeight = copyRects[i].height();
+		unsigned int copyRectTop = copyRects[i].top();
+		unsigned int copyRectLeft = copyRects[i].left();
+
+        unsigned int top = copyRectTop - updateRectTop;
+        unsigned int left = copyRectLeft - updateRectLeft;
+
+		unsigned int copyRectStrideLength = copyRectWidth * kBytesPerPixel;
+
+		// Fill each line
+        for(unsigned int currentLineNumber = 0; currentLineNumber < copyRectHeight; currentLineNumber++)
+		{
+			unsigned int writeOffset = (copyRectTop + currentLineNumber) * viewStrideLength + copyRectLeft * kBytesPerPixel;
+			unsigned char * pPaintBufferCurrentLine = mpPaintBuffer + writeOffset;
+			const unsigned char * pSourceBitmapLine = pSourceBitmapBuffer + (top + currentLineNumber) * updateRectStrideLength + left * kBytesPerPixel;
+
+			memcpy(pPaintBufferCurrentLine, pSourceBitmapLine, copyRectStrideLength);
+		}
+    }
+	
+	mWindow->onPaint(	mWidget,
+						mpPaintBuffer,
+						updateRect,
+						dx,
+						dy,
+						clipRect);
 }
-
-/*
-gfx::Rect MemoryRenderViewHost::RootWindowResizerRectSize()const{
-    return GetRootWindowResizerRect();
-}
-
-RenderProcessHost* MemoryRenderViewHost::process() {
-    return RenderViewHost::process();
-}
-
-int MemoryRenderViewHost::routing_id()const{
-    return RenderViewHost::routing_id();
-}
-
-RenderProcessHost* MemoryRenderWidgetHost::process() {
-    return RenderWidgetHost::process();
-}
-
-int MemoryRenderWidgetHost::routing_id()const{
-    return RenderWidgetHost::routing_id();
-}
-
-*/
 ///////// MemoryRenderViewHostFactory /////////
 
 MemoryRenderViewHostFactory::MemoryRenderViewHostFactory() {

@@ -156,9 +156,7 @@ public:
     void resize(int width, int height);
 
     void onPaint(Widget *wid,
-                 const unsigned char *sourceBuffer,
-                 const Rect &sourceBufferRect,
-                 size_t numCopyRects, const Rect *copyRects,
+                 const unsigned char *sourceBuffer, const Rect &rect,
                  int dx, int dy, const Rect &scrollRect);
     void onWidgetDestroyed(Widget *wid);
 

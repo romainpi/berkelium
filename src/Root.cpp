@@ -188,7 +188,6 @@ Root::Root () {
 }
 
 bool Root::init(FileString homeDirectory, FileString subprocessDirectory, unsigned int extra_argc, const char* extra_argv[] ) {
-
     new base::AtExitManager();
 
     FilePath subprocess;
@@ -594,9 +593,6 @@ Root::~Root(){
         devtools_http_handler_->Stop();
         devtools_http_handler_ = NULL;
     }
-
-    // FIXME: RemoveProfile gone--do we leak profiles?
-    //g_browser_process->profile_manager()->RemoveProfile(mProf);
 
     g_browser_process->EndSession();
     mRenderViewHostFactory.reset();
